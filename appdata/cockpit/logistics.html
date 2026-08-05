@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // LOGISTICS MATRIX</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #5a5421; padding-bottom: 15px; }
+        h1 { color: #a4b38a; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .action-btn { background: #2d2a1c; border: 1px solid #5c5431; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: #3d3724; border-color: #a4b38a; }
+
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 20px; text-transform: uppercase; }
+
+        .logistics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+        .log-card { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between; }
+        .log-card h2 { color: #a4b38a; margin: 0 0 12px 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #3a4031; padding-bottom: 8px; }
+        
+        .viewport-panel { background: #161a16; border: 1px solid #6b8e23; border-radius: 6px; padding: 20px; margin-bottom: 25px; display: none; }
+        .viewport-panel h2 { color: #87986a; margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed #6b8e23; padding-bottom: 5px; }
+
+        .panel-controls { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; background: #11120e; padding: 10px; border-radius: 4px; border: 1px solid #3a4031; }
+        .search-bar { background: #1c1f16; border: 1px solid #4b533f; color: #ffb000; padding: 8px 12px; font-family: monospace; border-radius: 4px; width: 300px; outline: none; }
+        .search-bar:focus { border-color: #a4b38a; }
+
+        .add-ribbon { display: flex; gap: 10px; background: #11120e; padding: 10px; border-radius: 4px; border: 1px solid #3a4031; margin-bottom: 15px; }
+        .add-ribbon input { background: #1c1f16; border: 1px solid #4b533f; color: #e6e8e3; padding: 8px; font-family: monospace; border-radius: 4px; outline: none; font-size: 0.85rem; }
+        .add-ribbon input:focus { border-color: #a4b38a; }
+        
+        .add-ribbon .action-btn { background: #238636 !important; border-color: #2ea44f !important; color: white !important; }
+        .add-ribbon .action-btn:hover { background: #2ea44f !important; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { border: 1px solid #3a4031; padding: 8px; text-align: left; }
+        th { background: #11120e; color: #a4b38a; font-family: monospace; text-transform: uppercase; font-size: 0.8rem; }
+        
+        .table-input { width: 100%; background: transparent; border: none; color: #e6e8e3; font-size: 0.9rem; outline: none; }
+        .table-input:focus { background: #1c1f16; color: #ffb000; }
+        
+        .qty-btn { background: #2d2a1c; border: 1px solid #5c5431; color: #ffb000; font-weight: bold; width: 24px; height: 24px; border-radius: 3px; cursor: pointer; font-family: monospace; margin: 0 4px; vertical-align: middle; }
+        .qty-btn:hover { background: #a4b38a; color: #11120e; border-color: #a4b38a; }
+        .del-btn { background: #3d1d1d; border: 1px solid #732626; color: #ff7b72; font-weight: bold; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; font-family: monospace; }
+        .del-btn:hover { background: #cf4040; color: #ffffff; }
+
+        .select-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .selector { background: #11120e; border: 1px solid #4b533f; color: #ffb000; padding: 8px; font-family: monospace; border-radius: 4px; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- TACTICAL OPERATIONAL HEADER -->
+        <div class="header-block">
+            <h1>🌿 PROJECT CITADEL // HOMESTEAD LOGISTICS MATRIX</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        <div class="status-bar">RESOURCE TRACKING SYSTEM // LEDGER STORAGE: ENGINE_JSON_ARRAYS // ACTIVE</div>
+
+        <!-- 3-COLUMN LOGISTICS EXECUTIVE DECK -->
+        <div class="logistics-grid">
+            <div class="log-card">
+                <h2>🥫 Food Inventory</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track home provisions, freeze-dried storage stacks, shelf-life matrices, and calorie indexes.</p>
+                <button class="action-btn" onclick="openPanel('foodPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>⛽ Fuel Resources</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Monitor stabilized gasoline reserves, diesel drums, propane levels, and rotation timelines.</p>
+                <button class="action-btn" onclick="openPanel('fuelPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🥽 PPE & Equipment</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Manage personal protective kits, gas mask canisters, respirator gear, and filtration items.</p>
+                <button class="action-btn" onclick="openPanel('ppePanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🍏 Orchard & Fruit Trees</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Log individual tree counts, varieties, pruning records, watering routines, and seasonal health charts.</p>
+                <button class="action-btn" onclick="openPanel('orchardPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🐓 Livestock & Animals</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track animal populations, health logs, feeding requirements, and production outputs.</p>
+                <button class="action-btn" onclick="openPanel('animalPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card" style="border-color:#6b8e23; box-shadow: 0 0 15px rgba(107, 142, 35, 0.2);">
+                <h2 style="color:#87986a;">🌾 Botanical Garden Tracker</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Query multi-year spring/fall garden data records, crop varieties, pests, fertilizers, and total yield weights.</p>
+                <button class="action-btn" style="background:#3a422e; border-color:#6b8e23;" onclick="openPanel('gardenPanel')">Access Ledger</button>
+            </div>
+        </div>
+
+        <!-- ================= LIVE DATA WORKSPACE PANELS ================= -->
+        
+        <!-- FOOD LEDGER -->
+        <div id="foodPanel" class="viewport-panel">
+            <h2>🥫 Food Provisions Ledger Drawer</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query descriptions or slots..." oninput="renderLedger('food', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">DYNAMIC DATA DISPATCH MATRIX</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_food_desc" placeholder="Item / Description..." style="flex-grow:2;">
+                <input type="text" id="add_food_loc" placeholder="Location..." style="flex-grow:1;">
+                <input type="number" id="add_food_qty" placeholder="Qty..." style="width: 80px;">
+                <input type="text" id="add_food_exp" placeholder="Exp Date / Status..." style="flex-grow:1;">
+                <button class="action-btn" onclick="addNewItem('food')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="foodTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- FUEL LEDGER -->
+        <div id="fuelPanel" class="viewport-panel">
+            <h2>⛽ Fuel & Energy Storage Registry</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query fuel profiles..." oninput="renderLedger('fuel', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">FUEL MONITOR MATRIX</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_fuel_desc" placeholder="Fuel Type..." style="flex-grow:1;">
+                <input type="text" id="add_fuel_loc" placeholder="Container Profile..." style="flex-grow:1;">
+                <input type="number" id="add_fuel_qty" placeholder="Total Volume (Gal)..." style="width: 150px;">
+                <input type="text" id="add_fuel_exp" placeholder="Rotation Date..." style="flex-grow:1;">
+                <button class="action-btn" onclick="addNewItem('fuel')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Fuel Type</th><th>Container Profile</th><th>Total Volume</th><th>Rotation Date</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="fuelTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- PPE LEDGER -->
+        <div id="ppePanel" class="viewport-panel">
+            <h2>🥽 Personal Protective Equipment Stock</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query equipment pools..." oninput="renderLedger('ppe', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">SAFETY INVENTORY POOL</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_ppe_desc" placeholder="Equipment Profile..." style="flex-grow:2;">
+                <input type="text" id="add_ppe_loc" placeholder="Kit Size..." style="flex-grow:1;">
+                <input type="number" id="add_ppe_qty" placeholder="Quantity..." style="width: 100px;">
+                <input type="text" id="add_ppe_exp" placeholder="Inspection Status..." style="flex-grow:1;">
+                <button class="action-btn" onclick="addNewItem('ppe')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Equipment Profile</th><th>Kit Size</th><th>Quantity</th><th>Inspection Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="ppeTableBody"></tbody>
+            </table>
+        </div>
+        <!-- ORCHARD LEDGER -->
+        <div id="orchardPanel" class="viewport-panel">
+            <h2>🍏 Orchard & Fruit Tree Registry</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query tags or trees..." oninput="renderLedger('orchard', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">FLORA CALIBRATION SUITE</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_orchard_desc" placeholder="Tree ID / Plot Location..." style="flex-grow:1;">
+                <input type="text" id="add_orchard_loc" placeholder="Tree Variety..." style="flex-grow:1;">
+                <input type="number" id="add_orchard_qty" placeholder="Count..." style="width: 80px;">
+                <input type="text" id="add_orchard_exp" placeholder="Fertilizer / Health Note..." style="flex-grow:2;">
+                <button class="action-btn" onclick="addNewItem('orchard')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Tree ID / Plot Location</th><th>Tree Variety</th><th>Count</th><th>Fertilizer / Health Note</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="orchardTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- ANIMAL LEDGER -->
+        <div id="animalPanel" class="viewport-panel">
+            <h2>🐓 Livestock & Breeding Registry</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query tags or species..." oninput="renderLedger('animal', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">FAUNA HEADCOUNT LEDGER</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_animal_desc" placeholder="Animal Group / Breed..." style="flex-grow:2;">
+                <input type="text" id="add_animal_loc" placeholder="Feed Log / Ration..." style="flex-grow:2;">
+                <input type="number" id="add_animal_qty" placeholder="Head Count..." style="width: 120px;">
+                <input type="text" id="add_animal_exp" placeholder="Production Yield Info..." style="flex-grow:2;">
+                <button class="action-btn" onclick="addNewItem('animal')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Animal Group / Breed</th><th>Feed Log / Ration Metric</th><th>Total Head Count</th><th>Production Yield Info</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="animalTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- ADVANCED BOTANICAL GARDEN LEDGER (YEAR-OVER-YEAR TRACKER) -->
+        <div id="gardenPanel" class="viewport-panel" style="border-color:#6b8e23;">
+            <h2>🌾 Year-Over-Year Botanical Garden Matrix Ledger</h2>
+            
+            <div class="select-row">
+                <div>
+                    <label style="font-family:monospace; font-size:0.8rem; color:#a4b38a; display:block; margin-bottom:4px;">📅 SELECT TARGET SEASON YEAR:</label>
+                    <select id="gardenYear" class="selector" onchange="loadGardenLedger()">
+                        <option value="2025">2025 OPERATIONAL LEDGER</option>
+                        <option value="2026" selected>2026 OPERATIONAL LEDGER</option>
+                        <option value="2027">2027 OPERATIONAL LEDGER</option>
+                        <option value="2028">2028 OPERATIONAL LEDGER</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-family:monospace; font-size:0.8rem; color:#a4b38a; display:block; margin-bottom:4px;">🌱 SELECT TARGET CYCLE INTERVAL:</label>
+                    <select id="gardenSeason" class="selector" onchange="loadGardenLedger()">
+                        <option value="Spring" selected>SPRING PLANTING CYCLE</option>
+                        <option value="Fall">FALL PLANTING CYCLE</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query varieties or press..." oninput="renderGarden(this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #6b8e23;">BOTANICAL TIME MATRIX CHANNELS</span>
+            </div>
+
+            <div class="add-ribbon" style="flex-wrap: wrap;">
+                <input type="text" id="g_add_crop" placeholder="Crop..." style="width:130px;">
+                <input type="text" id="g_add_loc" placeholder="Plot..." style="width:100px;">
+                <input type="text" id="g_add_type" placeholder="Type (Seed/Starter)..." style="width:140px;">
+                <input type="text" id="g_add_var" placeholder="Variety / Lineage..." style="width:160px;">
+                <input type="text" id="g_add_fert" placeholder="Fertilizers..." style="flex-grow:1;">
+                <input type="text" id="g_add_pest" placeholder="Pest Pressures..." style="flex-grow:1;">
+                <input type="text" id="g_add_yield" placeholder="Yield..." style="width:100px;">
+                <button class="action-btn" onclick="addGardenItem()">+ Add Crop</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Crop Profile</th>
+                        <th>Plot Location</th>
+                        <th>Type</th>
+                        <th>Variety / Lineage</th>
+                        <th>Fertilizers & Intervals</th>
+                        <th>Pest Pressures & Mitigations</th>
+                        <th>Final Yield Output</th>
+                        <th style="width:70px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="gardenTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        // Core Memory Containers
+        let inventoryData = { food: [], fuel: [], ppe: [], orchard: [], animal: [] };
+        let activeGardenList = [];
+
+        // Fetch category data from SQLite via Python API
+        async function fetchCategory(cat) {
+            try {
+                const res = await fetch(`/api/inventory/${cat}`);
+                inventoryData[cat] = await res.json();
+                renderLedger(cat);
+            } catch (err) { console.error(`Failed fetching ${cat}:`, err); }
+        }
+
+        // Global Boot Loader Loop
+        function initLedgerMatrix() {
+            Object.keys(inventoryData).forEach(cat => fetchCategory(cat));
+            loadGardenLedger();
+        }
+
+        function openPanel(id) {
+            document.querySelectorAll('.viewport-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function renderLedger(cat, query = "") {
+            const tbody = document.getElementById(`${cat}TableBody`);
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            const normalizedQuery = query.toLowerCase();
+            const filtered = inventoryData[cat].filter(item => 
+                item.desc.toLowerCase().includes(normalizedQuery) || 
+                item.loc.toLowerCase().includes(normalizedQuery) ||
+                item.exp.toLowerCase().includes(normalizedQuery)
+            );
+
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="table-input" value="${item.desc}" onchange="updateItemValue('${cat}', '${item.id}', 'desc', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.loc}" onchange="updateItemValue('${cat}', '${item.id}', 'loc', this.value)"></td>
+                    <td>
+                        <button class="qty-btn" onclick="adjustQty('${cat}', '${item.id}', -1)">-</button>
+                        <span style="font-family:monospace; display:inline-block; width:40px; text-align:center; font-weight:bold; color:#ffb000;">${item.qty}</span>
+                        <button class="qty-btn" onclick="adjustQty('${cat}', '${item.id}', 1)">+</button>
+                    </td>
+                    <td><input type="text" class="table-input" value="${item.exp}" onchange="updateItemValue('${cat}', '${item.id}', 'exp', this.value)"></td>
+                    <td><button class="del-btn" onclick="deleteItem('${cat}', '${item.id}')">Wipe</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function updateItemValue(cat, id, field, value) {
+            const item = inventoryData[cat].find(i => i.id == id);
+            if (item) {
+                item[field] = value;
+                await fetch('/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...item, category: cat })
+                });
+            }
+        }
+
+        function adjustQty(cat, id, amount) {
+            const item = inventoryData[cat].find(i => i.id == id);
+            if (item) {
+                const newQty = Math.max(0, parseInt(item.qty || 0) + amount);
+                updateItemValue(cat, id, 'qty', newQty);
+                renderLedger(cat);
+            }
+        }
+
+        async function addNewItem(cat) {
+            const descEl = document.getElementById(`add_${cat}_desc`);
+            const locEl = document.getElementById(`add_${cat}_loc`);
+            const qtyEl = document.getElementById(`add_${cat}_qty`);
+            const expEl = document.getElementById(`add_${cat}_exp`);
+
+if (!descEl.value.trim()) { alert("CRITICAL: DESCRIPTION FIELD CANNOT BE EMPTY."); return; }
+if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0; }
+
+            const newItem = {
+                id: String(Date.now()),
+                category: cat,
+                desc: descEl.value.trim(),
+                loc: locEl.value.trim() || "Unassigned",
+                qty: parseInt(qtyEl.value) || 0,
+                exp: expEl.value.trim() || "N/A"
+            };
+
+            await fetch('/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            });
+
+            descEl.value = ""; locEl.value = ""; qtyEl.value = ""; expEl.value = "";
+            fetchCategory(cat);
+        }
+
+        async function deleteItem(cat, id) {
+            await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+            fetchCategory(cat);
+        }
+
+        // --- GARDEN MATRIX STATE MACHINE BACKENDS ---
+
+        async function loadGardenLedger() {
+            const year = document.getElementById('gardenYear').value;
+            const season = document.getElementById('gardenSeason').value;
+            try {
+                const res = await fetch(`/api/garden/${year}/${season}`);
+                activeGardenList = await res.json();
+                renderGarden();
+            } catch (err) { console.error("Garden log load failure:", err); }
+        }
+
+        function renderGarden(query = "") {
+            const tbody = document.getElementById('gardenTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            const normalizedQuery = query.toLowerCase();
+            const filtered = activeGardenList.filter(item => 
+                item.crop.toLowerCase().includes(normalizedQuery) ||
+                item.var.toLowerCase().includes(normalizedQuery) ||
+                item.loc.toLowerCase().includes(normalizedQuery)
+            );
+
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="table-input" value="${item.crop}" onchange="updateGardenValue('${item.id}', 'crop', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.loc}" onchange="updateGardenValue('${item.id}', 'loc', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.type}" onchange="updateGardenValue('${item.id}', 'type', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.var}" onchange="updateGardenValue('${item.id}', 'var', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.fert}" onchange="updateGardenValue('${item.id}', 'fert', this.value)"></td>
+                    <td><input type="text" class="table-input" value="${item.pest}" onchange="updateGardenValue('${item.id}', 'pest', this.value)"></td>
+                    <td><input type="text" class="table-input" style="color:#ffb000; font-weight:bold;" value="${item.yield}" onchange="updateGardenValue('${item.id}', 'yield', this.value)"></td>
+                    <td><button class="del-btn" onclick="deleteGardenItem('${item.id}')">❌</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function updateGardenValue(id, field, value) {
+            const item = activeGardenList.find(i => i.id == id);
+            if (item) {
+                item[field] = value;
+                await fetch('/api/garden', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+            }
+        }
+
+        async function addGardenItem() {
+            const crop = document.getElementById('g_add_crop');
+            const loc = document.getElementById('g_add_loc');
+            const type = document.getElementById('g_add_type');
+            const v = document.getElementById('g_add_var');
+            const fert = document.getElementById('g_add_fert');
+            const pest = document.getElementById('g_add_pest');
+            const y = document.getElementById('g_add_yield');
+
+            if (!crop.value.trim()) return;
+
+            const newItem = {
+                id: String(Date.now()),
+                year: document.getElementById('gardenYear').value,
+                season: document.getElementById('gardenSeason').value,
+                crop: crop.value.trim(),
+                loc: loc.value.trim() || "N/A",
+                type: type.value.trim() || "Seed",
+                var: v.value.trim() || "Standard",
+                fert: fert.value.trim() || "None",
+                pest: pest.value.trim() || "None",
+                yield: y.value.trim() || "0 lbs"
+            };
+
+            await fetch('/api/garden', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            });
+
+            crop.value = ""; loc.value = ""; type.value = ""; v.value = ""; fert.value = ""; pest.value = ""; y.value = "";
+            loadGardenLedger();
+        }
+
+        async function deleteGardenItem(id) {
+            await fetch(`/api/garden/${id}`, { method: 'DELETE' });
+            loadGardenLedger();
+        }
+
+        // Bootstrap Matrix Engines on Mount
+        initLedgerMatrix();
+    </script>
+</body>
+</html>

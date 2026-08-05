@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>CITADEL // PROJECT VIGIL COMMAND</title>
+    <style>
+        body { background: #080a06; color: #a4b28d; font-family: monospace; padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        /* Unified Header Routing Bar Layout */
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #38402f; padding-bottom: 15px; margin-bottom: 25px; }
+        h1 { color: #d1d5cb; margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        
+        .back-btn { background: #151c12; color: #a4b28d; text-decoration: none; padding: 8px 16px; border-radius: 4px; border: 1px solid #38402f; font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
+        .back-btn:hover { background: #222e1d; border-color: #00ff66; color: #00ff66; }
+
+        /* Dynamic Nodes Grid Workspace Matrix */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .card { background: #10140e; border: 1px solid #38402f; padding: 20px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        h2 { color: #ffb000; margin-top: 0; font-size: 16px; letter-spacing: 0.5px; }
+        
+        .btn { background: #151c12; border: 1px solid #455239; color: #a4b28d; padding: 10px; width: 100%; cursor: pointer; font-family: monospace; font-weight: bold; margin-top: 15px; text-transform: uppercase; border-radius: 3px; }
+        .btn:hover { color: #00ff66; border-color: #00ff66; background: #1a2416; }
+        
+        .cam-feed { width: 100%; height: 180px; background: #000; border: 1px solid #38402f; margin-top: 12px; border-radius: 2px; object-fit: cover; }
+        .scanning-text { font-family: monospace; font-size: 0.9rem; color: #455239; padding: 20px; border: 1px dashed #38402f; border-radius: 4px; text-align: center; width: 100%; grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- CONTROL HUB ROUTING ROW -->
+        <div class="header-row">
+            <h1>🛰️ PROJECT VIGIL // SMART NODE MATRIX</h1>
+            <a href="index.html" class="back-btn">⬅ COCKPIT MATRIX</a>
+        </div>
+        
+        <!-- TELEMETRY STATUS BAR -->
+        <div id="status" style="color:#00ff66; font-weight:bold; font-family:monospace; margin-bottom:25px; text-transform:uppercase; letter-spacing:0.5px;">INITIALIZING TELEMETRY CONSOLE...</div>
+        
+        <!-- HARDWARE CAPTURE DRAWERS GRID -->
+        <div class="grid" id="container">
+            <div class="scanning-text">SCANNING AIRWAVES... SEARCHING FOR OPEN AUTOMATION NODES...</div>
+        </div>
+    </div>
+
+    <script>
+        // Execution routine tracking device parameters dynamically over proxy paths
+        async function updateHUD() {
+            try {
+                const r = await fetch("/api/grid?t=" + Date.now());
+                if (!r.ok) throw new Error("Server disconnected");
+                const d = await r.json();
+                let h = "";
+                
+                for (const id in d) {
+                    const dev = d[id];
+                    let cameraElement = "";
+                    
+                    // CAMERA DETECTION MODULE: Render live viewport box if data feed exists
+                    if (dev.stream_url && dev.stream_url.trim() !== "") {
+                        cameraElement = `<img class="cam-feed" src="${dev.stream_url}" alt="LIVE CAMERA INTERCEPT" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\' width=\'100\' height=\'50\' viewBox=\'0 0 100 50\'><rect width=\'100\' height=\'50\' fill=\'%23050704\'/><text x=\'50\' y=\'28\' font-family=\'monospace\' font-size=\'6\' fill=\'%23ff3333\' text-anchor=\'middle\'>[ CAMERA FEED OFFLINE ]</text></svg>'">`;
+                    }
+                    
+                    h += `
+                    <div class="card">
+                        <div>
+                            <h2>🎯 NODE: ${id.toUpperCase()}</h2>
+                            <div style="margin-bottom:4px;">PROFILE: <span style="color:#ffb000;">${dev.type.toUpperCase()}</span></div>
+                            <div style="margin-bottom:4px;">IP ROUTE: <span style="font-family:monospace; color:#87986a;">${dev.ip}</span></div>
+                            <div style="margin-bottom:4px;">STATUS: <span style="color:${dev.state === 'ON' ? '#00ff66' : '#ff3333'}; font-weight:bold;">${dev.state}</span></div>
+                            ${cameraElement}
+                        </div>
+                        <button class="btn" onclick="toggleRelay('${id}')">TOGGLE OVERRIDE RELAY</button>
+                    </div>`;
+                }
+                
+                document.getElementById("container").innerHTML = h || `<div class="scanning-text">SCANNING AIRWAVES... NO OPEN AUTOMATION HARDWARE CAPTURED YET...</div>`;
+                document.getElementById("status").innerText = "Sovereign Base Controller Online // Monitoring Local Infrastructure";
+                document.getElementById("status").style.color = "#00ff66";
+            } catch (e) {
+                document.getElementById("status").innerText = "METRIC DROP (Project VIGIL Network Engine Interrupted)";
+                document.getElementById("status").style.color = "#ff3333";
+            }
+        }
+
+        // Fires outbound packet blast down to the target IP node route
+        async function toggleRelay(id) {
+            try {
+                await fetch("/api/toggle", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ device_id: id })
+                });
+                setTimeout(updateHUD, 150);
+            } catch (err) {
+                console.error("Outbound override directive failed:", err);
+            }
+        }
+
+        // Loop execution scanning frequency
+        setInterval(updateHUD, 2000);
+        window.onload = updateHUD;
+    </script>
+</body>
+</html>

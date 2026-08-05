@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // OFF-GRID AI CORE</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 30px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; height: 90vh; }
+        
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #4b533f; padding-bottom: 15px; }
+        h1 { color: #87986a; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .action-btn { background: #2a2f21; border: 1px solid #5c6450; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: #3a422e; border-color: #87986a; }
+
+        .chat-box { flex-grow: 1; background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 20px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .message { padding: 12px 16px; border-radius: 6px; max-width: 80%; line-height: 1.5; font-size: 0.95rem; }
+        .user-msg { background: #2a2d21; border-left: 4px solid #87986a; align-self: flex-end; color: #e6e8e3; }
+        .ai-msg { background: #11120e; border-left: 4px solid #ffb000; align-self: flex-start; color: #ffb000; font-family: 'Courier New', monospace; }
+
+        .input-area { display: flex; gap: 15px; }
+        .chat-input { flex-grow: 1; background: #1c1f16; border: 1px solid #3a4031; padding: 15px; color: #ffb000; font-family: 'Courier New', monospace; font-size: 1rem; border-radius: 6px; outline: none; }
+        .send-btn { background: #4b533f; border: 1px solid #87986a; color: #e6e8e3; padding: 0 25px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .send-btn:hover { background: #5c6450; }
+        
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 15px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-block">
+            <h1>PROJECT CITADEL // INTELLIGENCE MATRIX</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        
+        <div class="status-bar">TARGET ENVELOPE: LLAMA3.2:1B // STATUS: LOCAL_ONLY_SECURE</div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="message ai-msg">CITADEL SECURE AI LINK ESTABLISHED. INGEST MATRIX INITIALIZED. STANDING BY FOR QUERIES...</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" class="chat-input" placeholder="ENTER TACTICAL DATA INQUIRY MATRIX..." onkeydown="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" onclick="sendMessage()">EXECUTE</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const inputField = document.getElementById('userInput');
+            const prompt = inputField.value.trim();
+            if (!prompt) return;
+
+            // Render user message text
+            appendMessage(prompt, 'user-msg');
+            inputField.value = '';
+
+            // Create temporary loading container for streaming AI responses
+            const aiMessageDiv = appendMessage('THINKING...', 'ai-msg');
+
+            try {
+                // Relative path through nginx's own proxy_pass to citadel-ollama:11434 —
+                // not a hardcoded host port, which only worked if OLLAMA_PORT in .env
+                // happened to be left at 11434 instead of the documented default (11500).
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama3.2:1b',
+                        messages: [{ role: 'user', content: prompt }],
+                        stream: false
+                    })
+                });
+
+                const data = await response.json();
+                aiMessageDiv.innerText = data.message.content;
+            } catch (error) {
+                aiMessageDiv.innerText = "ERROR: CRITICAL TELEMETRY LINK TO OLLAMA CORE INTERRUPTED. VERIFY DOCKER CONTAINER ENGINE.";
+                console.error(error);
+            }
+        }
+
+        function appendMessage(text, className) {
+            const chatBox = document.getElementById('chatBox');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            msgDiv.innerText = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv;
+        }
+    </script>
+</body>
+</html>
+

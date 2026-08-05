@@ -1,0 +1,28 @@
+# Real per-install config — install.sh generates this from .env.example.
+# Never commit an actual .env even though this project's values aren't
+# secrets (just ports/paths) — the convention matters more than this
+# specific file's contents.
+.env
+
+# Packaged distributable — not source, regenerate from the repo instead.
+citadel.zip
+
+# Runtime data every bundled service writes into appdata/ once running —
+# none of this belongs in git (media libraries, model weights, chat
+# history, encyclopedia archives, etc. are all real user data, not code).
+appdata/ollama/
+appdata/open-webui/
+appdata/flatnotes/
+appdata/kolibri_home/
+appdata/kiwix-library/
+appdata/media-vault/videos/
+appdata/media-vault/mp3s/
+appdata/media-vault/pdfs/
+appdata/media-vault/notes-data/
+appdata/media-vault/citadel.db
+appdata/project-vigil/vigil_state.json
+appdata/project-vigil/vigil_grid_ledger.json
+
+# Standard OS cruft
+.DS_Store
+Thumbs.db

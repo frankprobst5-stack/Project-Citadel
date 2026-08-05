@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // AUDIO VAULT</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #1c1e17; color: #e6e8e3; padding: 40px 40px 120px 40px; margin: 0; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4b533f; padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { color: #87986a; margin: 0; font-size: 2rem; text-transform: uppercase; letter-spacing: 1px; }
+        .back-btn { background: #2b3025; color: #a4b38a; text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid #3a4031; font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
+        .back-btn:hover { background: #353b2e; border-color: #87986a; }
+        
+        #searchBar { width: 100%; padding: 15px 20px; background: #282c22; border: 2px solid #4b533f; border-radius: 8px; color: #ffb000; font-family: monospace; font-size: 1.1rem; margin-bottom: 30px; box-sizing: border-box; outline: none; }
+        #searchBar:focus { border-color: #87986a; }
+        
+        /* Enforced 2-Wide Layout Cards Grid */
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; }
+        .card { background: #23271e; padding: 25px; border-radius: 8px; border: 1px solid #3a4031; box-shadow: 0 4px 15px rgba(0,0,0,0.5); height: 350px; display: flex; flex-direction: column; box-sizing: border-box; }
+        h2 { color: #a4b38a; margin-top: 0; border-bottom: 1px solid #3a4031; padding-bottom: 10px; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Vertical Scroll Area Inside Each Category Card */
+        .box-content { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+        .box-content::-webkit-scrollbar { width: 6px; }
+        .box-content::-webkit-scrollbar-track { background: #1c1e17; border-radius: 4px; }
+        .box-content::-webkit-scrollbar-thumb { background: #4b533f; border-radius: 4px; }
+        .box-content::-webkit-scrollbar-thumb:hover { background: #87986a; }
+        
+        .file-item { display: flex; justify-content: space-between; align-items: center; background: #1c1e17; padding: 12px 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #708090; text-decoration: none; cursor: pointer; transition: all 0.2s; }
+        .file-item:hover { background: #2b3025; border-left-color: #87986a; transform: translateX(3px); }
+        .file-name { color: #d0d6c9; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; font-family: monospace; }
+        .hidden { display: none !important; }
+        .empty-text { color: #5c6450; font-size: 0.9rem; font-style: italic; padding: 10px; text-align: center; border: 1px dashed #3a4031; border-radius: 4px; }
+
+        /* Fixed Spotify-Style Player Dock at Bottom */
+        .footer-player { position: fixed; bottom: 0; left: 0; right: 0; background: #23271e; border-top: 2px solid #4b533f; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.6); z-index: 1000; }
+        .track-info { min-width: 250px; color: #ffb000; font-family: monospace; font-weight: bold; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        audio { width: 50%; max-width: 600px; filter: sepia(0.2) hue-rotate(30deg); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- CONTROL HEADER ROW -->
+        <div class="header-row">
+            <h1>📻 PROJECT CITADEL // AUDIO VAULT</h1>
+            <a href="index.html" class="back-btn">⬅ BACK TO COCKPIT</a>
+        </div>
+        
+        <!-- LIVE FILTER MATRIX INPUT -->
+        <input type="text" id="searchBar" placeholder="🔍 TYPE STRATEGIC SIGNATURE TO FILTER PLAYLIST TRACKS MATRIX..." onkeyup="filterFiles()">
+        
+        <!-- DYNAMIC 2-WIDE CARD CANVAS VIEWPORT -->
+        <div class="grid" id="deckGrid">
+            <!-- Manual system folders inject here instantly -->
+        </div>
+    </div>
+
+    <!-- FIXED SPOTIFY-STYLE AUDIO PLAYER BAR -->
+    <div class="footer-player">
+        <div class="track-info" id="audioTitle">RECEIVER INITIALIZED // STANDBY LINK IDLE</div>
+        <audio id="mainAudioPlayer" controls></audio>
+        <div style="min-width: 250px;"></div> <!-- Layout balancing block -->
+    </div>
+    <script>
+        const DECK_TYPE = "mp3";
+
+        // Scans your manual directories and populates the 2-wide scrolling card layout
+        async function loadManualFolders() {
+            try {
+                const res = await fetch(`/api/files/${DECK_TYPE}`);
+                const data = await res.json();
+                const grid = document.getElementById('deckGrid');
+                grid.innerHTML = '';
+
+                Object.keys(data).forEach(category => {
+                    let filesHTML = '';
+                    
+                    if (!data[category] || data[category].length === 0) {
+                        filesHTML = `<div class="empty-text">[ Empty Playlist Folder: Drop MP3s into media/mp3/${category}/ ]</div>`;
+                    } else {
+                        data[category].forEach(file => {
+                            const fileUrl = `media/${DECK_TYPE}/${category}/${file}`;
+                            filesHTML += `
+                                <div onclick="playAudio('${fileUrl}', '${file}')" class="file-item">
+                                    <span class="file-name">🎵 ${file}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    grid.innerHTML += `
+                        <div class="card">
+                            <h2>🎶 ${category.toUpperCase().replace(/_/g, ' ')}</h2>
+                            <div class="box-content">
+                                ${filesHTML}
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Directory retrieval error:", error);
+            }
+        }
+
+        // Spotify-style player loader
+        function playAudio(fileUrl, fileName) {
+            const player = document.getElementById('mainAudioPlayer');
+            const title = document.getElementById('audioTitle');
+            player.src = fileUrl;
+            title.textContent = "🎵 PLAYING: " + fileName.toUpperCase();
+            player.play();
+        }
+
+        // Global key matrix filter function
+        function filterFiles() {
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.textContent.toLowerCase().includes(query) ? item.classList.remove('hidden') : item.classList.add('hidden');
+            });
+            document.querySelectorAll('.card').forEach(card => {
+                const totalItems = card.querySelectorAll('.file-item').length;
+                const hiddenItems = card.querySelectorAll('.file-item.hidden').length;
+                if (totalItems > 0 && totalItems === hiddenItems && query !== "") card.classList.add('hidden');
+                else card.classList.remove('hidden');
+            });
+        }
+
+        // Initialize scanner immediately on page mount
+        loadManualFolders();
+    </script>
+</body>
+</html>

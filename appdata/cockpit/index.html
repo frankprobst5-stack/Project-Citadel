@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // CORE COCKPIT INTERFACE</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px 25px 50px 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 99%; margin: 0 auto; width: 100%; }
+        
+        /* Centered Branding Image Layout Block */
+        .branding-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; width: 100%; }
+        .branding-logo { max-width: 450px; height: auto; border-radius: 6px; box-shadow: 0 0 20px rgba(135, 152, 106, 0.25); border: 1px solid #3a4031; }
+
+        .header-block { display: flex; align-items: center; justify-content: center; margin-bottom: 25px; border-bottom: 2px solid #3a4031; padding-bottom: 15px; text-align: center; }
+        h1 { color: #87986a; margin: 0; font-size: 2rem; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .status-bar { font-family: monospace; font-size: 0.85rem; color: #ffb000; text-transform: uppercase; margin-bottom: 25px; background: #1c1f16; padding: 10px 15px; border-radius: 4px; border: 1px solid #3a4031; display: flex; justify-content: space-between; }
+
+        /* FIXED 3-WIDE HIGH-DENSITY STRATEGIC GRID WORKSPACE */
+        .matrix-grid { display: grid; grid-template-columns: repeat(3, 1fr) !important; gap: 20px; margin-bottom: 30px; }
+        
+        @media (max-width: 768px) { .matrix-grid { grid-template-columns: 1fr !important; } }
+
+        .module-card { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; cursor: pointer; }
+        .module-card:hover { border-color: #87986a; background: #23271c; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        
+        .card-top { display: flex; gap: 15px; margin-bottom: 12px; }
+        .card-icon { font-size: 2.2rem; display: flex; align-items: center; justify-content: center; background: #11120e; padding: 10px; border-radius: 6px; border: 1px solid #282f20; }
+        .card-title { font-size: 1.15rem; font-weight: bold; color: #e6e8e3; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; }
+        
+        .card-desc { font-size: 0.85rem; color: #aea79f; line-height: 1.5; margin: 0 0 15px 0; flex-grow: 1; }
+        .card-meta { font-family: monospace; font-size: 0.75rem; color: #687259; text-transform: uppercase; border-top: 1px dashed #282f20; padding-top: 8px; }
+
+        .scratchpad-area { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .scratchpad-header { font-family: monospace; font-size: 0.9rem; color: #87986a; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        textarea { width: 100%; height: 150px; background: #11120e; border: 1px solid #282f20; border-radius: 4px; color: #ffb000; font-family: monospace; font-size: 1rem; padding: 15px; box-sizing: border-box; resize: vertical; outline: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- BRANDING IMAGE -->
+        <div class="branding-container">
+            <img src="citadel.jpeg" alt="PROJECT CITADEL LOGO" class="branding-logo" onerror="this.style.display='none';">
+        </div>
+
+        <!-- COCKPIT CONTROL HEADER -->
+        <div class="header-block">
+            <h1>🛡️ PROJECT CITADEL // COMMAND CONTROL STATION</h1>
+        </div>
+        
+        <!-- SYSTEM TELEMETRY STRIP -->
+        <div class="status-bar">
+            <span>📡 HUB LINK STATUS: SECURED // OFF-GRID LOCAL NET ACTIVE</span>
+            <span id="liveChronometer">ZULU SYNC PENDING...</span>
+        </div>
+
+        <!-- STRATEGIC CORE MODULAR TILES CANVAS -->
+        <div class="matrix-grid" id="cockpitGrid"></div>
+
+        <!-- RESTORED TACTICAL SCRATCHPAD DRAWER -->
+        <div class="scratchpad-area">
+            <div class="scratchpad-header">
+                <span>📝 LIVE COCKPIT SCRATCHPAD // STATION REFERENCE LOGS</span>
+                <span style="color:#687259; font-size:0.75rem;">AUTO-SAVE MEMORY: LOCKED ON DISK</span>
+            </div>
+            <textarea id="cockpitScratchpad" placeholder="Type quick off-grid mission profiles, tactical frequencies, coordinates, or hand-off markers here..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // Synchronized Clock Loop
+        function tickClock() {
+            const now = new Date();
+            const h = String(now.getUTCHours()).padStart(2, '0');
+            const m = String(now.getUTCMinutes()).padStart(2, '0');
+            const s = String(now.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('liveChronometer').innerText = `🌍 TIMELINE MARKER // COORD ZULU: ${h}:${m}:${s} Z`;
+        }
+        setInterval(tickClock, 1000);
+
+        // Aligned 12-Module Strategic Deck Core Array
+        const coreModules = [
+            { title: "Communications Hub", desc: "Launch radio software, monitor area repeater ledgers, decode analog SSTV feeds, and bridge talkgroups.", meta: "Engine: Radio Stack", icon: "📡", action: "comms.html" },
+            { title: "Digital Media Vault", desc: "Access your centralized, self-contained media command station for manual video archives, audio playlists, and PDF guides.", meta: "Engine: Native Python Vault", icon: "🎬", action: "vault-root" },
+            { title: "Home Education Hub", desc: "Access the containerized Kolibri Learning matrix for offline schooling, interactive exercises, lesson planning, and student data archives.", meta: "Engine: Kolibri Matrix Core", icon: "🎓", action: "http://localhost:8081" },
+            { title: "Knowledge Base", desc: "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html" },
+            { title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html" },
+            { title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html" },
+            { title: "Off-Grid AI", desc: "Query localized, non-networked Large Language Models for secure tactical data analysis.", meta: "Engine: Offline LLM Core", icon: "🧠", action: "ai.html" },
+            { title: "Home Monitor Matrix", desc: "Access the standalone Project Vigil smart hub to manage local camera feeds, analyze solar power bus loads, and control offline hardware relays.", meta: "Engine: Vigil Kernel Core", icon: "🏠", action: "/project-vigil/index.html" },
+            { title: "Note Storage Vault", desc: "Access your offline secure markdown notepad, edit storage entries, catalog asset inventories, and view local media files safely.", meta: "Engine: Vault Brain Core", icon: "💾", action: "notes.html" },
+        ];
+
+        // Automate Card Rendering Grid Loops
+        function buildDashboardCockpit() {
+            const grid = document.getElementById('cockpitGrid');
+            grid.innerHTML = '';
+            
+            coreModules.forEach(mod => {
+                grid.innerHTML += `
+                    <div class="module-card" onclick="handleModuleClick('${mod.action}')">
+                        <div>
+                            <div class="card-top">
+                                <div class="card-icon">${mod.icon}</div>
+                                <div class="card-title">${mod.title}</div>
+                            </div>
+                            <div class="card-desc">${mod.desc}</div>
+                        </div>
+                        <div class="card-meta">${mod.meta}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Client Side Routing Click Handler Loop
+        function handleModuleClick(action) {
+            // NEW: Forces direct port assets to break free of iframe locks instantly
+            if (action.startsWith('http')) {
+                window.open(action, '_blank');
+            } else if (action === 'vault-root') {
+                window.location.href = '/vault-root/';
+            } else if (action.endsWith('.html')) {
+                window.location.href = action;
+            } else {
+                alert(`Initializing ${action} matrix framework...`);
+            }
+        }
+
+        // Auto-Saving Engine for the Cockpit Scratchpad
+        function initScratchpad() {
+            const pad = document.getElementById('cockpitScratchpad');
+            if (localStorage.getItem('citadel_cockpit_notes')) {
+                pad.value = localStorage.getItem('citadel_cockpit_notes');
+            }
+            pad.addEventListener('input', () => {
+                localStorage.setItem('citadel_cockpit_notes', pad.value);
+            });
+        }
+
+        // Mount dashboard instantly
+        tickClock();
+        buildDashboardCockpit();
+        initScratchpad();
+    </script>
+</body>
+</html>

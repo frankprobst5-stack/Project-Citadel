@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // OPERATIONAL LOGS</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px; margin: 0; box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; }
+        .container { max-width: 1600px; margin: 0 auto; width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
+        
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #3d3b21; padding-bottom: 15px; flex-shrink: 0; }
+        h1 { color: #87986a; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .action-btn { background: #3d3b21; border: 1px solid #7a7543; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: #524f2c; border-color: #9c9659; }
+
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 15px; text-transform: uppercase; flex-shrink: 0; }
+        
+        .notes-frame-container { flex-grow: 1; background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        iframe { width: 100%; height: 100%; border: none; background: #ffffff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER ROW -->
+        <div class="header-block">
+            <h1>📝 PROJECT CITADEL // SECURE OPERATIONS LOGS</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        
+        <div class="status-bar">FLAT-TEXT DECK // STORAGE: ./APPDATA/FLATNOTES // LOCAL_ONLY</div>
+
+        <!-- EMBEDDED APPLICATION FRAME -->
+        <div class="notes-frame-container">
+            <script>
+                // Dynamically embeds the FlatNotes engine running on local proxy port 8098
+                document.write('<iframe src="http://' + window.location.hostname + ':8098"></iframe>');
+            </script>
+        </div>
+    </div>
+</body>
+</html>
