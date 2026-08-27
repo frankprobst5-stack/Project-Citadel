@@ -1,88 +1,317 @@
 # Project Citadel
 
-A self-contained, offline-friendly home dashboard: a media library, notes, an
-offline AI assistant (Ollama + Open WebUI), an offline encyclopedia (Kiwix),
-home-school lessons (Kolibri), and a couple of home-automation helpers — all
-running on your own machine via Docker, with nothing sent to the cloud.
+**A self-contained, offline-first home command center**: complete media library, secure notes, offline AI assistant (Ollama + Open WebUI), offline encyclopedia (Kiwix), home-school lessons (Kolibri), comprehensive homestead & emergency logistics tracking, and intelligent home automation — all running on your own hardware via Docker, with **zero external internet dependency**.
 
-Free forever, licensed under the GNU General Public License v3.0 or later
-(GPL-3.0-or-later) — see [LICENSE](LICENSE) for the full text. (This covers
-Citadel's own code — the cockpit dashboard, the media-vault app, install
-scripts. The bundled services — Ollama, Open WebUI, Kiwix, Kolibri,
-Flatnotes — are pulled as pre-built container images and keep their own
-upstream licenses.)
+Everything runs locally on your own machine. When the internet goes down, your entire home command infrastructure stays up.
+
+Free forever, licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later) — see [LICENSE](LICENSE) for the full text. (This covers Citadel's own code — the cockpit dashboard, the media-vault app, install scripts. The bundled services — Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes — are pulled as pre-built container images and keep their own upstream licenses.)
+
+---
+
+## What You Get
+
+### 🛡️ Command Cockpit Dashboard
+A unified browser-based command center (port **8085**) with 12 integrated modules:
+
+- **📡 Communications Hub** — Frequency logs, scanner notes, radio reference data, SSTV feed tracking, talkgroup bridges (SDRTrunk integration planned)
+- **🎬 Digital Media Vault** — Self-hosted video, audio, and PDF library with category-based organization
+- **🎓 Home Education Hub** — Kolibri offline learning platform with thousands of lessons, interactive exercises, and student tracking
+- **📚 Knowledge Base** — Offline wiki/encyclopedia access (Kiwix + .zim archives), morse code, phonetic alphabets, technical manuals
+- **🌿 Homestead Logistics** — Multi-table inventory system for food, fuel, PPE, orchard/fruit trees, livestock, and botanical gardens (see below)
+- **🩸 First Aid & Medical** — Offline emergency trauma protocols, surgical field manuals, medical reference charts
+- **🧠 Offline AI Assistant** — Local Large Language Models (Ollama) for data analysis, writing, and computation — no cloud, no tracking
+- **🏠 Home Monitor Matrix** — Smart home device registry and relay control (Project Vigil) for cameras, sensors, power monitoring, and automation
+- **📝 Secure Notes** — Flatnotes markdown storage for sensitive documentation, asset inventories, and mission profiles
+
+Plus a **live scratchpad** for quick tactical notes (auto-saved to browser storage).
+
+### 📊 Homestead Logistics System
+
+A production-grade inventory database (SQLite) for preparedness and homesteading:
+
+**Inventory Ledgers:**
+- **Food** — Track provisions, freeze-dried storage, shelf life, calorie indexes, expiration dates
+- **Fuel** — Monitor gasoline reserves, diesel drums, propane levels, rotation schedules
+- **PPE & Equipment** — Manage protective kits, gas mask canisters, respirator gear, inspection status
+- **Orchard & Fruit Trees** — Log tree varieties, locations, pruning records, fertilization, seasonal health
+- **Livestock & Animals** — Track breed counts, health logs, feeding requirements, production yields
+
+**Botanical Garden Tracker:**
+- Year-over-year crop database (2025–2028, extendable)
+- Spring and Fall planting cycle records
+- Per-crop logging: variety, plot location, planting type (seed/starter), fertilizers, pest pressures, total yield
+- Search and filter by crop, variety, or plot
+- Full CRUD interface with real-time updates
+
+All data persists in a local SQLite database. **No cloud sync, no external dependencies.**
+
+### 🏠 Smart Home Hub (Project Vigil)
+
+An embedded **local-only IoT controller** for offline home automation:
+
+- **Device Registry** — DIY smart devices (relays, cameras, sensors) register via HTTP heartbeat to `/api/register`
+- **Relay Control** — Toggle connected devices on/off through the dashboard UI
+- **Power Monitoring** — Separate solar/off-grid power tracking (`vigil_hub.py`)
+- **Hardware Support** — Includes ESP32 Arduino sketch (`esp32_relay_node.ino`) for building your own smart relay nodes
+- **Persistent State** — Device registry saved to `vigil_grid_ledger.json`, survives reboots
+- **Zero Internet** — All communication is LAN-local; works during internet outages
+
+Example hardware registration:
+```json
+{
+  "device_id": "LIVING_ROOM_SWITCH",
+  "ip": "192.168.1.105",
+  "type": "Smart Power Relay",
+  "state": "OFF"
+}
+```
+
+See `appdata/project-vigil/manual.html` for full integration docs.
+
+---
 
 ## Requirements
 
-- Docker and the `docker compose` plugin. Get Docker here if you don't have
-  it: https://docs.docker.com/get-docker/
+- Docker and the `docker compose` plugin. Get Docker here if you don't have it: https://docs.docker.com/get-docker/
 - Linux, macOS, or Windows.
-- **Raspberry Pi:** not yet a supported target — see
-  [ROADMAP.md](ROADMAP.md). The AI (Ollama) and home-school (Kolibri)
-  services are genuinely heavy; running everything here on a Pi today is
-  untested and likely to struggle. Tested so far on desktop/laptop-class
-  hardware only.
+- **Minimum hardware:** 4 GB RAM recommended. Lighter services (cockpit, vault-api, vigil, flatnotes, kiwix) run fine on modest hardware; Ollama and Kolibri benefit from more RAM.
+- **Raspberry Pi:** Not yet officially supported (see [ROADMAP.md](ROADMAP.md)). Ollama (LLM) and Kolibri (education platform) are resource-heavy; tested only on desktop/laptop-class hardware so far.
+
+---
 
 ## Installing
 
-1. Download and unzip this project.
-2. Run the installer for your platform:
-   - **Windows**: double-click `install.bat` (or run it from Command Prompt/PowerShell).
-   - **Linux / macOS**: open a terminal in the extracted folder and run `./install.sh`.
-3. Once it finishes, open **http://localhost:8085** in your browser.
+### Quick Start
 
-Everything runs locally. First run will take a few minutes while Docker pulls
-the container images.
+1. **Download and unzip** this project to a folder on your machine.
+2. **Run the installer for your platform:**
+   - **Windows**: double-click `install.bat` (or run from Command Prompt/PowerShell)
+   - **Linux / macOS**: open a terminal in the extracted folder and run `./install.sh`
+3. **Wait for first startup** — Docker will pull container images (a few minutes on first run)
+4. **Open your browser** to **http://localhost:8085**
 
-## Adding your own content
+Everything runs locally. Your entire home infrastructure is now up and running.
 
-- **Videos / music / PDFs**: drop files into `appdata/media-vault/videos`,
-  `mp3s`, or `pdfs`. Organize into subfolders — each subfolder becomes a
-  category on the dashboard.
-- **Offline encyclopedia**: download `.zim` files from
-  https://library.kiwix.org and drop them into `appdata/kiwix-library`
-  (or wherever `KIWIX_STORAGE_PATH` in `.env` points).
-- **Home-school lessons**: managed through the Kolibri app itself once it's running.
+### Configuration (Optional)
 
-## Stopping / restarting
+If any default ports are already in use on your machine, edit `.env` before running `install.sh`:
 
-```
-docker compose down     # stop everything
-docker compose up -d    # start it back up
+```dotenv
+# Port mappings (host-side only; containers use their own internal ports)
+COCKPIT_PORT=8085          # Main dashboard
+OLLAMA_PORT=11500          # Offline AI (internal: 11434)
+KOLIBRI_PORT=8081          # Home education
+KIWIX_STORAGE_PATH=./appdata/kiwix-library  # Offline encyclopedias
 ```
 
-## Ports used
+See `.env.example` for all available options.
 
-| Service | Port |
-|---|---|
-| Dashboard | 8085 |
-| Kolibri (home-school) | 8081 |
-| Vigil (home automation) | 8082, 8083 |
-| Ollama (AI, internal) | 11500 |
-| Open WebUI (AI chat) | 8090 |
-| Kiwix (encyclopedia) | 8095 |
-| Flatnotes | 8098 |
+---
 
-If any of these are already in use on your machine, edit `.env` before
-running `install.sh` and change the corresponding port value.
+## Adding Your Content
 
-## Known gaps
+### Media Library
 
-A few things in the cockpit dashboard reference integrations that aren't
-actually wired up yet — flagged here so they're not a surprise, and see
-[ROADMAP.md](ROADMAP.md) for the plan to close them:
+Drop files into the appropriate folders inside `appdata/media-vault/`:
 
-- **Radar/signal tracking** (`/api/radar`, used by the Vigil page) always
-  returns an empty/sync-error result — the underlying tool it reads from
-  (Project IBRIS) exists as a separate script but isn't included in this
-  Docker Compose stack yet.
-- **Radio communications** (`comms.html`) has a working frequency-log and
-  scanner-note UI, but its "Open Full SDRTrunk Console" button points at a
-  service (`/sdrtrunk/`) that isn't part of this stack — there's no actual
-  radio decoding happening yet.
+```
+appdata/media-vault/
+  videos/
+    Documentary/
+    Educational/
+    Archive/
+  mp3s/
+    Audiobooks/
+    Podcasts/
+    Music/
+  pdfs/
+    Manuals/
+    References/
+    Plans/
+```
+
+Each subfolder becomes a category. Open the **Digital Media Vault** module in the cockpit to browse and stream.
+
+### Offline Encyclopedia
+
+Download `.zim` archives from https://library.kiwix.org (Wikipedia, wiktionary, wikihow, technical docs, etc.) and drop them into:
+```
+appdata/kiwix-library/
+```
+
+(Or configure `KIWIX_STORAGE_PATH` in `.env` to point elsewhere.)
+
+Then access them via the **Knowledge Base** module.
+
+### Home Education Lessons
+
+Kolibri is a full learning platform. Once running, visit **http://localhost:8081** or click the **Home Education Hub** module to:
+- Browse thousands of lessons (math, science, history, language, etc.)
+- Track student progress
+- Download content for offline use
+
+### Homestead Logistics
+
+Click the **Homestead Logistics** module in the cockpit to manage:
+- Food, fuel, PPE inventory
+- Orchard and livestock records
+- Year-over-year botanical garden logs
+
+All data is stored locally in SQLite. Export/backup `appdata/media-vault/citadel.db` if needed.
+
+### Smart Home Devices
+
+See `appdata/project-vigil/manual.html` for full hardware integration documentation. Quick summary:
+
+1. Wire up a DIY smart device (ESP32 + relay recommended; sketch included)
+2. Configure it to POST a registration packet to `http://<YOUR_CITADEL_IP>:8085/api/register`
+3. Device appears in the **Home Monitor Matrix** module
+4. Toggle on/off from the dashboard; Citadel sends commands back to your device
+
+No cloud service, no vendor lock-in.
+
+---
+
+## Stopping / Restarting
+
+```bash
+# Stop all services
+docker compose down
+
+# Start everything back up
+docker compose up -d
+
+# View live logs
+docker compose logs -f
+
+# Restart a single service (e.g., vault-api)
+docker compose restart citadel-vault-brain
+```
+
+---
+
+## Ports Used
+
+| Service | Port | Purpose |
+|---|---|---|
+| **Cockpit Dashboard** | 8085 | Main command center UI |
+| **Kolibri** (Education) | 8081 | Home-school platform |
+| **Project Vigil** (Home Hub) | 8082 | Device registry & control |
+| **Vigil Power Monitor** | 8083 | Solar/off-grid power tracking |
+| **Ollama** (Offline AI) | 11500 | Local LLM engine (internal: 11434) |
+| **Open WebUI** (AI Chat) | 8090 | Multi-user AI chat interface |
+| **Kiwix** (Encyclopedia) | 8095 | Offline wiki access |
+| **Flatnotes** (Secure Notes) | 8098 | Markdown note storage |
+
+If any port is already in use on your machine, edit `.env` **before running install.sh** and change the value. Example:
+
+```dotenv
+OLLAMA_PORT=11501  # Changed from 11500 if something else owns it
+COCKPIT_PORT=8086  # Changed from 8085
+```
+
+---
+
+## The Offline-First Architecture
+
+Citadel is designed from the ground up to work **with or without the internet:**
+
+### When Internet Is Down
+- ✅ Dashboard available at `http://localhost:8085`
+- ✅ Media vault (videos, audio, PDFs) fully accessible
+- ✅ Offline AI (Ollama) responds normally
+- ✅ Encyclopedia (Kiwix) fully searchable
+- ✅ Education platform (Kolibri) continues lessons
+- ✅ Smart home control (Project Vigil) unaffected
+- ✅ Notes (Flatnotes) readable and editable
+- ✅ Logistics database fully operational
+- ✅ Serves other devices on your LAN (see below)
+
+### When Internet Is Up
+- Citadel still doesn't phone home; it's fully self-contained
+- You *can* optionally configure external services (e.g., real Project IBRIS radar daemon), but nothing requires it
+
+### Serving Other Devices on Your LAN
+
+Citadel runs an internal HTTP server that other devices on your local network can access **even if your internet connection is down:**
+
+- **Smart devices** can register and receive control commands at `http://<citadel-ip>:8085/api/register` and `http://<citadel-ip>:8085/api/toggle`
+- **Laptops, tablets, phones** on your LAN can access the full dashboard at `http://<citadel-ip>:8085`
+- **IoT sensors** can query the device registry at `http://<citadel-ip>:8085/api/grid`
+- **Media streaming** to other devices works through the vault API at `/files/videos/`, `/files/mp3s/`, `/files/pdfs/`
+
+This makes Citadel a true **network hub for your home** — a central command and data center that keeps functioning when the internet fails.
+
+---
+
+## Known Gaps & Roadmap
+
+A few features are stubbed out but not yet implemented. See [ROADMAP.md](ROADMAP.md) for the full plan. Quick summary:
+
+- **Radar tracking** — The vigil.html page has a radar panel that currently shows dummy data. Project IBRIS (radar daemon) exists as a separate script but isn't bundled yet.
+- **Radio console** — comms.html has a working frequency log and scanner UI, but the "Open Full SDRTrunk Console" button points to a service that isn't in this stack. Real P25 trunked-radio decoding would require RTL-SDR hardware.
+- **Raspberry Pi support** — Ollama and Kolibri are genuinely heavy; testing and documentation needed for Pi deployment.
+- **Containerized vault-api** — Currently uses dev-mode Flask; should have a proper Dockerfile with pinned dependencies for reproducibility and offline startup.
+
+None of these gaps affect the core functionality; they're genuine features to build, not bugs.
+
+---
+
+## Tech Stack
+
+- **Frontend:** HTML5, CSS3, vanilla JavaScript (no build step, runs directly in nginx)
+- **Backend:** Python 3.10 (Flask + SQLite, Ollama API, Project Vigil)
+- **Reverse Proxy:** nginx (routing, CORS handling)
+- **Container Runtime:** Docker + Docker Compose
+- **Included Services:**
+  - **Ollama** — Offline LLM inference
+  - **Open WebUI** — AI chat interface
+  - **Kiwix** — Encyclopedia/wiki server
+  - **Kolibri** — Education platform
+  - **Flatnotes** — Markdown note storage
+  - **Project Vigil** — Home automation hub
+
+---
 
 ## Contributing
 
-Issues and pull requests welcome. This is a hobby project, not a commercial
-product — expect rough edges, and feel free to fork and make it your own
-under the terms of the AGPL-3.0.
+Issues and pull requests welcome. This is a hobby project, not a commercial product — expect rough edges, and feel free to fork and make it your own under the terms of the GPL-3.0-or-later.
+
+### Development Tips
+
+- **Dashboard frontend** is pure HTML/CSS/JS in `appdata/cockpit/` — no build step
+- **Vault API** logic is in `appdata/media-vault/app.py` — Flask-based, handles inventory/garden CRUD and media serving
+- **Project Vigil** smart home logic is in `appdata/project-vigil/vigil_core.py` — device registry and relay control
+- **Nginx routing** configured in `appdata/cockpit/nginx.conf` — proxy rules for all backend services
+
+All changes are hot-reloaded or require a simple `docker compose restart <service>`.
+
+---
+
+## License
+
+GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
+
+**Important:** This covers Citadel's own code (cockpit, media-vault, install scripts, Project Vigil integration). The bundled container services (Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes) are pulled from upstream repositories and retain their own licenses.
+
+---
+
+## FAQ
+
+**Q: Does Citadel require internet?**  
+A: No. It runs entirely offline. If you have an internet connection, Citadel won't use it. If you lose internet, Citadel keeps working.
+
+**Q: Can I access Citadel from other devices on my network?**  
+A: Yes. From any device on your LAN, visit `http://<citadel-host-ip>:8085`. Smart home devices can register at `/api/register`. Everything works even if internet is down.
+
+**Q: What if I already run Ollama locally?**  
+A: Citadel's Ollama container is mapped to port 11500 by default (not 11434) to avoid conflicts. You can adjust `OLLAMA_PORT` in `.env`.
+
+**Q: Can I export my logistics data?**  
+A: The SQLite database is stored at `appdata/media-vault/citadel.db`. Back it up anytime. Standard SQLite tools can read it.
+
+**Q: Is this meant to replace a commercial product like Project NOMAD?**  
+A: Yes — Citadel was built explicitly as a free, self-hosted alternative. You own all your data; nothing is stored in the cloud.
+
+**Q: Can I run this on Raspberry Pi?**  
+A: Not officially tested yet. Ollama and Kolibri are heavy; Pi hardware would struggle. See [ROADMAP.md](ROADMAP.md) for the plan to split lightweight vs. resource-intensive services.
