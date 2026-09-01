@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Vault - Videos</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #1c1e17; color: #e6e8e3; padding: 40px; margin: 0; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4b533f; padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { color: #87986a; margin: 0; font-size: 2rem; }
+        .back-btn { background: #2b3025; color: #a4b38a; text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid #3a4031; font-weight: bold; transition: all 0.2s; }
+        .back-btn:hover { background: #353b2e; border-color: #87986a; }
+        
+        /* Video Player Dashboard Container */
+        .player-wrapper { background: #23271e; padding: 20px; border-radius: 8px; border: 1px solid #3a4031; margin-bottom: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        video { width: 100%; max-width: 800px; border-radius: 6px; background: #1c1e17; border: 1px solid #4b533f; }
+        .now-playing { color: #a4b38a; margin-top: 10px; font-weight: bold; font-size: 1.1rem; }
+
+        #searchBar { width: 100%; padding: 15px 20px; background: #282c22; border: 2px solid #4b533f; border-radius: 8px; color: #e6e8e3; font-size: 1.1rem; margin-bottom: 30px; box-sizing: border-box; outline: none; }
+        #searchBar:focus { border-color: #87986a; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
+        .card { background: #23271e; padding: 25px; border-radius: 8px; border: 1px solid #3a4031; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-height: 400px; overflow-y: auto; }
+        h2 { color: #a4b38a; margin-top: 0; border-bottom: 1px solid #3a4031; padding-bottom: 10px; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .card::-webkit-scrollbar { width: 6px; }
+        .card::-webkit-scrollbar-track { background: #1c1e17; border-radius: 4px; }
+        .card::-webkit-scrollbar-thumb { background: #4b533f; border-radius: 4px; }
+        .card::-webkit-scrollbar-thumb:hover { background: #87986a; }
+        
+        .file-item { display: flex; justify-content: space-between; align-items: center; background: #1c1e17; padding: 12px 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #708090; text-decoration: none; cursor: pointer; transition: all 0.2s; }
+        .file-item:hover { background: #2b3025; border-left-color: #87986a; transform: translateX(3px); }
+        .file-name { color: #d0d6c9; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
+        .hidden { display: none !important; }
+        .empty-text { color: #5c6450; font-size: 0.9rem; font-style: italic; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>🎬 VIDEO ARCHIVE</h1>
+            <a href="/" class="back-btn">⬅ Back to Hub</a>
+        </div>
+
+        <!-- Inline Video Player -->
+        <div class="player-wrapper">
+            <video id="mainVideoPlayer" controls placeholder="Select a video below to play"></video>
+            <div class="now-playing" id="videoTitle">Select a video below to begin watching</div>
+        </div>
+
+        <input type="text" id="searchBar" placeholder="🔍 Type to search video folders instantly..." onkeyup="filterFiles()">
+        
+        <div class="grid">
+            {% for category, files in categories.items() %}
+            <div class="card">
+                <h2>📁 {{ category }}</h2>
+                <div class="box-content">
+                    {% if files %}
+                        {% for file in files %}
+                        <div onclick="playVideo('/files/videos/{{ category }}/{{ file }}', '{{ file }}')" class="file-item">
+                            <span class="file-name">🎞️ {{ file }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-text">No video files found</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function playVideo(fileUrl, fileName) {
+            const player = document.getElementById('mainVideoPlayer');
+            const title = document.getElementById('videoTitle');
+            player.src = fileUrl;
+            title.textContent = "🎬 Now Watching: " + fileName;
+            player.play();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filterFiles() {
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.textContent.toLowerCase().includes(query) ? item.classList.remove('hidden') : item.classList.add('hidden');
+            });
+            document.querySelectorAll('.card').forEach(card => {
+                const totalItems = card.querySelectorAll('.file-item').length;
+                const hiddenItems = card.querySelectorAll('.file-item.hidden').length;
+                if (totalItems > 0 && totalItems === hiddenItems && query !== "") card.classList.add('hidden');
+                else card.classList.remove('hidden');
+            });
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,132 @@
+services:
+  # Layer 1: Your Custom Tactical Dashboard Layout Router
+  cockpit:
+    image: nginx:alpine
+    container_name: citadel-cockpit
+    ports:
+      - 8085:80
+    volumes:
+      - ./appdata/cockpit:/usr/share/nginx/html
+      - ./appdata/cockpit/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./appdata/project-vigil:/usr/share/nginx/html/project-vigil
+
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 1.2: Project VIGIL Off-Grid Hardware Control Hub (device registry + relay control)
+  vigil-hub:
+    image: python:3.10-alpine
+    container_name: citadel-vigil-engine
+    volumes:
+      - ./appdata/project-vigil:/app
+    working_dir: /app
+    ports:
+      - "8082:8085"
+    command: python /app/vigil_core.py
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 1.25: Project VIGIL Solar & Off-Grid Power Monitor (runs alongside vigil-hub,
+  # not in place of it — separate script, separate state file, separate port)
+  vigil-power:
+    image: python:3.10-alpine
+    container_name: citadel-vigil-power
+    volumes:
+      - ./appdata/project-vigil:/app
+    working_dir: /app
+    ports:
+      - "8083:8082"
+    command: python /app/vigil_hub.py
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 1.5: Your Native Python Vault Brain
+  vault-api:
+    image: python:3.10-alpine
+    container_name: citadel-vault-brain
+    command: >
+      sh -c "pip install flask requests && FLASK_APP=/app/app.py flask run --host=0.0.0.0 --port=5000"
+    volumes:
+      - ./appdata/media-vault:/app
+      - ./appdata/media-vault/videos:/app/videos
+      - ./appdata/media-vault/mp3s:/app/mp3s
+      - ./appdata/media-vault/pdfs:/app/pdfs
+      - ./appdata/media-vault/notes-data:/app/notes-data
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 2: The Core Offline AI Engine
+  ollama:
+    image: ollama/ollama:latest
+    container_name: citadel-ollama
+    ports:
+      - "${OLLAMA_PORT}:11434"
+    volumes:
+      - ./appdata/ollama:/root/.ollama
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 3: The Multi-User AI Web Interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: citadel-webui
+    ports:
+      - 8090:8080
+    volumes:
+      - ./appdata/open-webui:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://citadel-ollama:11434
+    networks:
+      - citadel-net
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  # Layer 4: The Offline Knowledge Matrix
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:latest
+    container_name: citadel-kiwix
+    ports:
+      - 8095:8080
+    volumes:
+      - ${KIWIX_STORAGE_PATH}:/data
+    command: --library library.xml
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 5: The Portable Flat Notes Logging Engine
+  flatnotes:
+    image: dullage/flatnotes:latest
+    container_name: citadel-flatnotes
+    ports:
+      - 8098:8080
+    environment:
+      - FLATNOTES_AUTH_TYPE=none
+    volumes:
+      - ./appdata/flatnotes:/data
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 10: The Offline Home Schooling Matrix Hub
+  kolibri:
+    image: learningequality/kolibri:latest
+    container_name: citadel-kolibri
+    ports:
+      - "${KOLIBRI_PORT}:8080"
+    volumes:
+      - ${KOLIBRI_DATA_PATH}:/kolibri
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+networks:
+  citadel-net:
+    driver: bridge
+

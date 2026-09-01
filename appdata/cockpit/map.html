@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // TACTICAL MAP</title>
+    <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
+    <style>
+        html, body { height: 100%; margin: 0; }
+        body { font-family: 'Ubuntu', sans-serif; background: #070806; color: #e6e8e3; box-sizing: border-box; display: flex; flex-direction: column; }
+
+        .header-block { display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; border-bottom: 2px solid #2a4dad; }
+        h1 { color: #528eff; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(82, 142, 255, 0.3); }
+        .action-btn { background: #131b2e; border: 1px solid #2a4dad; color: #e6e8e3; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: #1c2a47; border-color: #528eff; }
+        .action-btn.active { background: #1c2a47; border-color: #528eff; color: #528eff; }
+        .layer-toggle { display: flex; gap: 8px; }
+
+        #map { flex: 1; min-height: 0; }
+
+        .status-line { padding: 6px 25px; font-family: monospace; font-size: 0.75rem; color: #687259; border-top: 1px solid #23291e; }
+
+        /* MapLibre's own attribution/controls should stay legible against
+           the dark theme rather than fight it. */
+        .maplibregl-ctrl-attrib { background: rgba(7,8,6,0.75) !important; color: #b8c2b0 !important; }
+        .maplibregl-ctrl-attrib a { color: #87986a !important; }
+        .maplibregl-popup-content { background: #131611 !important; color: #e6e8e3 !important; font-family: monospace; font-size: 0.8rem; }
+        .maplibregl-popup-tip { border-top-color: #131611 !important; border-bottom-color: #131611 !important; }
+    </style>
+</head>
+<body>
+    <div class="header-block">
+        <h1>🗺️ PROJECT CITADEL // TACTICAL MAP</h1>
+        <div class="layer-toggle">
+            <button class="action-btn active" id="btn-terrain" onclick="toggleTerrain()">Terrain</button>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div class="status-line" id="statusLine">Loading local tiles — comms_base.pmtiles / tactical_terrain.pmtiles (no internet required)...</div>
+
+    <script src="vendor/maplibre/maplibre-gl.js"></script>
+    <script src="vendor/pmtiles/pmtiles.js"></script>
+    <script src="vendor/pmtiles/protomaps-themes-base.js"></script>
+    <script>
+        // Deliberately v5.24.0's classic UMD bundle, not v6's ESM-only
+        // build. v6 ships worker code as a separate .mjs the browser loads
+        // via a constructed URL at runtime, and something in that path
+        // resolution silently failed here -- tiles fetched over the
+        // network fine, but nothing ever got processed into rendered
+        // layers, with zero errors surfacing anywhere to explain why.
+        // v5.24.0's UMD bundle inlines its worker as a Blob URL instead,
+        // which sidesteps that whole class of problem. A proven, boring
+        // version beat chasing a brand-new one's rough edges at this hour.
+
+        // Station location -- N0CALL, Genericville TX, grid AA00aa. Hardcoded
+        // for now rather than reading Waystation's own database; the two
+        // apps don't share a data layer yet.
+        const HOME = [0.0, 0.0];
+
+        // Registers the pmtiles:// URL scheme so MapLibre can read a
+        // .pmtiles archive directly over HTTP range requests -- no tile
+        // server process needed, matches every source in this file being a
+        // plain static file nginx already serves.
+        const protocol = new pmtiles.Protocol();
+        maplibregl.addProtocol('pmtiles', protocol.tile);
+
+        // protomaps-themes-base builds the actual vector styling (road
+        // colors, place labels, water fill, etc.) matching the exact schema
+        // Protomaps' basemap tiles use -- hand-writing this would risk
+        // silently mismatching their layer/property names and rendering
+        // blank. "dark" is the closest built-in theme to Citadel's own
+        // palette; not a pixel match, real cross-theme work is a later step.
+        const theme = protomaps_themes_base.namedTheme('dark');
+        const baseLayers = protomaps_themes_base.layers('basemap', theme, { lang: 'en' });
+
+        // The Protocol instance alone isn't enough -- it has to be told
+        // about each actual archive via protocol.add(), or it has no
+        // "tile manager" to route a pmtiles:// request to (found this the
+        // hard way: MapLibre threw "There is no tile manager with ID
+        // 'basemap'" until this was added, confirmed against the official
+        // maplibre.org PMTiles example rather than guessed).
+        const BASEMAP_URL = new URL('tiles/comms_base.pmtiles', location.href).href;
+        const TERRAIN_URL = new URL('tiles/tactical_terrain.pmtiles', location.href).href;
+        protocol.add(new pmtiles.PMTiles(BASEMAP_URL));
+        protocol.add(new pmtiles.PMTiles(TERRAIN_URL));
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
+                glyphs: 'https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf',
+                sources: {
+                    basemap: {
+                        type: 'vector',
+                        url: `pmtiles://${BASEMAP_URL}`,
+                        attribution: '<a href="https://openstreetmap.org/copyright" target="_blank">© OpenStreetMap</a>'
+                    },
+                    terrain: {
+                        type: 'raster-dem',
+                        url: `pmtiles://${TERRAIN_URL}`,
+                        encoding: 'terrarium',
+                        tileSize: 256
+                    }
+                },
+                layers: [
+                    { id: 'bg', type: 'background', paint: { 'background-color': theme.background } },
+                    {
+                        id: 'hillshade',
+                        type: 'hillshade',
+                        source: 'terrain',
+                        paint: { 'hillshade-shadow-color': '#0a0e07', 'hillshade-highlight-color': '#3a4a2a', 'hillshade-exaggeration': 0.6 }
+                    },
+                    ...baseLayers
+                ]
+            },
+            center: HOME,
+            zoom: 9,
+            attributionControl: { compact: true }
+        });
+
+        map.addControl(new maplibregl.NavigationControl(), 'top-left');
+        map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+
+        new maplibregl.Marker({ color: '#ffb000' })
+            .setLngLat(HOME)
+            .setPopup(new maplibregl.Popup().setText('N0CALL — AA00aa'))
+            .addTo(map);
+
+        const statusLine = document.getElementById('statusLine');
+        map.on('load', () => {
+            statusLine.textContent = 'Live — comms_base.pmtiles (roads/labels, z0-14) + tactical_terrain.pmtiles (elevation) — served locally, zero internet used.';
+        });
+        map.on('error', (e) => {
+            // A missing/misnamed tile file surfaces here rather than a
+            // blank map with no explanation -- matches this project's own
+            // "never fail silently" convention elsewhere.
+            statusLine.textContent = 'Map error: ' + (e.error?.message || 'see browser console');
+            statusLine.style.color = '#ff5555';
+            console.error('MapLibre error:', e);
+        });
+
+        let terrainOn = true;
+        window.toggleTerrain = function () {
+            terrainOn = !terrainOn;
+            map.setLayoutProperty('hillshade', 'visibility', terrainOn ? 'visible' : 'none');
+            document.getElementById('btn-terrain').classList.toggle('active', terrainOn);
+        };
+    </script>
+</body>
+</html>

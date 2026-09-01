@@ -1,0 +1,52 @@
+# Real per-install config — install.sh generates this from .env.example.
+# Never commit an actual .env even though this project's values aren't
+# secrets (just ports/paths) — the convention matters more than this
+# specific file's contents.
+.env
+
+# Packaged distributable — not source, regenerate from the repo instead.
+citadel.zip
+
+# Runtime data every bundled service writes into appdata/ once running —
+# none of this belongs in git (media libraries, model weights, chat
+# history, encyclopedia archives, etc. are all real user data, not code).
+appdata/ollama/
+appdata/open-webui/
+appdata/flatnotes/
+appdata/kolibri_home/
+appdata/kiwix/
+appdata/kiwix-library/
+appdata/media-vault/videos/
+appdata/media-vault/mp3s/
+appdata/media-vault/pdfs/
+appdata/media-vault/notes-data/
+appdata/media-vault/citadel.db
+appdata/media-vault/ZIM_Library/
+appdata/project-vigil/vigil_state.json
+appdata/project-vigil/vigil_grid_ledger.json
+
+# Personal SDR channel configs — reveals real county/location names, not
+# generic sample data. Never belongs in a public repo.
+appdata/media-vault/SDRUno/
+
+# Empty scaffolding / not-yet-wired staging dirs (see ROADMAP.md Phase 2
+# and Phase 5) — nothing real in them yet, exclude until they hold actual
+# source or the roadmap items they're staged for get built.
+appdata/notes/
+appdata/project-intercept/
+appdata/project-ibris/
+appdata/cockpit/media/
+appdata/cockpit/project-vigil/
+
+# WayStation basemap tiles — 300MB+ of binary map data, not source, and
+# tactical_terrain.pmtiles alone exceeds GitHub's 100MB file limit.
+# Provision separately (install script / release asset), never via git.
+appdata/cockpit/tiles/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Standard OS cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Vault - Control Hub</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #1c1e17; color: #e6e8e3; padding: 40px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; text-align: center; }
+        h1 { color: #87986a; font-size: 2.5rem; border-bottom: 2px solid #4b533f; padding-bottom: 20px; margin-bottom: 40px; letter-spacing: 1px; text-transform: uppercase; }
+        
+        /* Clean 3-Column layout configuration */
+        .hub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
+        .hub-card { background: #23271e; padding: 50px 20px; border-radius: 8px; border: 1px solid #3a4031; text-decoration: none; color: #e6e8e3; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hub-card:hover { background: #2b3025; border-color: #87986a; transform: translateY(-3px); }
+        .icon { font-size: 3.5rem; margin-bottom: 15px; }
+        .hub-card h2 { color: #a4b38a; margin: 0 0 10px 0; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hub-card p { margin: 0; color: #7d886d; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LINK TO HEAD STRAIGHT BACK TO THE MAIN BRIDGING DASHBOARD -->
+        <div style="text-align: left; margin-bottom: 20px;">
+            <a href="http://localhost:8085" style="background: #2b3025; color: #a4b38a; text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid #3a4031; font-weight: bold; font-size: 0.8rem; text-transform: uppercase;">⬅ Back to Cockpit</a>
+        </div>
+
+        <h1>🛠️ DIGITAL OPERATIONS MEDIA VAULT</h1>
+        
+        <div class="hub-grid">
+            <a href="/videos" class="hub-card">
+                <div class="icon">🎬</div>
+                <h2>Video Archive</h2>
+                <p>Tutorials & Preparedness</p>
+            </a>
+            <a href="/mp3" class="hub-card">
+                <div class="icon">🎵</div>
+                <h2>Audio Library</h2>
+                <p>Playlists & Podcasts</p>
+            </a>
+            <a href="/pdf" class="hub-card">
+                <div class="icon">📄</div>
+                <h2>Document Vault</h2>
+                <p>Manuals & Intel Guides</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

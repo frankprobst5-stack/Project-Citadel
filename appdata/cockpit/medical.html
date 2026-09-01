@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // MEDICAL MATRIX</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #5a2121; padding-bottom: 15px; }
+        h1 { color: #cc3333; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(204, 51, 51, 0.4); }
+        
+        .action-btn { background: #3d1c1c; border: 1px solid #7a2d2d; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: #522424; border-color: #cc3333; }
+
+        .trauma-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .trauma-card { background: #1c1414; border: 1px solid #7a2d2d; border-radius: 6px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(122, 45, 45, 0.2); }
+        .trauma-card:hover { background: #2d1a1a; border-color: #ff3333; transform: translateY(-2px); box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); }
+        .trauma-card h3 { margin: 0; color: #ff5555; text-transform: uppercase; font-size: 1.1rem; }
+
+        .instruction-viewport { background: #161a16; border: 1px solid #6b8e23; border-radius: 6px; padding: 20px; margin-bottom: 20px; display: none; }
+        .instruction-viewport h2 { color: #87986a; margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed #6b8e23; padding-bottom: 5px; }
+        .instruction-viewport ol { margin: 0; padding-left: 20px; line-height: 1.6; color: #d0d6c9; }
+
+        .split-workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .log-matrix { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; }
+        .section-header { font-family: monospace; font-size: 0.85rem; color: #a4b38a; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #3a4031; padding-bottom: 5px; display: flex; justify-content: space-between; }
+        
+        .med-textarea { width: 100%; height: 265px; background: #050604; border: 1px solid #3a4031; color: #ffb000; font-family: monospace; font-size: 1rem; padding: 10px; resize: none; box-sizing: border-box; outline: none; line-height: 1.5; }
+        
+        .ai-matrix { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }
+        .chat-stream { height: 265px; overflow-y: auto; background: #11120e; border: 1px solid #3a4031; padding: 10px; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; margin-bottom: 10px; }
+        .msg { padding: 8px; border-radius: 4px; line-height: 1.4; }
+        .user { background: #2a2d21; border-left: 3px solid #87986a; align-self: flex-end; }
+        .ai { background: #050604; border-left: 3px solid #ffb000; color: #ffb000; font-family: monospace; }
+        .chat-input-row { display: flex; gap: 10px; }
+        .chat-input { flex-grow: 1; background: #11120e; border: 1px solid #3a4031; padding: 10px; color: #ffb000; font-family: monospace; border-radius: 4px; outline: none; }
+        .btn { background: #4b533f; border: 1px solid #87986a; color: #e6e8e3; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-block">
+            <h1>🩸 PROJECT CITADEL // TACTICAL TRIAGE INTERFACE</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+
+        <div class="trauma-grid">
+            <div class="trauma-card" onclick="loadTrauma('bleed')"><h3>🛑 Massive Bleeding</h3></div>
+            <div class="trauma-card" onclick="loadTrauma('airway')"><h3>🫁 Airway Block</h3></div>
+            <div class="trauma-card" onclick="loadTrauma('burn')"><h3>🔥 Severe Burns</h3></div>
+            <div class="trauma-card" onclick="loadTrauma('fracture')"><h3>🦴 Fractures</h3></div>
+        </div>
+
+        <div class="instruction-viewport" id="viewport">
+            <h2 id="viewTitle">Select Protocol</h2>
+            <ol id="viewSteps"></ol>
+        </div>
+
+        <div class="split-workspace">
+            <div class="log-matrix">
+                <div class="section-header">
+                    <span>📝 CASE INCIDENT LOG SCRATCHPAD</span>
+                    <span id="saveStatus" style="color: #687259;">SECURED OFF-GRID</span>
+                </div>
+                <textarea id="medScratchpad" class="med-textarea" placeholder="Type case treatment logs, patient vitals, or triage actions here... (Auto-saves locally)"></textarea>
+                <button class="action-btn" style="background:#212c3d; border-color:#3b537a; font-size:0.75rem; margin-top: 10px;" onclick="injectHandoff()">⚡ Inject Radio Handoff Protocol Template (MIST)</button>
+            </div>
+
+            <div class="ai-matrix">
+                <div class="section-header">🧠 EMBEDDED AI ASSISTANT TRIAGE SUPPORT</div>
+                <div class="chat-stream" id="medChat">
+                    <div class="msg ai">CITADEL MEDICAL ENVELOPE ONLINE. ENTER COMPLICATED TRIAGE SYMPTOMS OR PHARMACOLOGICAL DOSAGE INQUIRIES BELOW.</div>
+                </div>
+                <!-- NEW: High-Visibility Emergency CPR Metronome Controller -->
+                <div style="background: #2a1414; padding: 10px; border-radius: 4px; border: 1px solid #7a2d2d; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-family: monospace; font-size: 0.85rem; color: #ff5555; font-weight: bold;">🫀 EMERGENCY CPR PACER (110 BPM)</span>
+                    <button class="action-btn" id="cprBtn" style="background: #7a2d2d; border-color: #ff3333; padding: 5px 12px;" onclick="toggleCPRMetronome()">START COMPRESSION PACER</button>
+                </div>
+
+                <div class="chat-input-row">
+                    <!-- NEW: Hands-Free Voice Ingestion Button inside the row -->
+                    <button class="btn" style="background: #2d2a1c; border-color: #5c5431;" onclick="activateVoiceDictation()" title="Hands-Free Voice Query">🎤</button>
+                    <input type="text" id="medInput" class="chat-input" placeholder="Query medical assistant node or use voice..." onkeydown="if(event.key==='Enter') queryMedAI()">
+                    <button class="btn" onclick="queryMedAI()">EXECUTE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const traumaData = {
+            bleed: { title: "Massive Bleeding Protocol (MARCH)", steps: ["Apply direct pressure using sterile gauze packs immediately.", "If bleeding occurs on a limb, deploy a tourniquet 2-3 inches above the wound layer.", "Tighten the windlass rod securely until bright red arterial flow ceases completely.", "Write down the exact timeline marker on the patient's forehead profile."] },
+            airway: { title: "Airway Clearance Parameters", steps: ["Establish level of responsiveness. Inspect physical breathing loops.", "Perform clean head-tilt / chin-lift maneuver sequence to clear oral cavity blocks.", "Visually scan for loose obstructions and perform clean sweeping maneuvers.", "Roll patient onto their side into a stable recovery position tracking vectors."] },
+            burn: { title: "Thermal Burn Remediation", steps: ["Isolate target safely from the heat source signature immediately.", "Cool target envelope using low-pressure fresh running water for 10-20 minutes.", "Gently cut away tight clothing and remove metal rings before inflammation.", "Apply clear sterile dressings loosely. Avoid oil, grease, or unauthorized topical creams."] },
+            fracture: { title: "Immobilization Splinting Protocols", steps: ["Never apply manual compression force to push bones back inside the skin system.", "Immobilize the frame completely above and below the fractured structure.", "Apply robust splint materials padded thoroughly with field towels or rags.", "Bandage cleanly while verifying distal circulation and toe/finger warmths remain active."] }
+        };
+
+        function loadTrauma(id) {
+            document.getElementById('viewTitle').innerText = traumaData[id].title;
+            document.getElementById('viewSteps').innerHTML = traumaData[id].steps.map(s => `<li>${s}</li>`).join('');
+            document.getElementById('viewport').style.display = 'block';
+        }
+
+        function injectHandoff() {
+            const el = document.getElementById('medScratchpad');
+            el.value = `=== MEDICAL HANDOFF (MIST) ===\n[M] Mechanism:\n[I] Injuries:\n[S] Vitals:\n[T] Treatment:\n============================\n` + el.value;
+            localStorage.setItem('citadel_med_scratchpad', el.value);
+        }
+
+        const medScratchpad = document.getElementById('medScratchpad');
+        const saveStatus = document.getElementById('saveStatus');
+
+        if (localStorage.getItem('citadel_med_scratchpad')) {
+            medScratchpad.value = localStorage.getItem('citadel_med_scratchpad');
+        }
+
+        medScratchpad.addEventListener('input', () => {
+            localStorage.setItem('citadel_med_scratchpad', medScratchpad.value);
+            saveStatus.innerText = "SAVING MATRIX...";
+            saveStatus.style.color = "#ffb000";
+            setTimeout(() => {
+                saveStatus.innerText = "SECURED OFF-GRID";
+                saveStatus.style.color = "#687259";
+            }, 600);
+        });
+
+        async function queryMedAI() {
+            const el = document.getElementById('medInput');
+            const prompt = el.value.trim();
+            if(!prompt) return;
+
+            const chat = document.getElementById('medChat');
+            chat.innerHTML += `<div class="msg user">${prompt}</div>`;
+            el.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            const aiDiv = document.createElement('div');
+            aiDiv.className = "msg ai";
+            aiDiv.innerText = "QUERYING OFFLINE HEALTH REPOSITORY...";
+            chat.appendChild(aiDiv);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'llama3.2:1b',
+                        messages: [{ role: 'user', content: "Give short emergency triage advice for: " + prompt }],
+                        stream: false
+                    })
+                });
+                const data = await response.json();
+                aiDiv.innerText = data.message.content;
+            } catch(e) { aiDiv.innerText = "LINK DISRUPTION: INTERNAL AI ENGINE ENVELOPE SEVERED."; }
+            chat.scrollTop = chat.scrollHeight;
+        }
+        // --- EMERGENCY HANDS-FREE VOICE TRANSLATION ENGINE ---
+        function activateVoiceDictation() {
+            const inputField = document.getElementById('medInput');
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                alert("CRITICAL: Voice recognition is not supported on this device/browser.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            inputField.placeholder = "🔴 LISTENING... SPEAK ACTIVE SYMPTOMS NOW...";
+            inputField.style.borderColor = "#ff3333";
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                const speechToText = event.results.transcript;
+                inputField.value = speechToText;
+            };
+
+            recognition.onspeechend = function() {
+                recognition.stop();
+                inputField.placeholder = "Query medical assistant node...";
+                inputField.style.borderColor = "#3a4031";
+            };
+
+            recognition.onerror = function(event) {
+                inputField.placeholder = "Voice failed. Type input matrix manually...";
+                inputField.style.borderColor = "#3a4031";
+                console.error("Speech error:", event.error);
+            };
+        }
+
+        // --- HARDWARE-INDEPENDENT OFFLINE CPR AUDIO METRONOME ---
+        let metronomeInterval = null;
+        let audioCtx = null;
+
+        function toggleCPRMetronome() {
+            const btn = document.getElementById('cprBtn');
+            
+            if (metronomeInterval) {
+                clearInterval(metronomeInterval);
+                metronomeInterval = null;
+                btn.innerText = "START COMPRESSION PACER";
+                btn.style.background = "#7a2d2d";
+                return;
+            }
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            btn.innerText = "🚨 STOP PACER (PUSH TO THIS BEAT)";
+            btn.style.background = "#ff3333";
+
+            // 110 BPM translates to an explicit 545ms interval loop cycle
+            metronomeInterval = setInterval(() => {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }, 545); 
+        }
+
+    </script>
+</body>
+</html>
