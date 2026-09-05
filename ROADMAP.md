@@ -79,36 +79,46 @@ gaps"), but they're real, worthwhile features to actually build:
   `vault-api`. Either add it as a real service and wire the existing
   endpoint up for real, or remove the vigil.html panel that expects it
   until it is.
-- **Trunked radio scanner — read-side wired, decode still hardware-
-  blocked (2026-09-05).** `comms.html`'s scanner panel used to hardcode
-  a fake "LISTENING [USB SDR DONGLE LOCKED]" status with no daemon
-  behind it — a real dishonesty bug, fixed. It now polls a new
-  `/api/scanner` route (same daemon-writes-JSON/vault-api-reads-JSON
-  shape `/api/radar` already used) and shows an honest "NO DATA — no
-  scanner decode daemon configured yet" until one exists. A `scanner`
-  service (real `robotastic/trunk-recorder` image, a mature open-source
-  P25/trunked-radio decoder) is in `docker-compose.yml` under a
-  `hardware` Compose profile, so a normal `docker compose up` never
-  tries to start it — bring it up explicitly with `docker compose
-  --profile hardware up -d scanner` once both exist: (1) an actual
-  RTL-SDR (or similar) dongle passed through via the service's
+- ~~**SDRTrunk radio console / comms.html**~~ — `comms.html` (the old
+  standalone frequency-log/scanner-note page) has been **deleted,
+  2026-09-05**. It was dead weight, not a live feature: the
+  Communications Hub tile has launched WayStation instead since
+  2026-09-01, and nothing else in the cockpit still linked to this
+  page — WayStation is the real, full replacement (net control, ICS
+  forms, mesh, Winlink, JS8Call, message routing), not this page. Its
+  scanner status line had also drifted into a real dishonesty bug —
+  hardcoded "LISTENING [USB SDR DONGLE LOCKED]" with no daemon behind
+  it — moot now that the page itself is gone, but worth naming so it
+  doesn't get quietly recreated the same way.
+- **Trunked radio scanner — read-side wired on Citadel, hardware/
+  bridge still open (2026-09-05).** `vault-api` now serves `/api/scanner`
+  (same daemon-writes-JSON/API-reads-JSON shape `/api/radar` already
+  used) with an honest "no_data" default until a real daemon exists. A
+  `scanner` service (real `robotastic/trunk-recorder` image, a mature
+  open-source P25/trunked-radio decoder) is in `docker-compose.yml`
+  under a `hardware` Compose profile, so a normal `docker compose up`
+  never tries to start it — bring it up explicitly with `docker
+  compose --profile hardware up -d scanner` once both exist: (1) an
+  actual RTL-SDR (or similar) dongle passed through via the service's
   `devices:` mapping, and (2) a real `config.json`/`talkgroups.csv` for
   your own county's trunked system (from your own SDR setup or
   radioreference.com — never generic placeholder frequencies, since a
   wrong control-channel value just fails silently). Also still open:
   the bridge script that turns trunk-recorder's own statusServer API
-  into `scanner_state.json` — deliberately not written yet with no
-  running trunk-recorder instance to test it against.
+  into `scanner_state.json` (deliberately not written yet with no
+  running trunk-recorder instance to test it against), and the actual
+  display — that's WayStation's job now, not this repo's; see
+  WayStation's own `ROADMAP.md` "Tactical Ingestion" backlog entry.
 - **Local weather capture — same read-side pattern, 2026-09-05.** New
-  `/api/weather` route, same honest-default shape, surfaced in
-  `comms.html` next to the NOAA weather frequency reference card.
-  NWS's online alerts (consumed by WayStation's `nws.rs`) already cover
-  the primary online weather picture; this is specifically the local/
-  offline fallback the two projects' roadmaps both name — a weather-
-  station console poller, or a NOAA SAME weather-radio decoder off the
-  same RTL-SDR the scanner would use. No capture daemon exists yet;
-  what it should poll depends on what hardware/console the operator
-  actually has, so nothing here guesses at that.
+  `/api/weather` route, same honest-default shape. NWS's online alerts
+  (consumed by WayStation's `nws.rs`) already cover the primary online
+  weather picture; this is specifically the local/offline fallback the
+  two projects' roadmaps both name — a weather-station console poller,
+  or a NOAA SAME weather-radio decoder off the same RTL-SDR the
+  scanner would use. No capture daemon exists yet; what it should poll
+  depends on what hardware/console the operator actually has, so
+  nothing here guesses at that. Display is WayStation's job, same as
+  the scanner above.
 
 ## Phase 3 — Make `vault-api` a real container
 

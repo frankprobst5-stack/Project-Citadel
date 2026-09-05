@@ -214,11 +214,13 @@ def get_live_radar_matrix():
 @app.route('/api/scanner', methods=['GET'])
 def get_scanner_state():
     """Reads whatever a real scanner-decode daemon (trunk-recorder/op25) has
-    written to the shared state file and serves it to comms.html. Same
-    daemon-writes-JSON/API-reads-JSON shape as /api/radar above -- no daemon
-    is wired into this stack yet (see ROADMAP.md Phase 2), so an honest
-    "no_data" default comes back instead of a fabricated "listening" claim
-    until one actually exists."""
+    written to the shared state file and serves it. Same daemon-writes-JSON/
+    API-reads-JSON shape as /api/radar above -- no daemon is wired into this
+    stack yet (see ROADMAP.md Phase 2), so an honest "no_data" default comes
+    back instead of a fabricated "listening" claim until one actually
+    exists. WayStation (the comms app this cockpit launches) is the
+    intended consumer, same pattern as the map-tiles integration -- there
+    is no Citadel-side comms UI anymore, see ROADMAP.md."""
     json_path = "/app/scanner/scanner_state.json"
     if os.path.exists(json_path):
         with open(json_path, 'r') as f:
@@ -238,7 +240,8 @@ def get_weather_state():
     weather-radio decoder) has written to the shared state file. Honest
     "no_data" default until one exists -- NWS's online alerts already cover
     this station's primary weather picture (see WayStation's nws.rs); this
-    is specifically the offline/local-capture fallback."""
+    is specifically the offline/local-capture fallback. WayStation is the
+    intended consumer, not a Citadel-side page -- see ROADMAP.md."""
     json_path = "/app/weather/weather_state.json"
     if os.path.exists(json_path):
         with open(json_path, 'r') as f:

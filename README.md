@@ -249,7 +249,7 @@ This makes Citadel a true **network hub for your home** — a central command an
 A few features are stubbed out but not yet implemented. See [ROADMAP.md](ROADMAP.md) for the full plan. Quick summary:
 
 - **Radar tracking** — The vigil.html page has a radar panel that currently shows dummy data. Project IBRIS (radar daemon) exists as a separate script but isn't bundled yet.
-- **Radio scanner & local weather** — comms.html now shows honest live status (`/api/scanner`, `/api/weather`) instead of a hardcoded fake "listening" claim, and a real `trunk-recorder` service exists in `docker-compose.yml` under a `hardware` profile. Actual P25 decode and local weather capture both still need real RTL-SDR hardware plus a county-specific trunk-recorder config — see ROADMAP.md Phase 2 for exactly what's left.
+- **Radio scanner & local weather** — `vault-api` now serves honest live status (`/api/scanner`, `/api/weather`) instead of the old `comms.html` page's hardcoded fake "listening" claim (that page has been deleted — WayStation is the real comms replacement, launched from the Communications Hub tile). A real `trunk-recorder` service exists in `docker-compose.yml` under a `hardware` profile. Actual P25 decode and local weather capture both still need real RTL-SDR hardware plus a county-specific trunk-recorder config, and WayStation still needs to actually consume these two new endpoints — see ROADMAP.md Phase 2 for exactly what's left.
 - **Raspberry Pi support** — Ollama and Kolibri are genuinely heavy; testing and documentation needed for Pi deployment.
 - **Containerized vault-api** — Currently uses dev-mode Flask; should have a proper Dockerfile with pinned dependencies for reproducibility and offline startup.
 
