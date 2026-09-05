@@ -114,6 +114,35 @@ services:
       - citadel-net
     restart: unless-stopped
 
+  # Layer 6: Trunked-radio scanner decode (P25/op25), decided 2026-09-05.
+  # Real, mature open-source decoder (robotastic/trunk-recorder) -- not a
+  # stub image. Under the "hardware" profile, so a normal `docker compose
+  # up` never tries to start this: it needs an actual RTL-SDR (or similar)
+  # dongle passed through via `devices:` below, plus a real config.json +
+  # talkgroups.csv for your own county's trunked system (get these from
+  # your own SDR setup or radioreference.com -- never invented/generic
+  # values, since a wrong control-channel frequency just fails silently).
+  # Start it explicitly once both exist: `docker compose --profile
+  # hardware up -d scanner`. Writes call audio into the same
+  # appdata/media-vault/scanner/ directory vault-api's /api/scanner reads
+  # from -- the bridge that turns trunk-recorder's own statusServer API
+  # into scanner_state.json is real remaining work, intentionally not
+  # written speculatively with no running daemon to test it against (see
+  # ROADMAP.md).
+  scanner:
+    image: robotastic/trunk-recorder:latest
+    container_name: citadel-scanner
+    profiles: ["hardware"]
+    devices:
+      - /dev/bus/usb
+    volumes:
+      - ./appdata/media-vault/scanner:/app
+    working_dir: /app
+    command: trunk-recorder --config=/app/config.json
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
   # Layer 10: The Offline Home Schooling Matrix Hub
   kolibri:
     image: learningequality/kolibri:latest

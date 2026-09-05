@@ -67,10 +67,11 @@
                 </div>
                 <div style="font-family:monospace; font-size:0.85rem; color:#b8c2b0; background:#07080a; padding:15px; border-radius:4px; border:1px solid #232c3d; line-height:1.6;">
                     <b>📡 ACTIVE REGIONAL TRUNKED MONITOR (P25 PHASE II):</b><br>
-                    • Scanner Node Status: <span style="color:#00ff66; font-weight:bold;">LISTENING [USB SDR DONGLE LOCKED]</span><br>
-                    • Talkgroups Index: Police Dispatch, Fire Dispatch, EMS Mutual Aid, Sheriff Operations.<br>
-                    <span style="color:#ffb000;">* SDRTrunk streams decoded audio packets natively. Ensure your travel router subnet matches the host binding channels.</span>
+                    • Scanner Node Status: <span id="scannerStatus" style="color:#888; font-weight:bold;">CHECKING…</span><br>
+                    • Last Update: <span id="scannerUpdated" style="color:#888;">—</span><br>
+                    <span id="scannerDetail" style="color:#ffb000;"></span>
                 </div>
+                <div id="scannerTranscripts" style="margin-top:10px;"></div>
             </div>
 
 
@@ -134,6 +135,10 @@
                         <b>WX1:</b> 162.400 MHz // <b>WX2:</b> 162.425 MHz<br>
                         <b>WX3:</b> 162.450 MHz // <b>WX4:</b> 162.475 MHz
                     </div>
+                    <div class="ref-list" style="margin-top:10px; padding-top:8px; border-top:1px dashed #1f261a;">
+                        <b>Local Capture:</b> <span id="weatherStatus" style="color:#888;">CHECKING…</span><br>
+                        <span id="weatherDetail" style="color:#87986a; font-size:0.75rem;"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,17 +165,6 @@
         function saveTrunkedTitle(val) {
             localStorage.setItem('citadel_comms_network_title', val);
         }
-
-        function runChronograph() {
-            const now = new Date();
-            document.getElementById('localClock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-            const zHours = String(now.getUTCHours()).padStart(2, '0');
-            const zMinutes = String(now.getUTCMinutes()).padStart(2, '0');
-            const zSeconds = String(now.getUTCSeconds()).padStart(2, '0');
-            document.getElementById('zuluClock').innerText = `${zHours}:${zMinutes}:${zSeconds} Z`;
-        }
-        setInterval(runChronograph, 1000);
-
 
         // ================= INTERACTIVE SPECTRUM HARDWARE STORAGE ROW ENGAGEMENT =================
         function loadFrequencyMatrix() {
@@ -253,15 +247,61 @@
             ]));
         }
 
-        loadFrequencyMatrix(); 
+        // ================= LIVE SCANNER & WEATHER STATE (VAULT-API RELAY) =================
+        // Reads whatever a real capture daemon (trunk-recorder/op25 for the
+        // scanner, a local weather console or NOAA SAME decoder for weather)
+        // has written to a shared state file -- see vault-api's /api/scanner
+        // and /api/weather routes. Neither daemon is wired into this stack
+        // yet (see ROADMAP.md), so the honest default is "not configured,"
+        // never a fabricated "listening" claim.
+        const STATUS_COLORS = { no_data: '#888', listening: '#00ff66', ok: '#00ff66', error: '#ff5555' };
+
+        async function refreshScannerState() {
+            try {
+                const r = await fetch('/api/scanner');
+                const s = await r.json();
+                const statusEl = document.getElementById('scannerStatus');
+                statusEl.innerText = (s.status || 'no_data').toUpperCase().replace('_', ' ');
+                statusEl.style.color = STATUS_COLORS[s.status] || '#888';
+                document.getElementById('scannerUpdated').innerText = s.updated_at || '—';
+                document.getElementById('scannerDetail').innerText = s.detail || '';
+                const list = document.getElementById('scannerTranscripts');
+                const transcripts = s.transcripts || [];
+                list.innerHTML = transcripts.length === 0 ? '' : transcripts.map(t => `
+                    <div style="font-family:monospace; font-size:0.8rem; color:#b8c2b0; padding:6px 0; border-bottom:1px solid #1f261a;">
+                        <b>${t.talkgroup || 'Unknown talkgroup'}</b> @ ${t.frequency_mhz ?? '?'} MHz — ${t.started_at || ''}
+                        ${t.transcript_text ? `<br>${t.transcript_text}` : ''}
+                    </div>`).join('');
+            } catch {
+                document.getElementById('scannerStatus').innerText = 'UNKNOWN';
+                document.getElementById('scannerStatus').style.color = '#888';
+                document.getElementById('scannerDetail').innerText = 'Could not reach vault-api.';
+            }
+        }
+
+        async function refreshWeatherState() {
+            try {
+                const r = await fetch('/api/weather');
+                const s = await r.json();
+                const statusEl = document.getElementById('weatherStatus');
+                statusEl.innerText = (s.status || 'no_data').toUpperCase().replace('_', ' ');
+                statusEl.style.color = STATUS_COLORS[s.status] || '#888';
+                document.getElementById('weatherDetail').innerText = s.detail || '';
+            } catch {
+                document.getElementById('weatherStatus').innerText = 'UNKNOWN';
+                document.getElementById('weatherDetail').innerText = 'Could not reach vault-api.';
+            }
+        }
+
+        refreshScannerState();
+        refreshWeatherState();
+        setInterval(refreshScannerState, 30000);
+        setInterval(refreshWeatherState, 30000);
+
+        loadFrequencyMatrix();
         loadTrafficLogPad();
-        runChronograph();  
+        runChronograph();
         loadTrunkedTitle();
-    </script>
-</body>
-</html>
-
-
     </script>
 </body>
 </html>

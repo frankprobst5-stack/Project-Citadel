@@ -38,6 +38,14 @@ appdata/project-ibris/
 appdata/cockpit/media/
 appdata/cockpit/project-vigil/
 
+# Scanner-decode and local-weather-capture state, once a real daemon writes
+# it (see /api/scanner, /api/weather in media-vault/app.py) — real captured
+# audio/transcripts/observations are user data, same reasoning as every
+# other appdata/ runtime-data exclusion above, not staged/empty like the
+# scaffolding dirs but still never belongs in git.
+appdata/media-vault/scanner/
+appdata/media-vault/weather/
+
 # WayStation basemap tiles — 300MB+ of binary map data, not source, and
 # tactical_terrain.pmtiles alone exceeds GitHub's 100MB file limit.
 # Provision separately (install script / release asset), never via git.

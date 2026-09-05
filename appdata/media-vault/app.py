@@ -204,11 +204,52 @@ def get_live_radar_matrix():
     """Reads the output of the radar daemon script and serves it to the front-end sweep screen."""
     # POINTS DIRECTLY TO THE SHARED VOLUME PATHWAY MATRIX LANE
     json_path = "/app/project-ibris/radar_state.json"
-    
+
     if os.path.exists(json_path):
         with open(json_path, 'r') as f:
             return jsonify(json.load(f))
     return jsonify({"timestamp": "SYNC_ERROR", "total_nodes": 0, "targets": []})
+
+# --- TRUNKED RADIO SCANNER LIVE STATE RELAY ROUTE ---
+@app.route('/api/scanner', methods=['GET'])
+def get_scanner_state():
+    """Reads whatever a real scanner-decode daemon (trunk-recorder/op25) has
+    written to the shared state file and serves it to comms.html. Same
+    daemon-writes-JSON/API-reads-JSON shape as /api/radar above -- no daemon
+    is wired into this stack yet (see ROADMAP.md Phase 2), so an honest
+    "no_data" default comes back instead of a fabricated "listening" claim
+    until one actually exists."""
+    json_path = "/app/scanner/scanner_state.json"
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify({
+        "status": "no_data",
+        "updated_at": None,
+        "detail": "No scanner decode daemon configured yet -- requires an RTL-SDR (or similar) dongle and a trunk-recorder/op25 config for your local trunked system.",
+        "transcripts": [],
+    })
+
+# --- LOCAL WEATHER CAPTURE LIVE STATE RELAY ROUTE ---
+@app.route('/api/weather', methods=['GET'])
+def get_weather_state():
+    """Same shape as /api/scanner and /api/radar: reads whatever a real local
+    weather-capture daemon (a weather-station console poller, or a NOAA SAME
+    weather-radio decoder) has written to the shared state file. Honest
+    "no_data" default until one exists -- NWS's online alerts already cover
+    this station's primary weather picture (see WayStation's nws.rs); this
+    is specifically the offline/local-capture fallback."""
+    json_path = "/app/weather/weather_state.json"
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify({
+        "status": "no_data",
+        "updated_at": None,
+        "detail": "No local weather capture configured yet -- point this at a weather-station console API or a NOAA SAME weather-radio decoder.",
+        "observation": None,
+        "same_alerts": [],
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
