@@ -3,6 +3,8 @@ import sqlite3
 import os
 import json
 
+from scanner_config import build_trunk_recorder_config, validate_talkgroups_csv
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
@@ -231,6 +233,60 @@ def get_scanner_state():
         "detail": "No scanner decode daemon configured yet -- requires an RTL-SDR (or similar) dongle and a trunk-recorder/op25 config for your local trunked system.",
         "transcripts": [],
     })
+
+SCANNER_DIR = "/app/scanner"
+SCANNER_CONFIG_PATH = f"{SCANNER_DIR}/config.json"
+SCANNER_TALKGROUPS_PATH = f"{SCANNER_DIR}/talkgroups.csv"
+
+@app.route('/api/scanner/config', methods=['GET'])
+def get_scanner_config():
+    """Lets the setup UI (WayStation, not a page in this repo -- see
+    ROADMAP.md) pre-populate the form with whatever's already configured,
+    rather than being a write-only black box."""
+    if not os.path.exists(SCANNER_CONFIG_PATH):
+        return jsonify({"configured": False})
+    with open(SCANNER_CONFIG_PATH, 'r') as f:
+        config = json.load(f)
+    talkgroups_csv = ""
+    if os.path.exists(SCANNER_TALKGROUPS_PATH):
+        with open(SCANNER_TALKGROUPS_PATH, 'r') as f:
+            talkgroups_csv = f.read()
+    return jsonify({"configured": True, "config": config, "talkgroups_csv": talkgroups_csv})
+
+@app.route('/api/scanner/config', methods=['POST'])
+def save_scanner_config():
+    """Turns operator-supplied setup into real trunk-recorder files. Both
+    files are validated in full before either is written -- a partially
+    written config (valid JSON, missing/corrupt talkgroups, or vice versa)
+    is worse than refusing the write outright and saying why."""
+    data = request.json or {}
+    talkgroups_csv = data.get("talkgroups_csv", "")
+
+    valid, error = validate_talkgroups_csv(talkgroups_csv)
+    if not valid:
+        return jsonify({"status": "error", "detail": error}), 400
+
+    try:
+        config = build_trunk_recorder_config(
+            short_name=data.get("short_name", ""),
+            driver=data.get("driver", "osmosdr"),
+            device=data.get("device"),
+            center_hz=float(data.get("center_hz", 0)),
+            rate_hz=float(data.get("rate_hz", 0)),
+            gain=float(data.get("gain", 40)),
+            control_channels_hz=data.get("control_channels_hz", []),
+            ppm=data.get("ppm"),
+        )
+    except (ValueError, TypeError) as e:
+        return jsonify({"status": "error", "detail": str(e)}), 400
+
+    os.makedirs(SCANNER_DIR, exist_ok=True)
+    with open(SCANNER_CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
+    with open(SCANNER_TALKGROUPS_PATH, 'w') as f:
+        f.write(talkgroups_csv)
+
+    return jsonify({"status": "success", "config": config})
 
 # --- LOCAL WEATHER CAPTURE LIVE STATE RELAY ROUTE ---
 @app.route('/api/weather', methods=['GET'])

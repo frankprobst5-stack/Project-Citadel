@@ -90,25 +90,40 @@ gaps"), but they're real, worthwhile features to actually build:
   hardcoded "LISTENING [USB SDR DONGLE LOCKED]" with no daemon behind
   it — moot now that the page itself is gone, but worth naming so it
   doesn't get quietly recreated the same way.
-- **Trunked radio scanner — read-side wired on Citadel, hardware/
-  bridge still open (2026-09-05).** `vault-api` now serves `/api/scanner`
+- **Trunked radio scanner — read-side and config API done, hardware/
+  bridge still open (2026-09-05).** `vault-api` serves `/api/scanner`
   (same daemon-writes-JSON/API-reads-JSON shape `/api/radar` already
-  used) with an honest "no_data" default until a real daemon exists. A
-  `scanner` service (real `robotastic/trunk-recorder` image, a mature
-  open-source P25/trunked-radio decoder) is in `docker-compose.yml`
-  under a `hardware` Compose profile, so a normal `docker compose up`
-  never tries to start it — bring it up explicitly with `docker
-  compose --profile hardware up -d scanner` once both exist: (1) an
-  actual RTL-SDR (or similar) dongle passed through via the service's
-  `devices:` mapping, and (2) a real `config.json`/`talkgroups.csv` for
-  your own county's trunked system (from your own SDR setup or
-  radioreference.com — never generic placeholder frequencies, since a
-  wrong control-channel value just fails silently). Also still open:
-  the bridge script that turns trunk-recorder's own statusServer API
-  into `scanner_state.json` (deliberately not written yet with no
-  running trunk-recorder instance to test it against), and the actual
-  display — that's WayStation's job now, not this repo's; see
-  WayStation's own `ROADMAP.md` "Tactical Ingestion" backlog entry.
+  used) with an honest "no_data" default until a real daemon exists,
+  and now `GET`/`POST /api/scanner/config` — the generic "last mile"
+  for setup. New `scanner_config.py`: `build_trunk_recorder_config()`
+  produces a real trunk-recorder `ver:2` config (schema verified
+  against trunk-recorder's own `CONFIGURE.md`, not guessed at),
+  `validate_talkgroups_csv()` accepts the standard talkgroups CSV
+  shape regardless of where an operator got it — hand-typed off
+  RadioReference's free system pages (no paid subscription needed for
+  that, only for bulk export/API access), a CSV shared publicly on
+  OpenMHz, frequencies from digitalfrequencysearch.com's free
+  FCC-license data (no talkgroup names, still a working config), or a
+  paid RadioReference export. Both files are validated in full before
+  either is written — never a half-written config. 15 real unit
+  tests (`test_scanner_config.py`, stdlib `unittest`, no new
+  dependency) plus a live end-to-end verification against the actual
+  running container (POST a real config, confirm the files land
+  correctly, confirm `GET` reads them back, confirm no regression on
+  `/api/radar`/`/api/weather`). The `scanner` service (real
+  `robotastic/trunk-recorder` image) is in `docker-compose.yml` under
+  a `hardware` Compose profile, so a normal `docker compose up` never
+  tries to start it — bring it up explicitly once an actual RTL-SDR
+  dongle is attached.
+  **The setup form and live display both live in WayStation now, not
+  here** — a deliberate decision (2026-09-05): all comms and
+  emergency-traffic UI stays in one app, same reason `comms.html` was
+  removed rather than rebuilt. This repo now only ever exposes the
+  API; see WayStation's `citadel_scanner.rs`/`ScannerPanel.tsx`. Still
+  genuinely open: the bridge script that turns trunk-recorder's own
+  statusServer API into `scanner_state.json` — deliberately not
+  written yet with no running trunk-recorder instance to test it
+  against.
 - **Local weather capture — same read-side pattern, 2026-09-05.** New
   `/api/weather` route, same honest-default shape. NWS's online alerts
   (consumed by WayStation's `nws.rs`) already cover the primary online
