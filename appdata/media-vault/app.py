@@ -3,7 +3,12 @@ import sqlite3
 import os
 import json
 
-from scanner_config import build_trunk_recorder_config, validate_talkgroups_csv
+from scanner_config import (
+    build_conventional_config,
+    build_trunk_recorder_config,
+    validate_channel_file_csv,
+    validate_talkgroups_csv,
+)
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -237,54 +242,96 @@ def get_scanner_state():
 SCANNER_DIR = "/app/scanner"
 SCANNER_CONFIG_PATH = f"{SCANNER_DIR}/config.json"
 SCANNER_TALKGROUPS_PATH = f"{SCANNER_DIR}/talkgroups.csv"
+SCANNER_CHANNELS_PATH = f"{SCANNER_DIR}/channels.csv"
 
 @app.route('/api/scanner/config', methods=['GET'])
 def get_scanner_config():
     """Lets the setup UI (WayStation, not a page in this repo -- see
     ROADMAP.md) pre-populate the form with whatever's already configured,
-    rather than being a write-only black box."""
+    rather than being a write-only black box. Which CSV to read back is
+    determined by the saved config's own system type, not guessed --
+    trunked systems reference talkgroupsFile, conventional/conventionalP25
+    reference channelFile (added 2026-09-06 for real conventional
+    Sheriff/Fire/EMS setups)."""
     if not os.path.exists(SCANNER_CONFIG_PATH):
         return jsonify({"configured": False})
     with open(SCANNER_CONFIG_PATH, 'r') as f:
         config = json.load(f)
-    talkgroups_csv = ""
-    if os.path.exists(SCANNER_TALKGROUPS_PATH):
-        with open(SCANNER_TALKGROUPS_PATH, 'r') as f:
-            talkgroups_csv = f.read()
-    return jsonify({"configured": True, "config": config, "talkgroups_csv": talkgroups_csv})
+    csv_path = SCANNER_TALKGROUPS_PATH
+    system = (config.get("systems") or [{}])[0]
+    if "channelFile" in system:
+        csv_path = SCANNER_CHANNELS_PATH
+    csv_data = ""
+    if os.path.exists(csv_path):
+        with open(csv_path, 'r') as f:
+            csv_data = f.read()
+    return jsonify({"configured": True, "config": config, "csv_data": csv_data})
 
 @app.route('/api/scanner/config', methods=['POST'])
 def save_scanner_config():
     """Turns operator-supplied setup into real trunk-recorder files. Both
     files are validated in full before either is written -- a partially
-    written config (valid JSON, missing/corrupt talkgroups, or vice versa)
-    is worse than refusing the write outright and saying why."""
+    written config (valid JSON, missing/corrupt CSV, or vice versa) is
+    worse than refusing the write outright and saying why.
+
+    `system_type` picks the real trunk-recorder system shape: "trunked"
+    (control-channel-following, the original and only supported shape
+    before 2026-09-06) or "conventional"/"conventionalP25" (fixed-frequency
+    channels, added when a real operator brought real conventional
+    Sheriff/Fire/EMS frequencies -- PANCOM, Donley County -- the trunked-
+    only builder couldn't express. Whichever CSV file the chosen type
+    doesn't use is left untouched from any previous config, not deleted --
+    switching system_type and back shouldn't lose data."""
     data = request.json or {}
-    talkgroups_csv = data.get("talkgroups_csv", "")
-
-    valid, error = validate_talkgroups_csv(talkgroups_csv)
-    if not valid:
-        return jsonify({"status": "error", "detail": error}), 400
-
-    try:
-        config = build_trunk_recorder_config(
-            short_name=data.get("short_name", ""),
-            driver=data.get("driver", "osmosdr"),
-            device=data.get("device"),
-            center_hz=float(data.get("center_hz", 0)),
-            rate_hz=float(data.get("rate_hz", 0)),
-            gain=float(data.get("gain", 40)),
-            control_channels_hz=data.get("control_channels_hz", []),
-            ppm=data.get("ppm"),
-        )
-    except (ValueError, TypeError) as e:
-        return jsonify({"status": "error", "detail": str(e)}), 400
+    csv_data = data.get("csv_data", "")
+    system_type = data.get("system_type", "trunked")
 
     os.makedirs(SCANNER_DIR, exist_ok=True)
+
+    if system_type == "trunked":
+        valid, error = validate_talkgroups_csv(csv_data)
+        if not valid:
+            return jsonify({"status": "error", "detail": error}), 400
+        try:
+            config = build_trunk_recorder_config(
+                short_name=data.get("short_name", ""),
+                driver=data.get("driver", "osmosdr"),
+                device=data.get("device"),
+                center_hz=float(data.get("center_hz", 0)),
+                rate_hz=float(data.get("rate_hz", 0)),
+                gain=float(data.get("gain", 40)),
+                control_channels_hz=data.get("control_channels_hz", []),
+                ppm=data.get("ppm"),
+            )
+        except (ValueError, TypeError) as e:
+            return jsonify({"status": "error", "detail": str(e)}), 400
+        with open(SCANNER_TALKGROUPS_PATH, 'w') as f:
+            f.write(csv_data)
+    elif system_type in ("conventional", "conventionalP25"):
+        valid, error = validate_channel_file_csv(csv_data)
+        if not valid:
+            return jsonify({"status": "error", "detail": error}), 400
+        try:
+            config = build_conventional_config(
+                short_name=data.get("short_name", ""),
+                system_type=system_type,
+                driver=data.get("driver", "osmosdr"),
+                device=data.get("device"),
+                center_hz=float(data.get("center_hz", 0)),
+                rate_hz=float(data.get("rate_hz", 0)),
+                gain=float(data.get("gain", 40)),
+                squelch=float(data.get("squelch", -50)),
+                ppm=data.get("ppm"),
+            )
+        except (ValueError, TypeError) as e:
+            return jsonify({"status": "error", "detail": str(e)}), 400
+        with open(SCANNER_CHANNELS_PATH, 'w') as f:
+            f.write(csv_data)
+    else:
+        return jsonify({"status": "error", "detail": f"Unknown system_type {system_type!r} -- must be 'trunked', 'conventional', or 'conventionalP25'."}), 400
+
     with open(SCANNER_CONFIG_PATH, 'w') as f:
         json.dump(config, f, indent=2)
-    with open(SCANNER_TALKGROUPS_PATH, 'w') as f:
-        f.write(talkgroups_csv)
 
     return jsonify({"status": "success", "config": config})
 

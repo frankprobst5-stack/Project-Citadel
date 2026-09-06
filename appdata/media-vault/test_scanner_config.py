@@ -9,7 +9,12 @@ Run with: python3 -m unittest appdata/media-vault/test_scanner_config.py
 
 import unittest
 
-from scanner_config import build_trunk_recorder_config, validate_talkgroups_csv
+from scanner_config import (
+    build_conventional_config,
+    build_trunk_recorder_config,
+    validate_channel_file_csv,
+    validate_talkgroups_csv,
+)
 
 REAL_SHAPE_CSV = "Decimal,Mode,Description,Alpha Tag,Priority\n101,D,01 Dispatch,DCFD 01 Disp,1\n2227,D,Streetcar Yard,DC StcarYard,3\n"
 
@@ -116,6 +121,90 @@ class BuildTrunkRecorderConfigTests(unittest.TestCase):
             build_trunk_recorder_config(short_name="t", driver="osmosdr", device=None, center_hz=0, rate_hz=1, gain=1, control_channels_hz=[100])
         with self.assertRaises(ValueError):
             build_trunk_recorder_config(short_name="t", driver="osmosdr", device=None, center_hz=1, rate_hz=-5, gain=1, control_channels_hz=[100])
+
+
+# Real PANCOM channel-list shape (Donley County, TX) -- brought by Frank
+# 2026-09-06 from a real RadioReference county page, not invented. TG
+# Number is a synthetic per-channel index (trunk-recorder's conventional
+# channelFile requires one; these frequencies don't have real talkgroup
+# numbers the way a trunked system would).
+REAL_CONVENTIONAL_CSV = (
+    "TG Number,Frequency,Tone,Alpha Tag,Description\n"
+    "1,155.7750,114.8,Sheriff Disp,Donley Co Sheriff Dispatch\n"
+    "2,154.1450,156.7,Clarendon VFD,Clarendon VFD Tactical\n"
+)
+
+
+class ValidateChannelFileCsvTests(unittest.TestCase):
+    def test_accepts_the_real_documented_shape(self):
+        ok, err = validate_channel_file_csv(REAL_CONVENTIONAL_CSV)
+        self.assertTrue(ok, err)
+        self.assertIsNone(err)
+
+    def test_accepts_a_frequency_with_no_tone_or_alpha_tag_yet(self):
+        # e.g. Genericville VFD Tactical (154.1375 MHz), listed as plain
+        # analog with no PL tone at all in the real county data.
+        ok, err = validate_channel_file_csv("TG Number,Frequency\n3,154.1375\n")
+        self.assertTrue(ok, err)
+
+    def test_rejects_empty_input(self):
+        ok, err = validate_channel_file_csv("")
+        self.assertFalse(ok)
+        self.assertIn("empty", err)
+
+    def test_rejects_tg_number_not_being_the_first_column(self):
+        ok, err = validate_channel_file_csv("Frequency,TG Number\n154.1375,1\n")
+        self.assertFalse(ok)
+        self.assertIn("first column", err)
+
+    def test_rejects_missing_frequency_column(self):
+        ok, err = validate_channel_file_csv("TG Number,Tone\n1,114.8\n")
+        self.assertFalse(ok)
+        self.assertIn("Frequency", err)
+
+    def test_rejects_a_non_numeric_tg_number(self):
+        ok, err = validate_channel_file_csv("TG Number,Frequency\nabc,154.1375\n")
+        self.assertFalse(ok)
+        self.assertIn("Row 2", err)
+
+    def test_rejects_a_non_positive_frequency(self):
+        ok, err = validate_channel_file_csv("TG Number,Frequency\n1,0\n")
+        self.assertFalse(ok)
+        self.assertIn("Frequency", err)
+
+
+class BuildConventionalConfigTests(unittest.TestCase):
+    def test_produces_the_real_documented_ver2_shape_for_p25_conventional(self):
+        config = build_conventional_config(
+            short_name="pancom", system_type="conventionalP25", driver="osmosdr", device="rtl=0",
+            center_hz=155e6, rate_hz=2400000.0, gain=40, squelch=-60,
+        )
+        self.assertEqual(config["ver"], 2)
+        self.assertEqual(config["systems"][0]["type"], "conventionalP25")
+        self.assertEqual(config["systems"][0]["channelFile"], "channels.csv")
+        self.assertEqual(config["systems"][0]["squelch"], -60.0)
+        self.assertEqual(config["systems"][0]["modulation"], "qpsk")
+
+    def test_analog_conventional_has_no_modulation_field(self):
+        # trunk-recorder's docs don't list modulation as applying to
+        # plain analog "conventional" systems -- only conventionalP25/DMR.
+        config = build_conventional_config(
+            short_name="pancom", system_type="conventional", driver="osmosdr", device=None,
+            center_hz=155e6, rate_hz=2400000.0, gain=40, squelch=-60,
+        )
+        self.assertNotIn("modulation", config["systems"][0])
+
+    def test_rejects_an_unknown_system_type(self):
+        with self.assertRaises(ValueError):
+            build_conventional_config(short_name="t", system_type="smartnet", driver="osmosdr", device=None, center_hz=1, rate_hz=1, gain=1, squelch=-50)
+
+    def test_rejects_blank_short_name(self):
+        with self.assertRaises(ValueError):
+            build_conventional_config(short_name="  ", system_type="conventional", driver="osmosdr", device=None, center_hz=1, rate_hz=1, gain=1, squelch=-50)
+
+    def test_rejects_non_positive_center_or_rate(self):
+        with self.assertRaises(ValueError):
+            build_conventional_config(short_name="t", system_type="conventional", driver="osmosdr", device=None, center_hz=0, rate_hz=1, gain=1, squelch=-50)
 
     def test_device_and_ppm_are_optional(self):
         config = build_trunk_recorder_config(short_name="t", driver="osmosdr", device=None, center_hz=1, rate_hz=1, gain=1, control_channels_hz=[100])
