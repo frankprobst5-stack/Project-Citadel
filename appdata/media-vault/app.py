@@ -220,12 +220,18 @@ def get_live_radar_matrix():
 # --- TRUNKED RADIO SCANNER LIVE STATE RELAY ROUTE ---
 @app.route('/api/scanner', methods=['GET'])
 def get_scanner_state():
-    """Reads whatever a real scanner-decode daemon (trunk-recorder/op25) has
-    written to the shared state file and serves it. Same daemon-writes-JSON/
-    API-reads-JSON shape as /api/radar above -- no daemon is wired into this
-    stack yet (see ROADMAP.md Phase 2), so an honest "no_data" default comes
-    back instead of a fabricated "listening" claim until one actually
-    exists. WayStation (the comms app this cockpit launches) is the
+    """Reads whatever scanner_bridge.py (see that file, 2026-09-06) has
+    written to the shared state file and serves it as-is. Same daemon-
+    writes-JSON/API-reads-JSON shape as /api/radar above -- no daemon has
+    ever connected in this environment (this sandbox can't run
+    trunk-recorder at all, it needs real USB device passthrough for an
+    RTL-SDR), so an honest "no_data" default comes back instead of a
+    fabricated "listening" claim until one actually does. The default's
+    shape matches scanner_bridge.py's ScannerState.to_json() exactly
+    (systems/active_calls/recorders/decode_rates all real-empty, not
+    just status/detail/transcripts as before 2026-09-06) so WayStation's
+    UI never needs a schema-version check to know nothing's connected
+    yet. WayStation (the comms app this cockpit launches) is the
     intended consumer, same pattern as the map-tiles integration -- there
     is no Citadel-side comms UI anymore, see ROADMAP.md."""
     json_path = "/app/scanner/scanner_state.json"
@@ -236,6 +242,10 @@ def get_scanner_state():
         "status": "no_data",
         "updated_at": None,
         "detail": "No scanner decode daemon configured yet -- requires an RTL-SDR (or similar) dongle and a trunk-recorder/op25 config for your local trunked system.",
+        "systems": [],
+        "active_calls": [],
+        "recorders": [],
+        "decode_rates": [],
         "transcripts": [],
     })
 

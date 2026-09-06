@@ -117,6 +117,18 @@ def validate_channel_file_csv(raw_csv_text):
 
 CONVENTIONAL_SYSTEM_TYPES = {"conventional", "conventionalP25"}
 
+# Real trunk-recorder config field, decided 2026-09-06 alongside
+# scanner_bridge.py: trunk-recorder is the websocket *client* here (its
+# own docs: "configures Trunk Recorder to send status messages... to a
+# server"), dialing out to this address -- "scanner-bridge" is the
+# docker-compose service name scanner_bridge.py runs as, same
+# container-name-as-hostname pattern already used for citadel-ollama,
+# citadel-vault-brain, etc. on the shared citadel-net network. Without
+# this field, real hardware would run and record calls but never emit a
+# single status message -- config.json would look complete and still
+# leave scanner_state.json silently stuck on "no_data" forever.
+STATUS_SERVER_URL = "ws://scanner-bridge:3010/server"
+
 
 def build_conventional_config(short_name, system_type, driver, device, center_hz, rate_hz, gain, squelch, ppm=None):
     """Builds a real trunk-recorder ver:2 config for a conventional (fixed-
@@ -165,6 +177,7 @@ def build_conventional_config(short_name, system_type, driver, device, center_hz
         "sources": [source],
         "systems": [system],
         "captureDir": "/app/calls",
+        "statusServer": STATUS_SERVER_URL,
     }
 
 
@@ -207,4 +220,5 @@ def build_trunk_recorder_config(short_name, driver, device, center_hz, rate_hz, 
         "sources": [source],
         "systems": [system],
         "captureDir": "/app/calls",
+        "statusServer": STATUS_SERVER_URL,
     }

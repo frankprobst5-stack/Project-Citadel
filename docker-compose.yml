@@ -143,6 +143,34 @@ services:
       - citadel-net
     restart: unless-stopped
 
+  # The bridge that turns trunk-recorder's real statusServer websocket
+  # messages into scanner_state.json, decided 2026-09-06 (scanner_bridge.py
+  # -- see that file's own module docstring for the real message-shape
+  # verification and connection-direction correction that went into it).
+  # trunk-recorder is the websocket *client* here, dialing out to this
+  # service per its own config.json's "statusServer" field
+  # (scanner_config.py's STATUS_SERVER_URL) -- this service just has to be
+  # listening. Same "hardware" profile as `scanner` above: no point
+  # running a status bridge for a decoder that isn't running either.
+  # Pure software otherwise -- no USB device needed by this container
+  # itself, only by `scanner`.
+  scanner-bridge:
+    image: python:3.10-alpine
+    container_name: citadel-scanner-bridge
+    profiles: ["hardware"]
+    command: sh -c "pip install websockets && python3 scanner_bridge.py"
+    environment:
+      - SCANNER_BRIDGE_HOST=0.0.0.0
+      - SCANNER_BRIDGE_PORT=3010
+      - SCANNER_STATE_PATH=/app/scanner-out/scanner_state.json
+    volumes:
+      - ./appdata/media-vault/scanner_bridge.py:/app/scanner_bridge.py
+      - ./appdata/media-vault/scanner:/app/scanner-out
+    working_dir: /app
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
   # Layer 10: The Offline Home Schooling Matrix Hub
   kolibri:
     image: learningequality/kolibri:latest

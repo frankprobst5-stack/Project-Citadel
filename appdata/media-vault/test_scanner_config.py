@@ -81,6 +81,10 @@ class BuildTrunkRecorderConfigTests(unittest.TestCase):
         self.assertEqual(len(config["sources"]), 1)
         self.assertEqual(config["sources"][0]["driver"], "osmosdr")
         self.assertEqual(config["sources"][0]["center"], 857000000.0)
+        self.assertEqual(
+            config["statusServer"], "ws://scanner-bridge:3010/server",
+            "without this, real hardware would run and record but never emit a single status message",
+        )
         self.assertEqual(len(config["systems"]), 1)
         self.assertEqual(config["systems"][0]["type"], "p25")
         self.assertEqual(config["systems"][0]["control_channels"], [855462500])
@@ -184,6 +188,7 @@ class BuildConventionalConfigTests(unittest.TestCase):
         self.assertEqual(config["systems"][0]["channelFile"], "channels.csv")
         self.assertEqual(config["systems"][0]["squelch"], -60.0)
         self.assertEqual(config["systems"][0]["modulation"], "qpsk")
+        self.assertEqual(config["statusServer"], "ws://scanner-bridge:3010/server")
 
     def test_analog_conventional_has_no_modulation_field(self):
         # trunk-recorder's docs don't list modulation as applying to
