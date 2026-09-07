@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 import sqlite3
 import os
 import json
+import requests
 
 from scanner_config import (
     build_conventional_config,
@@ -9,6 +10,7 @@ from scanner_config import (
     validate_channel_file_csv,
     validate_talkgroups_csv,
 )
+from transcription import is_safe_filename, list_recordings, transcribe_file
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -344,6 +346,44 @@ def save_scanner_config():
         json.dump(config, f, indent=2)
 
     return jsonify({"status": "success", "config": config})
+
+SCANNER_CALLS_DIR = f"{SCANNER_DIR}/calls"
+
+@app.route('/api/scanner/recordings', methods=['GET'])
+def get_scanner_recordings():
+    """Real files trunk-recorder's own captureDir (scanner_config.py's
+    "captureDir": "/app/calls", which lands here since vault-api and
+    scanner share the same appdata/media-vault mount) actually has on
+    disk. Honestly empty -- not an error -- until a real dongle and a
+    running trunk-recorder have actually captured something; this
+    sandbox has neither, so real usage never populates this without
+    real hardware."""
+    return jsonify(list_recordings(SCANNER_CALLS_DIR))
+
+@app.route('/api/scanner/transcribe', methods=['POST'])
+def transcribe_scanner_recording():
+    """Transcribes one already-captured recording via the real
+    whisper-server service (transcription.py), decided 2026-09-07 --
+    verified live against the real running whisper container before
+    this route existed. Takes a bare filename, not a path, and refuses
+    anything containing a path separator -- this joins operator/caller-
+    supplied input directly onto a real directory path, so path
+    traversal (`../../etc/passwd`) has to be rejected outright rather
+    than trusted."""
+    data = request.json or {}
+    filename = data.get("filename", "")
+    if not is_safe_filename(filename):
+        return jsonify({"status": "error", "detail": "invalid filename"}), 400
+
+    file_path = os.path.join(SCANNER_CALLS_DIR, filename)
+    try:
+        text = transcribe_file(file_path)
+    except FileNotFoundError:
+        return jsonify({"status": "error", "detail": f"no such recording: {filename}"}), 404
+    except requests.RequestException as e:
+        return jsonify({"status": "error", "detail": f"whisper service unreachable or failed: {e}"}), 502
+
+    return jsonify({"status": "success", "text": text})
 
 # --- LOCAL WEATHER CAPTURE LIVE STATE RELAY ROUTE ---
 @app.route('/api/weather', methods=['GET'])

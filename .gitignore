@@ -11,6 +11,7 @@ citadel.zip
 # none of this belongs in git (media libraries, model weights, chat
 # history, encyclopedia archives, etc. are all real user data, not code).
 appdata/ollama/
+appdata/whisper-models/
 appdata/open-webui/
 appdata/flatnotes/
 appdata/kolibri_home/
