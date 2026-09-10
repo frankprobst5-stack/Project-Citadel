@@ -206,6 +206,29 @@ services:
       - citadel-net
     restart: unless-stopped
 
+  # Layer 9.5: Cloud9 -- a real, already-built homeschool/kid dashboard
+  # (github.com/frankprobst5-stack/Cloud9), previously a Windows-only
+  # desktop app for one specific kid's laptop, now run here so it's
+  # reachable from any device on the LAN like everything else in Citadel.
+  # Needs a real Dockerfile (not the runtime-pip-install pattern the
+  # lightweight Python services above use) because llama-cpp-python
+  # compiles native code -- see appdata/cloud9/Dockerfile's own comment.
+  # data/ and models/ are volume-mounted real host data (the 1.1GB Qwen
+  # GGUF model, kid-generated journal/planner/scratchpad content) --
+  # never baked into the image, same reasoning as every other appdata/
+  # real-data volume in this file.
+  cloud9:
+    build: ./appdata/cloud9
+    container_name: citadel-cloud9
+    ports:
+      - "${CLOUD9_PORT}:5057"
+    volumes:
+      - ./appdata/cloud9/data:/app/data
+      - ./appdata/cloud9/models:/app/models
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
   # Layer 10: The Offline Home Schooling Matrix Hub
   kolibri:
     image: learningequality/kolibri:latest

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">☁️9</span>
+      <span class="brand-name">Cloud9</span>
+    </div>
+    <div class="greeting">Hey! What do you want to do today?</div>
+    <div class="header-tools">
+      <button class="reminder-bar" id="reminder-bar" type="button" hidden>📅 Check your calendar!</button>
+      <div class="tools-menu">
+        <button class="tools-menu-btn" id="tools-menu-btn" type="button">🧰 Tools</button>
+        <div class="tools-menu-dropdown" id="tools-menu-dropdown" hidden>
+          <button type="button" class="tools-menu-item" id="tool-globe">🌍 Globe</button>
+          <button type="button" class="tools-menu-item" id="tool-calculator">🧮 Calculator</button>
+          <button type="button" class="tools-menu-item" id="tool-scratchpad">📝 Scratch Pad</button>
+          <button type="button" class="tools-menu-item" id="tool-writing">✍️ Writing Paper</button>
+          <button type="button" class="tools-menu-item" id="tool-dictionary">📖 Dictionary</button>
+          <button type="button" class="tools-menu-item" id="tool-journal">🔬 Science Journal</button>
+        </div>
+      </div>
+      <button class="tools-menu-btn" id="settings-btn" type="button" title="Settings">⚙️</button>
+      <div class="clock" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <main class="board">
+    {% for row in rows %}
+    <div class="row">
+      {% for card in row.cards %}
+      <div class="card {{ 'card-empty' if card.status == 'empty' else '' }}"
+           style="--accent: {{ card.accent }};"
+           data-id="{{ card.id }}"
+           data-status="{{ card.status }}"
+           data-link="{{ card.link or '' }}">
+        <div class="card-icon">{{ card.icon }}</div>
+        <div class="card-title">{{ card.title }}</div>
+        <div class="card-subtitle">{{ card.subtitle }}</div>
+        {% if card.status == 'coming_soon' %}
+        <div class="card-badge">coming soon</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </main>
+
+  <div class="modal-overlay" id="chat-overlay" hidden>
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span class="chat-title">🤖 AI Assistant</span>
+        <button class="chat-close" id="chat-close" aria-label="Close">✕</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <form class="chat-input-row" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Ask me anything..." autocomplete="off">
+        <button type="submit" id="chat-send">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="planner-overlay" hidden>
+    <div class="planner-panel">
+      <div class="chat-header">
+        <span class="chat-title">📅 Daily Planner</span>
+        <button class="chat-close" id="planner-close" aria-label="Close">✕</button>
+      </div>
+      <div class="planner-body">
+        <div class="calendar">
+          <div class="calendar-nav">
+            <button id="cal-prev" type="button" aria-label="Previous month">‹</button>
+            <span id="cal-month-label"></span>
+            <button id="cal-next" type="button" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div class="planner-notes">
+          <div class="planner-notes-header" id="planner-selected-date"></div>
+          <div class="planner-notes-list" id="planner-notes-list"></div>
+          <form class="planner-add-form" id="planner-add-form">
+            <input type="text" id="planner-author" placeholder="Your name (optional)" autocomplete="off">
+            <textarea id="planner-text" placeholder="Write a note..." rows="2"></textarea>
+            <button type="submit" id="planner-submit">Add Note</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="weather-overlay" hidden>
+    <div class="weather-panel">
+      <div class="chat-header">
+        <span class="chat-title">⛈️ Weather Labs <span id="weather-location"></span></span>
+        <button class="chat-close" id="weather-close" aria-label="Close">✕</button>
+      </div>
+      <div class="weather-body">
+        <div class="weather-radar">
+          <div class="weather-section-title">Live Radar</div>
+          <img id="weather-radar-img" alt="Live radar loop">
+          <button type="button" id="weather-radar-refresh">Refresh Radar</button>
+        </div>
+        <div class="weather-forecast">
+          <div class="weather-section-title">Forecast</div>
+          <div id="weather-forecast-list" class="weather-forecast-list"></div>
+          <div class="weather-section-title">Listen Live</div>
+          <button type="button" id="weather-radio-btn" class="weather-radio-btn"></button>
+          <div class="weather-radio-note">Opens in a new window - has a short ad, and isn't for life-safety alerts.</div>
+          <div class="weather-section-title">Cloud Chart - What Are You Seeing?</div>
+          <div class="cloud-chart-grid" id="cloud-chart-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="stem-overlay" hidden>
+    <div class="stem-panel">
+      <div class="chat-header">
+        <span class="chat-title">⚡ STEM Lab</span>
+        <button class="chat-close" id="stem-close" aria-label="Close">✕</button>
+      </div>
+      <div class="stem-body">
+        <div class="stem-tools">
+          <button type="button" class="stem-tool stem-tool-active" id="stem-tool-circuit">
+            <span class="stem-tool-icon">🔌</span>
+            <span class="stem-tool-name">Circuit Sandbox</span>
+          </button>
+          <button type="button" class="stem-tool stem-tool-disabled" disabled>
+            <span class="stem-tool-icon">🧪</span>
+            <span class="stem-tool-name">Advanced Circuits</span>
+            <span class="stem-tool-badge">coming soon</span>
+          </button>
+          <button type="button" class="stem-tool stem-tool-disabled" disabled>
+            <span class="stem-tool-icon">🔢</span>
+            <span class="stem-tool-name">Logic Gates</span>
+            <span class="stem-tool-badge">coming soon</span>
+          </button>
+        </div>
+        <div class="stem-frame-wrap">
+          <iframe id="stem-frame" title="Circuit Sandbox"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="videoshelf-overlay" hidden>
+    <div class="videoshelf-panel">
+      <div class="chat-header">
+        <span class="chat-title" id="videoshelf-title">🎬 Video Shelf</span>
+        <div class="videoshelf-header-actions">
+          <button type="button" id="videoshelf-manage-toggle" class="videoshelf-manage-btn">Manage</button>
+          <button class="chat-close" id="videoshelf-close" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <div class="videoshelf-body">
+        <div id="videoshelf-verse" class="videoshelf-verse" hidden></div>
+        <div id="videoshelf-grid" class="videoshelf-grid"></div>
+        <div id="videoshelf-empty" class="planner-notes-empty" hidden>Nothing here yet.</div>
+        <form id="videoshelf-add-form" class="videoshelf-add-form" hidden>
+          <input type="text" id="videoshelf-url" placeholder="Paste a YouTube link" autocomplete="off">
+          <input type="text" id="videoshelf-vtitle" placeholder="Title (optional)" autocomplete="off">
+          <button type="submit" id="videoshelf-add-btn">Download &amp; Add</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="videoplayer-overlay" hidden>
+    <div class="videoplayer-panel">
+      <button class="chat-close videoplayer-close" id="videoplayer-close" aria-label="Close">✕</button>
+      <video id="videoplayer-video" controls></video>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="arcade-overlay" hidden>
+    <div class="stem-panel">
+      <div class="chat-header">
+        <span class="chat-title">🕹️ Arcade</span>
+        <button class="chat-close" id="arcade-close" aria-label="Close">✕</button>
+      </div>
+      <div class="stem-body">
+        <div class="stem-tools">
+          <button type="button" class="stem-tool" id="arcade-tool-kart">
+            <span class="stem-tool-icon">🏎️</span>
+            <span class="stem-tool-name">Kart Racing</span>
+          </button>
+          <button type="button" class="stem-tool stem-tool-active" id="arcade-tool-snake">
+            <span class="stem-tool-icon">🐍</span>
+            <span class="stem-tool-name">Snake</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-memory">
+            <span class="stem-tool-icon">🧠</span>
+            <span class="stem-tool-name">Memory Match</span>
+          </button>
+        </div>
+        <div class="stem-frame-wrap arcade-content" id="arcade-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="calculator-overlay" hidden>
+    <div class="calculator-panel">
+      <div class="chat-header">
+        <span class="chat-title">🧮 Calculator</span>
+        <button class="chat-close" id="calculator-close" aria-label="Close">✕</button>
+      </div>
+      <div class="calculator-display" id="calculator-display">0</div>
+      <div class="calculator-grid" id="calculator-grid"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="scratchpad-overlay" hidden>
+    <div class="notepad-panel">
+      <div class="chat-header">
+        <span class="chat-title">📝 Scratch Pad</span>
+        <button class="chat-close" id="scratchpad-close" aria-label="Close">✕</button>
+      </div>
+      <div class="notepad-hint">Clears itself at the start of a new day.</div>
+      <textarea class="notepad-textarea" id="scratchpad-textarea" placeholder="Jot something down..."></textarea>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="writing-overlay" hidden>
+    <div class="notepad-panel">
+      <div class="chat-header">
+        <span class="chat-title">✍️ Writing Paper</span>
+        <button class="chat-close" id="writing-close" aria-label="Close">✕</button>
+      </div>
+      <div class="notepad-hint">Saved automatically. Doesn't clear.</div>
+      <textarea class="notepad-textarea" id="writing-textarea" placeholder="Practice writing a report, a story, anything..."></textarea>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="dictionary-overlay" hidden>
+    <div class="notepad-panel">
+      <div class="chat-header">
+        <span class="chat-title">📖 Dictionary</span>
+        <button class="chat-close" id="dictionary-close" aria-label="Close">✕</button>
+      </div>
+      <form class="dictionary-search-row" id="dictionary-form">
+        <input type="text" id="dictionary-input" placeholder="Type a word..." autocomplete="off">
+        <button type="submit">Look Up</button>
+      </form>
+      <div class="dictionary-results" id="dictionary-results"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="journal-overlay" hidden>
+    <div class="planner-panel">
+      <div class="chat-header">
+        <span class="chat-title">🔬 Science Journal</span>
+        <button class="chat-close" id="journal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="journal-body">
+        <div class="journal-filters" id="journal-filters">
+          <button type="button" class="journal-filter-btn active" data-category="all">All</button>
+          <button type="button" class="journal-filter-btn" data-category="stem">STEM</button>
+          <button type="button" class="journal-filter-btn" data-category="weather">Weather</button>
+          <button type="button" class="journal-filter-btn" data-category="general">General</button>
+        </div>
+        <div class="journal-list" id="journal-list"></div>
+        <form class="journal-add-form" id="journal-add-form">
+          <select id="journal-category">
+            <option value="general">General</option>
+            <option value="stem">STEM</option>
+            <option value="weather">Weather</option>
+          </select>
+          <input type="text" id="journal-title" placeholder="Title" autocomplete="off">
+          <textarea id="journal-text" placeholder="What did you notice or build today?" rows="3"></textarea>
+          <button type="submit">Add Entry</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settings-overlay" hidden>
+    <div class="notepad-panel settings-panel">
+      <div class="chat-header">
+        <span class="chat-title">⚙️ Settings</span>
+        <button class="chat-close" id="settings-close" aria-label="Close">✕</button>
+      </div>
+      <form class="settings-body" id="settings-form">
+        <label class="settings-label">School name</label>
+        <input type="text" id="settings-school-name" placeholder="e.g. Mia Academy" autocomplete="off">
+
+        <label class="settings-label">School website link</label>
+        <input type="url" id="settings-school-url" placeholder="https://..." autocomplete="off">
+
+        <label class="settings-label">ZIP code (for Weather Labs)</label>
+        <div class="settings-zip-row">
+          <input type="text" id="settings-zip" placeholder="e.g. 79101" autocomplete="off" maxlength="5">
+          <button type="button" id="settings-zip-btn">Look Up</button>
+        </div>
+        <div class="settings-hint" id="settings-location-current"></div>
+
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-bible-toggle">
+          <span>Show the Bible Study card</span>
+        </label>
+
+        <button type="submit" id="settings-save-btn">Save Settings</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

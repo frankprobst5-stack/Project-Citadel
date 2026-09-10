@@ -1,0 +1,110 @@
+{
+  "rows": [
+    {
+      "cards": [
+        {
+          "id": "ai_assist",
+          "title": "AI Assistant",
+          "subtitle": "Chat, ask questions, get help",
+          "icon": "🤖",
+          "accent": "#6fd3ff",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "my_school",
+          "title": "My School",
+          "subtitle": "Go to school",
+          "icon": "🎓",
+          "accent": "#8effa1",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "planner",
+          "title": "Daily Planner",
+          "subtitle": "Notes & calendar",
+          "icon": "📅",
+          "accent": "#ffd76f",
+          "status": "active",
+          "link": null
+        }
+      ]
+    },
+    {
+      "cards": [
+        {
+          "id": "weather_labs",
+          "title": "Weather Labs",
+          "subtitle": "Learn to read the sky",
+          "icon": "⛈️",
+          "accent": "#8fb8ff",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "code_lab",
+          "title": "Code Lab",
+          "subtitle": "Build & run your own scripts",
+          "icon": "🧩",
+          "accent": "#ff9f6f",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "video_shelf",
+          "title": "Video Shelf",
+          "subtitle": "Watch something good",
+          "icon": "🎬",
+          "accent": "#ff6f9f",
+          "status": "active",
+          "link": null
+        }
+      ]
+    },
+    {
+      "cards": [
+        {
+          "id": "arcade",
+          "title": "Arcade",
+          "subtitle": "Simple games, just for fun",
+          "icon": "🕹️",
+          "accent": "#c58fff",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "stem_lab",
+          "title": "STEM Lab",
+          "subtitle": "Circuits, Bluetooth & how things work",
+          "icon": "⚡",
+          "accent": "#c4ff6f",
+          "status": "active",
+          "link": null
+        },
+        {
+          "id": "bible_study",
+          "title": "Bible Study",
+          "subtitle": "Stories, just for you",
+          "icon": "📖",
+          "accent": "#e8c97e",
+          "status": "active",
+          "link": null
+        }
+      ]
+    },
+    {
+      "cards": [
+        {
+          "id": "kolibri",
+          "title": "Full School Library",
+          "subtitle": "Lessons, exercises & courses",
+          "icon": "📚",
+          "accent": "#7ea8e8",
+          "status": "active",
+          "link": "http://localhost:8081"
+        }
+      ]
+    }
+  ]
+}

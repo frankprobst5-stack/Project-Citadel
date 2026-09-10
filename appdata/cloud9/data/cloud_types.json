@@ -1,0 +1,72 @@
+[
+  {
+    "name": "Cirrus",
+    "altitude": "High",
+    "image": "Cirrus.jpg",
+    "looksLike": "Wispy hair or feathers",
+    "description": "Thin, wispy streaks way up high, made of tiny ice crystals. If you see these, weather might be changing in a day or two."
+  },
+  {
+    "name": "Cirrocumulus",
+    "altitude": "High",
+    "image": "Cirrocumulus_1.jpg",
+    "looksLike": "Fish scales or little ripples",
+    "description": "Small white ripples or patches high in the sky, made of ice crystals. They usually don't stick around very long."
+  },
+  {
+    "name": "Cirrostratus",
+    "altitude": "High",
+    "image": "Cirrostratus.jpg",
+    "looksLike": "A thin see-through veil",
+    "description": "A thin sheet that can cover the whole sky. Look for a ring (halo) around the sun or moon shining through it."
+  },
+  {
+    "name": "Altocumulus",
+    "altitude": "Middle",
+    "image": "Altocumulus.jpg",
+    "looksLike": "A flock of sheep in the sky",
+    "description": "White or gray patches and rolls in the middle of the sky. A very common cloud on a partly cloudy day."
+  },
+  {
+    "name": "Altostratus",
+    "altitude": "Middle",
+    "image": "Altostratus.jpg",
+    "looksLike": "Frosted glass over the sun",
+    "description": "A gray sheet covering the sky. The sun looks pale and blurry through it, like looking through frosted glass. Can bring light rain."
+  },
+  {
+    "name": "Nimbostratus",
+    "altitude": "Middle",
+    "image": "Nimbostratus.jpg",
+    "looksLike": "A thick dark gray blanket",
+    "description": "A thick, dark gray layer that blocks the sun completely. This is the cloud that brings steady rain or snow."
+  },
+  {
+    "name": "Cumulus",
+    "altitude": "Low",
+    "image": "Cumulus.jpg",
+    "looksLike": "Puffy cotton balls",
+    "description": "Puffy white clouds with flat bottoms and rounded tops. The classic sunny-day cloud."
+  },
+  {
+    "name": "Cumulonimbus",
+    "altitude": "Low (grows very tall)",
+    "image": "Cumulonimbus.jpg",
+    "looksLike": "A huge tower or mountain, flat on top like an anvil",
+    "description": "The thunderstorm cloud! A giant tower that can bring thunder, lightning, hail, heavy rain, and even tornadoes. This is the one storm chasers watch closest."
+  },
+  {
+    "name": "Stratocumulus",
+    "altitude": "Low",
+    "image": "Stratocumulus.jpg",
+    "looksLike": "Lumpy gray patches with gaps of blue sky",
+    "description": "Gray or white lumpy patches that cover a lot of the sky but usually leave some gaps of blue showing through."
+  },
+  {
+    "name": "Stratus",
+    "altitude": "Low",
+    "image": "Stratus.jpg",
+    "looksLike": "A flat gray blanket, like fog in the sky",
+    "description": "A flat, featureless gray layer covering the whole sky, like fog that never touched the ground. Can bring drizzle."
+  }
+]

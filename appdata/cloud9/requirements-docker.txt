@@ -1,0 +1,9 @@
+# Trimmed from the upstream Cloud9 repo's requirements.txt for this
+# Docker deployment: drops `pyinstaller`, which only exists there to
+# build the Windows desktop installer (see BUILD_INSTRUCTIONS.md) and
+# has no purpose running the Flask service itself in a container.
+Flask==3.0.3
+llama-cpp-python
+requests
+yt-dlp
+nltk

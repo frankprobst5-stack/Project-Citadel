@@ -184,7 +184,7 @@
             { key: 'waystation', title: "Communications Hub", desc: "Launch WayStation — the full EmComm command dashboard: net control, ICS forms, mesh, Winlink, JS8Call, space weather, and cross-transport message routing.", meta: "Engine: WayStation", icon: "📡", action: "waystation://open" },
             { key: 'maps', title: "Tactical Map", desc: "Offline vector map (roads, place names) and real elevation data for the Panhandle region, plus a low-detail world view — no internet required.", meta: "Engine: PMTiles / MapLibre", icon: "🗺️", action: "map.html" },
             { key: 'vault', title: "Digital Media Vault", desc: "Access your centralized, self-contained media command station for manual video archives, audio playlists, and PDF guides.", meta: "Engine: Native Python Vault", icon: "🎬", action: "vault-root" },
-            { key: 'kolibri', title: "Home Education Hub", desc: "Access the containerized Kolibri Learning matrix for offline schooling, interactive exercises, lesson planning, and student data archives.", meta: "Engine: Kolibri Matrix Core", icon: "🎓", action: "http://localhost:8081" },
+            { key: 'cloud9', title: "Home Education Hub", desc: "Cloud9 — the kid dashboard: AI homework helper, planner, dictionary, weather labs, video shelf, and a link into the full Kolibri course library.", meta: "Engine: Cloud9", icon: "🎓", action: "http://localhost:8099" },
             { key: 'kiwix', title: "Knowledge Base", desc: "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html" },
             { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html" },
             { key: 'static', title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html" },
@@ -303,7 +303,7 @@
         async function runHealthChecks() {
             const host = window.location.hostname;
             const results = {};
-            const [power, vault, maps, kiwix, ai, kolibri, flatnotes] = await Promise.all([
+            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9] = await Promise.all([
                 checkSameOrigin('/api/grid'),
                 checkSameOrigin('/api/inventory/general'),
                 checkSameOrigin('tiles/comms_base.pmtiles'),
@@ -311,6 +311,7 @@
                 checkSameOrigin('/api/tags'),
                 checkNoCors(`http://${host}:8081`),
                 checkNoCors(`http://${host}:8098`),
+                checkNoCors(`http://${host}:8099`),
             ]);
             results.power = power;
             results.network = true; // trivially true: this page loaded over the LAN nginx
@@ -320,6 +321,7 @@
             results.ai = ai;
             results.kolibri = kolibri;
             results.flatnotes = flatnotes;
+            results.cloud9 = cloud9;
             results.static = true; // purely local static content, always available
             return results;
         }
@@ -390,7 +392,7 @@
         }
 
         function diffAndLog(prev, curr) {
-            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault' };
+            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard' };
             Object.keys(labels).forEach(k => {
                 if (!prev) return; // first run: don't spam a log full of "detected" on load
                 if (prev[k] !== curr[k]) {

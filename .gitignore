@@ -26,6 +26,22 @@ appdata/media-vault/ZIM_Library/
 appdata/project-vigil/vigil_state.json
 appdata/project-vigil/vigil_grid_ledger.json
 
+# Cloud9 -- same reasoning as every other real-data exclusion above. The
+# 1.1GB Qwen model exceeds GitHub's 100MB limit regardless; the NLTK
+# corpus is fetched data, not source; the rest is real kid-generated
+# content (journal/planner/scratchpad/etc.) that ships blank upstream and
+# gets regenerated on first real use, matching the Cloud9 repo's own
+# .gitignore for these same files.
+appdata/cloud9/models/*.gguf
+appdata/cloud9/data/nltk_data/
+appdata/cloud9/data/settings.json
+appdata/cloud9/data/journal_entries.json
+appdata/cloud9/data/planner_notes.json
+appdata/cloud9/data/scratchpad.json
+appdata/cloud9/data/writing_paper.json
+appdata/cloud9/data/videos.json
+appdata/cloud9/server/static/videos/
+
 # Personal SDR channel configs — reveals real county/location names, not
 # generic sample data. Never belongs in a public repo.
 appdata/media-vault/SDRUno/
