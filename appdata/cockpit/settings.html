@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // SYSTEM SETTINGS</title>
+    <style>
+        :root {
+            --bg: #11120e; --panel: #1c1f16; --border: #3a4031; --border-dim: #282f20;
+            --text: #e6e8e3; --text-dim: #aea79f; --text-faint: #687259;
+            --accent: #87986a; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #6b7169;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 900px; margin: 0 auto; }
+        a.back { color: var(--text-faint); text-decoration: none; font-family: monospace; font-size: 0.8rem; }
+        a.back:hover { color: var(--accent); }
+        h1 { color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; font-size: 1.4rem; margin: 15px 0 20px 0; }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 18px; }
+        .panel h2 { margin: 0 0 14px 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text); border-bottom: 1px dashed var(--border-dim); padding-bottom: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 0.85rem; border-bottom: 1px solid var(--border-dim); }
+        .row:last-child { border-bottom: none; }
+        .row .label { color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+        .row .value { font-family: monospace; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .dot-gray { background: var(--gray); }
+        .note { font-size: 0.78rem; color: var(--text-faint); line-height: 1.5; margin-top: 4px; }
+        code { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 3px; padding: 1px 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back" href="index.html">&larr; Back to Cockpit</a>
+        <h1>⚙️ System Settings</h1>
+
+        <div class="panel">
+            <h2>Station Identity</h2>
+            <div class="row"><span class="label">Build</span><span class="value">Project Citadel v0.1.0</span></div>
+            <div class="row"><span class="label">License</span><span class="value">GPL-3.0-or-later</span></div>
+            <div class="row"><span class="label">Deployment model</span><span class="value">Single-site (LAN-trust only)</span></div>
+            <div class="note">No account/login layer exists yet — anyone on this network can reach every module. Fine for one trusted household; revisit before exposing this box beyond the LAN.</div>
+        </div>
+
+        <div class="panel">
+            <h2>Live Service Diagnostics</h2>
+            <div id="diagList"></div>
+            <div class="note">These checks run the same reachability probes as the cockpit health strip. This page does not yet support editing networking, integrations, or backup configuration — that's not wired up, shown here honestly rather than with disabled-looking controls that imply it almost works.</div>
+        </div>
+
+        <div class="panel">
+            <h2>Not Monitored (no backend yet)</h2>
+            <div class="row"><span class="label">Disk / storage usage</span><span class="value">— no endpoint exposes this</span></div>
+            <div class="row"><span class="label">WayStation running state</span><span class="value">— native app, not observable from a browser page</span></div>
+            <div class="row"><span class="label">Backup age</span><span class="value">— no backup-timestamp endpoint exists</span></div>
+        </div>
+    </div>
+
+    <script>
+        const CHECKS = [
+            { name: 'Vigil power hub', kind: 'same-origin', url: '/api/grid' },
+            { name: 'Media vault (vault-api)', kind: 'same-origin', url: '/api/inventory/general' },
+            { name: 'Map tile store', kind: 'same-origin', url: 'tiles/comms_base.pmtiles' },
+            { name: 'Off-grid AI (Ollama)', kind: 'same-origin', url: '/api/tags' },
+            { name: 'Kiwix (:8095)', kind: 'no-cors', port: 8095 },
+            { name: 'Kolibri education (:8081)', kind: 'no-cors', port: 8081 },
+            { name: 'Flatnotes (:8098)', kind: 'no-cors', port: 8098 },
+        ];
+
+        async function checkSameOrigin(url) {
+            try { const r = await fetch(url, { cache: 'no-store' }); return r.ok; }
+            catch { return false; }
+        }
+        async function checkNoCors(url, timeoutMs = 2500) {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), timeoutMs);
+            try { await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal }); return true; }
+            catch { return false; }
+            finally { clearTimeout(t); }
+        }
+
+        async function runDiagnostics() {
+            const host = window.location.hostname;
+            const list = document.getElementById('diagList');
+            list.innerHTML = CHECKS.map(c => `
+                <div class="row" data-name="${c.name}">
+                    <span class="label"><span class="dot dot-gray"></span>${c.name}</span>
+                    <span class="value">checking...</span>
+                </div>
+            `).join('');
+
+            for (const c of CHECKS) {
+                const ok = c.kind === 'same-origin'
+                    ? await checkSameOrigin(c.url)
+                    : await checkNoCors(`http://${host}:${c.port}`);
+                const row = list.querySelector(`[data-name="${CSS.escape(c.name)}"]`);
+                row.querySelector('.dot').className = 'dot ' + (ok ? 'dot-green' : 'dot-red');
+                row.querySelector('.value').innerText = ok ? 'REACHABLE' : 'UNREACHABLE';
+            }
+        }
+
+        runDiagnostics();
+    </script>
+</body>
+</html>
