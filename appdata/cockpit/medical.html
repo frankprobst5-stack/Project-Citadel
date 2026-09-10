@@ -3,241 +3,922 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CITADEL // MEDICAL MATRIX</title>
+    <title>CITADEL // FIRST AID &amp; MEDICAL SUPPORT</title>
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px; margin: 0; box-sizing: border-box; }
-        .container { max-width: 1600px; margin: 0 auto; }
-        
-        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #5a2121; padding-bottom: 15px; }
-        h1 { color: #cc3333; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(204, 51, 51, 0.4); }
-        
-        .action-btn { background: #3d1c1c; border: 1px solid #7a2d2d; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-        .action-btn:hover { background: #522424; border-color: #cc3333; }
+        :root {
+            --bg: #0e0d0d; --panel: #1a1414; --panel-alt: #161212; --border: #4a2626; --border-dim: #2c1c1c;
+            --text: #e6e8e3; --text-dim: #b3a8a8; --text-faint: #7a6a6a;
+            --accent: #ff5555; --accent-dim: #cc3333; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #6b7169;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .shell { display: flex; min-height: 100vh; }
 
-        .trauma-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .trauma-card { background: #1c1414; border: 1px solid #7a2d2d; border-radius: 6px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 15px rgba(122, 45, 45, 0.2); }
-        .trauma-card:hover { background: #2d1a1a; border-color: #ff3333; transform: translateY(-2px); box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); }
-        .trauma-card h3 { margin: 0; color: #ff5555; text-transform: uppercase; font-size: 1.1rem; }
+        /* Sidebar */
+        .sidebar { width: 220px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border-dim); padding: 18px 0; display: flex; flex-direction: column; justify-content: space-between; }
+        .nav-btn { display: block; width: 100%; text-align: left; background: transparent; border: none; border-left: 3px solid transparent; color: var(--text-dim); padding: 11px 18px; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+        .nav-btn:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+        .nav-btn.active { background: rgba(255,85,85,0.08); border-left-color: var(--accent); color: var(--accent); font-weight: bold; }
+        .em-btn { margin: 12px; background: var(--border-dim); border: 1px solid var(--accent-dim); color: var(--text); padding: 12px; border-radius: 6px; cursor: pointer; text-align: left; font-family: inherit; }
+        .em-btn .t1 { color: var(--accent); font-weight: bold; font-size: 0.85rem; }
+        .em-btn .t2 { color: var(--text-faint); font-size: 0.72rem; }
 
-        .instruction-viewport { background: #161a16; border: 1px solid #6b8e23; border-radius: 6px; padding: 20px; margin-bottom: 20px; display: none; }
-        .instruction-viewport h2 { color: #87986a; margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed #6b8e23; padding-bottom: 5px; }
-        .instruction-viewport ol { margin: 0; padding-left: 20px; line-height: 1.6; color: #d0d6c9; }
+        .main { flex: 1; min-width: 0; padding: 20px 26px 40px; }
 
-        .split-workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        .log-matrix { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; }
-        .section-header { font-family: monospace; font-size: 0.85rem; color: #a4b38a; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #3a4031; padding-bottom: 5px; display: flex; justify-content: space-between; }
-        
-        .med-textarea { width: 100%; height: 265px; background: #050604; border: 1px solid #3a4031; color: #ffb000; font-family: monospace; font-size: 1rem; padding: 10px; resize: none; box-sizing: border-box; outline: none; line-height: 1.5; }
-        
-        .ai-matrix { background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }
-        .chat-stream { height: 265px; overflow-y: auto; background: #11120e; border: 1px solid #3a4031; padding: 10px; display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem; margin-bottom: 10px; }
-        .msg { padding: 8px; border-radius: 4px; line-height: 1.4; }
-        .user { background: #2a2d21; border-left: 3px solid #87986a; align-self: flex-end; }
-        .ai { background: #050604; border-left: 3px solid #ffb000; color: #ffb000; font-family: monospace; }
-        .chat-input-row { display: flex; gap: 10px; }
-        .chat-input { flex-grow: 1; background: #11120e; border: 1px solid #3a4031; padding: 10px; color: #ffb000; font-family: monospace; border-radius: 4px; outline: none; }
-        .btn { background: #4b533f; border: 1px solid #87986a; color: #e6e8e3; padding: 0 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        @media (max-width: 880px) {
+            .shell { flex-direction: column; }
+            .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 8px; }
+            .nav-btn { width: auto; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-btn.active { border-bottom-color: var(--accent); }
+            .em-btn { margin: 0 0 0 8px; white-space: nowrap; }
+        }
+
+        /* Header */
+        .header-panel { display: flex; align-items: center; gap: 18px; background: var(--panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 16px 20px; margin-bottom: 14px; }
+        .header-crest { width: 50px; height: 50px; border-radius: 8px; background: var(--border-dim); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; border: 1px solid var(--border); }
+        .header-title-block { flex: 1; min-width: 0; }
+        .header-title-block h1 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        .header-title-block .brand { color: var(--text); }
+        .header-title-block .sub2 { color: var(--accent); text-transform: uppercase; font-size: 1rem; font-weight: bold; }
+        .header-title-block .tag { font-size: 0.72rem; color: var(--text-faint); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+        .header-quote { font-size: 0.8rem; color: var(--text-faint); font-style: italic; text-align: right; max-width: 220px; }
+        .dash-btn { background: var(--border-dim); border: 1px solid var(--accent-dim); color: var(--text); padding: 10px 16px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; text-transform: uppercase; white-space: nowrap; font-family: inherit; }
+        .dash-btn:hover { border-color: var(--accent); }
+
+        /* Health strip */
+        .health-strip { display: flex; gap: 14px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 12px 18px; margin-bottom: 20px; }
+        .health-item { display: flex; align-items: center; gap: 7px; font-size: 0.75rem; }
+        .health-item .name { color: var(--text-dim); }
+        .health-item .val { font-family: monospace; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+        .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .dot-gray { background: var(--gray); }
+
+        .disclaimer { font-size: 0.75rem; color: var(--text-faint); background: var(--panel); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; margin-bottom: 18px; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .card { background: var(--panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 18px; margin-bottom: 16px; }
+        .card h2 { margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); border-bottom: 1px dashed var(--border-dim); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .card .card-sub { font-size: 0.75rem; color: var(--text-faint); margin: -6px 0 12px 0; }
+
+        .row-4, .row-3 { display: grid; gap: 16px; margin-bottom: 16px; }
+        .row-4 { grid-template-columns: repeat(4, 1fr); }
+        .row-3 { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1200px) { .row-4 { grid-template-columns: repeat(2, 1fr); } .row-3 { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .row-4 { grid-template-columns: 1fr; } }
+
+        .trauma-card { background: #1c1414; border: 1px solid var(--border); border-radius: 6px; padding: 16px; cursor: pointer; transition: all 0.15s; }
+        .trauma-card:hover { background: #2d1a1a; border-color: var(--accent); transform: translateY(-2px); }
+        .trauma-card h3 { margin: 0 0 6px 0; color: var(--accent); font-size: 1.05rem; }
+        .trauma-card p { margin: 0; font-size: 0.78rem; color: var(--text-dim); }
+        .trauma-card .arrow { color: var(--text-faint); float: right; }
+
+        .protocol-block { background: #161212; border: 1px solid #4a3a1a; border-radius: 6px; padding: 18px; margin-bottom: 16px; }
+        .protocol-block h3 { color: #d3b567; margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed #4a3a1a; padding-bottom: 5px; }
+        .protocol-block ol, .protocol-block ul { margin: 0; padding-left: 20px; line-height: 1.6; color: #d0d6c9; }
+
+        .link-list { list-style: none; margin: 0; padding: 0; }
+        .link-list li { border-bottom: 1px solid var(--border-dim); }
+        .link-list li:last-child { border-bottom: none; }
+        .link-list a, .link-list .stub { display: flex; justify-content: space-between; align-items: center; padding: 8px 2px; color: var(--text-dim); text-decoration: none; font-size: 0.85rem; cursor: pointer; }
+        .link-list a:hover { color: var(--text); }
+        .link-list .stub { color: var(--text-faint); cursor: default; }
+        .link-list .badge-count { background: rgba(255,176,0,0.15); color: var(--amber); border: 1px solid var(--amber); border-radius: 10px; font-size: 0.68rem; padding: 1px 7px; }
+        .link-list .not-built { font-size: 0.65rem; color: var(--text-faint); border: 1px solid var(--border); border-radius: 10px; padding: 1px 6px; }
+
+        textarea, input[type=text], input[type=number], select { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--amber); font-family: monospace; font-size: 0.9rem; padding: 8px 10px; outline: none; }
+        textarea { width: 100%; resize: vertical; }
+        .field-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .field-row > * { flex: 1; min-width: 100px; }
+        .btn { background: #4b2f2f; border: 1px solid var(--accent-dim); color: var(--text); padding: 9px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.78rem; text-transform: uppercase; font-family: inherit; }
+        .btn:hover { background: #603c3c; }
+        .btn-ghost { background: var(--panel-alt); border: 1px solid var(--border); font-size: 0.75rem; padding: 7px 12px; }
+        .btn-full { width: 100%; padding: 12px; font-size: 0.82rem; }
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.72rem; font-family: inherit; }
+        .action-btn:hover { border-color: var(--accent); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        th { text-align: left; color: var(--text-faint); text-transform: uppercase; font-size: 0.68rem; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+        td { padding: 6px 8px; border-bottom: 1px solid var(--border-dim); vertical-align: top; }
+        .badge { font-size: 0.66rem; padding: 2px 7px; border-radius: 10px; font-family: monospace; text-transform: uppercase; }
+        .badge-ok { background: rgba(89,214,124,0.15); color: var(--green); border: 1px solid var(--green); }
+        .badge-warn { background: rgba(255,176,0,0.15); color: var(--amber); border: 1px solid var(--amber); }
+        .badge-bad { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid var(--red); }
+
+        .stat-row { display: flex; gap: 18px; margin-top: 12px; }
+        .stat { text-align: center; flex: 1; }
+        .stat .num { font-size: 1.5rem; font-weight: bold; }
+        .stat .lbl { font-size: 0.65rem; text-transform: uppercase; color: var(--text-faint); }
+
+        .chat-stream { height: 170px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; }
+        .msg { padding: 7px; border-radius: 4px; line-height: 1.4; }
+        .msg.user { background: #2a2121; border-left: 3px solid var(--accent-dim); align-self: flex-end; }
+        .msg.ai { background: #050604; border-left: 3px solid var(--amber); color: var(--amber); font-family: monospace; }
+        .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .chip { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text-dim); padding: 5px 10px; border-radius: 12px; font-size: 0.7rem; cursor: pointer; }
+        .chip:hover { border-color: var(--accent); color: var(--text); }
+
+        .footer-block { text-align: center; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border-dim); font-size: 0.72rem; color: var(--text-faint); }
+        .footer-block .brand2 { color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Emergency Mode overlay */
+        #emergencyOverlay { display: none; padding: 20px; }
+        body.emergency-mode .shell { display: none; }
+        body.emergency-mode #emergencyOverlay { display: block; }
+        .em-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .em-header h1 { color: var(--accent); font-size: 2rem; margin: 0; }
+        .em-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .em-card { background: #1c1414; border: 2px solid var(--border); border-radius: 8px; padding: 18px; }
+        .em-card h3 { color: var(--accent); font-size: 1.3rem; margin: 0 0 10px 0; }
+        .em-card ol { font-size: 1.05rem; line-height: 1.7; padding-left: 22px; }
+        .exit-em-btn { background: var(--border-dim); border: 1px solid var(--accent); color: var(--text); padding: 12px 20px; border-radius: 4px; font-size: 1rem; cursor: pointer; font-family: inherit; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-block">
-            <h1>🩸 PROJECT CITADEL // TACTICAL TRIAGE INTERFACE</h1>
-            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+    <div id="emergencyOverlay">
+        <div class="em-header">
+            <h1>🚨 EMERGENCY MODE</h1>
+            <button class="exit-em-btn" onclick="toggleEmergencyMode()">EXIT EMERGENCY MODE</button>
+        </div>
+        <div class="em-grid" id="emergencyGrid"></div>
+    </div>
+
+    <div class="shell" id="normalView">
+        <div class="sidebar">
+            <div id="navList"></div>
+            <button class="em-btn" onclick="toggleEmergencyMode()">
+                <div class="t1">📞 EMERGENCY MODE</div>
+                <div class="t2">Simplified interface</div>
+            </button>
         </div>
 
-        <div class="trauma-grid">
-            <div class="trauma-card" onclick="loadTrauma('bleed')"><h3>🛑 Massive Bleeding</h3></div>
-            <div class="trauma-card" onclick="loadTrauma('airway')"><h3>🫁 Airway Block</h3></div>
-            <div class="trauma-card" onclick="loadTrauma('burn')"><h3>🔥 Severe Burns</h3></div>
-            <div class="trauma-card" onclick="loadTrauma('fracture')"><h3>🦴 Fractures</h3></div>
-        </div>
-
-        <div class="instruction-viewport" id="viewport">
-            <h2 id="viewTitle">Select Protocol</h2>
-            <ol id="viewSteps"></ol>
-        </div>
-
-        <div class="split-workspace">
-            <div class="log-matrix">
-                <div class="section-header">
-                    <span>📝 CASE INCIDENT LOG SCRATCHPAD</span>
-                    <span id="saveStatus" style="color: #687259;">SECURED OFF-GRID</span>
+        <div class="main">
+            <div class="header-panel">
+                <div class="header-crest">🩹</div>
+                <div class="header-title-block">
+                    <h1><span class="brand">PROJECT CITADEL</span></h1>
+                    <div class="sub2">First Aid &amp; Medical Support</div>
+                    <div class="tag">Prepare &middot; Treat &middot; Track &middot; Reference</div>
                 </div>
-                <textarea id="medScratchpad" class="med-textarea" placeholder="Type case treatment logs, patient vitals, or triage actions here... (Auto-saves locally)"></textarea>
-                <button class="action-btn" style="background:#212c3d; border-color:#3b537a; font-size:0.75rem; margin-top: 10px;" onclick="injectHandoff()">⚡ Inject Radio Handoff Protocol Template (MIST)</button>
+                <div class="header-quote">&ldquo;Skills save lives when infrastructure cannot.&rdquo;</div>
+                <button class="dash-btn" onclick="window.location.href='index.html'">← Citadel Dashboard</button>
             </div>
 
-            <div class="ai-matrix">
-                <div class="section-header">🧠 EMBEDDED AI ASSISTANT TRIAGE SUPPORT</div>
-                <div class="chat-stream" id="medChat">
-                    <div class="msg ai">CITADEL MEDICAL ENVELOPE ONLINE. ENTER COMPLICATED TRIAGE SYMPTOMS OR PHARMACOLOGICAL DOSAGE INQUIRIES BELOW.</div>
-                </div>
-                <!-- NEW: High-Visibility Emergency CPR Metronome Controller -->
-                <div style="background: #2a1414; padding: 10px; border-radius: 4px; border: 1px solid #7a2d2d; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-family: monospace; font-size: 0.85rem; color: #ff5555; font-weight: bold;">🫀 EMERGENCY CPR PACER (110 BPM)</span>
-                    <button class="action-btn" id="cprBtn" style="background: #7a2d2d; border-color: #ff3333; padding: 5px 12px;" onclick="toggleCPRMetronome()">START COMPRESSION PACER</button>
+            <div class="health-strip" id="healthStrip"></div>
+
+            <div class="disclaimer">General offline first-aid reference and field logging tool — not a medical device, not a substitute for professional care. Get professional/EMS help whenever it's reachable. This page never calculates medication doses; always follow the product's own label or a trained provider.</div>
+
+            <!-- OVERVIEW -->
+            <div class="tab-panel" id="tab-overview">
+                <div class="row-4" id="overviewTraumaGrid"></div>
+
+                <div class="row-3">
+                    <div class="card">
+                        <h2>🧭 Triage Tool</h2>
+                        <div class="card-sub">Start a structured assessment (e.g. MIST, START)</div>
+                        <button class="btn btn-full" onclick="showTab('triage')">Begin Triage Assessment →</button>
+                        <div class="field-row" style="margin-top:10px;">
+                            <button class="btn-ghost btn" onclick="showTab('patientlog'); injectMIST();">📋 MIST Template</button>
+                            <button class="btn-ghost btn" onclick="showTab('triage')">👥 START Guidelines</button>
+                        </div>
+                        <div class="field-row">
+                            <button class="btn-ghost btn" disabled title="Not built yet" style="opacity:0.5; cursor:not-allowed;">🧒 Pediatric Triage</button>
+                            <button class="btn-ghost btn" disabled title="Not built yet" style="opacity:0.5; cursor:not-allowed;">⚠️ Disaster Triage</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>📋 Patient Log (Local)</h2>
+                        <div class="card-sub">Track patients, treatments, and outcomes.</div>
+                        <button class="btn btn-full" onclick="showTab('patientlog')">New Patient Entry →</button>
+                        <div class="field-row" style="margin-top:10px;">
+                            <button class="btn-ghost btn" onclick="showTab('patientlog')">📄 New Log</button>
+                            <button class="btn-ghost btn" onclick="exportPatientLog('json')">⬆ Export / Backup</button>
+                        </div>
+                        <div class="stat-row" id="patientStatRow"></div>
+                    </div>
+
+                    <div class="card">
+                        <h2>🧠 AI Medical Assistant</h2>
+                        <div class="card-sub">Offline medical guidance from a local AI model.</div>
+                        <div class="chat-stream" id="medChatMini"></div>
+                        <div class="field-row">
+                            <input type="text" id="medInputMini" placeholder="Ask a question..." onkeydown="if(event.key==='Enter') queryMedAI('mini')">
+                            <button class="btn" style="flex:0;" onclick="queryMedAI('mini')">Ask</button>
+                        </div>
+                        <div class="chip-row">
+                            <span class="chip" onclick="askChip('Snake bite protocol')">Snake bite protocol</span>
+                            <span class="chip" onclick="askChip('Pediatric fever, when to worry')">Pediatric fever</span>
+                            <span class="chip" onclick="askChip('Field wound care')">Field wound care</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="chat-input-row">
-                    <!-- NEW: Hands-Free Voice Ingestion Button inside the row -->
-                    <button class="btn" style="background: #2d2a1c; border-color: #5c5431;" onclick="activateVoiceDictation()" title="Hands-Free Voice Query">🎤</button>
-                    <input type="text" id="medInput" class="chat-input" placeholder="Query medical assistant node or use voice..." onkeydown="if(event.key==='Enter') queryMedAI()">
-                    <button class="btn" onclick="queryMedAI()">EXECUTE</button>
+                <div class="row-4">
+                    <div class="card">
+                        <h2>📚 Medical Reference Library</h2>
+                        <div class="card-sub">Offline access to trusted medical resources.</div>
+                        <ul class="link-list">
+                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">First Aid Basics <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Emergency Medical Procedures <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Trauma &amp; Critical Care <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Wilderness Medicine <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Medical Reference Manuals (PDF) <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); window.location.href='notes.html'" href="#">Custom Documents <span>›</span></a></li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h2>⚡ Quick Reference</h2>
+                        <div class="card-sub">Commonly needed information.</div>
+                        <ul class="link-list">
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Vital Signs (Normal Ranges) <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Common Medications <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Medical Abbreviations <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Infection Control <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Poison Control Information <span>›</span></a></li>
+                            <li><span class="stub">Pediatric Dosing Charts <span class="not-built">needs a cited source</span></span></li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h2>📦 Supplies &amp; Inventory</h2>
+                        <div class="card-sub">Track medical supplies and expiration dates.</div>
+                        <ul class="link-list" id="overviewSupplyList"></ul>
+                    </div>
+
+                    <div class="card">
+                        <h2>🎓 Training &amp; Drills</h2>
+                        <div class="card-sub">Keep skills sharp. Offline training materials.</div>
+                        <ul class="link-list">
+                            <li><span class="stub">Step-by-Step Skills (Images) <span class="not-built">not built yet</span></span></li>
+                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Video Demonstrations <span>›</span></a></li>
+                            <li><span class="stub">Scenario-Based Drills <span class="not-built">not built yet</span></span></li>
+                            <li><span class="stub">Printable Field Cards <span class="not-built">not built yet</span></span></li>
+                            <li><a onclick="event.preventDefault(); showTab('training')" href="#">Personal Notes <span>›</span></a></li>
+                        </ul>
+                    </div>
                 </div>
+            </div>
+
+            <!-- TRIAGE -->
+            <div class="tab-panel" id="tab-triage">
+                <div class="card">
+                    <h2>START Triage (Multiple-Casualty Sorting)</h2>
+                    <div class="card-sub">Standard Simple Triage And Rapid Treatment algorithm — use only when there are more patients than you can treat individually and you must decide treatment order.</div>
+                    <div class="protocol-block">
+                        <ol>
+                            <li><strong>Can they walk?</strong> Direct all walking wounded to one area. Tag <strong>GREEN — Minor</strong>.</li>
+                            <li><strong>Are they breathing?</strong> If not, open the airway. Still not breathing → tag <strong>BLACK — Deceased/Expectant</strong>. If breathing starts after repositioning → tag <strong>RED — Immediate</strong>.</li>
+                            <li><strong>Breathing rate.</strong> Over 30 breaths/min → tag <strong>RED — Immediate</strong>. 30 or under, continue.</li>
+                            <li><strong>Circulation.</strong> Check radial pulse or capillary refill. No radial pulse / refill over 2 seconds → tag <strong>RED — Immediate</strong>.</li>
+                            <li><strong>Mental status.</strong> Can't follow simple commands → tag <strong>RED — Immediate</strong>. Can follow commands → tag <strong>YELLOW — Delayed</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Pediatric &amp; Disaster Triage</h2>
+                    <p style="color:var(--text-faint); font-size:0.85rem;">Not built yet. Pediatric triage (e.g. JumpSTART) uses different breathing-rate and response thresholds than adult START and shouldn't be improvised from the adult algorithm above — this needs its own vetted reference before going in.</p>
+                </div>
+            </div>
+
+            <!-- EMERGENCY GUIDES -->
+            <div class="tab-panel" id="tab-guides">
+                <div class="row-4" id="guidesTraumaGrid" style="grid-template-columns: repeat(3, 1fr);"></div>
+                <div class="protocol-block" id="guideViewport" style="display:none;">
+                    <h3 id="guideTitle">Select a protocol above</h3>
+                    <ol id="guideSteps"></ol>
+                </div>
+            </div>
+
+            <!-- CONDITIONS & TREATMENTS -->
+            <div class="tab-panel" id="tab-conditions">
+                <div id="conditionsList"></div>
+            </div>
+
+            <!-- PROCEDURES / SKILLS -->
+            <div class="tab-panel" id="tab-procedures">
+                <div id="proceduresList"></div>
+            </div>
+
+            <!-- MEDICATIONS -->
+            <div class="tab-panel" id="tab-medications">
+                <div class="card">
+                    <h2>Medication Storage Guidance</h2>
+                    <ul style="color: var(--text-dim); line-height:1.7;">
+                        <li>Keep in original labeled containers — never mix medications into unlabeled bags or bottles.</li>
+                        <li>Store away from heat, direct sun, and humidity; check each label's specific storage temperature.</li>
+                        <li>Track expiration dates in Supplies &amp; Inventory and rotate stock.</li>
+                        <li>This page intentionally does not calculate doses. Always follow the medication's own label instructions, a pharmacist, or a trained medical provider.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>Medication Log</h2>
+                    <div class="field-row">
+                        <input type="text" id="medLogName" placeholder="Medication given">
+                        <input type="text" id="medLogPatient" placeholder="Given to (patient/ID)">
+                        <input type="text" id="medLogDose" placeholder="Dose (as labeled, e.g. '1 tablet')">
+                        <input type="text" id="medLogBy" placeholder="Given by">
+                        <button class="btn" onclick="addMedLog()">Log</button>
+                    </div>
+                    <table>
+                        <thead><tr><th>Time</th><th>Medication</th><th>Patient</th><th>Dose</th><th>By</th><th></th></tr></thead>
+                        <tbody id="medLogBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CHECKLISTS -->
+            <div class="tab-panel" id="tab-checklists">
+                <div class="card">
+                    <h2>IFAK / Go-Bag Checklist</h2>
+                    <div id="checklistItems"></div>
+                    <button class="action-btn" style="margin-top:10px;" onclick="resetChecklist()">Reset Checklist</button>
+                </div>
+            </div>
+
+            <!-- PATIENT LOG -->
+            <div class="tab-panel" id="tab-patientlog">
+                <div class="card">
+                    <h2>New Patient Log Entry</h2>
+                    <div class="field-row">
+                        <input type="text" id="plName" placeholder="Patient name / ID">
+                        <input type="text" id="plVitals" placeholder="Vitals (HR, RR, BP, notes)">
+                        <select id="plStatus">
+                            <option value="Stable">Stable</option>
+                            <option value="Monitoring">Monitoring</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="field-row">
+                        <textarea id="plTreatment" placeholder="Treatment given" rows="2"></textarea>
+                        <textarea id="plOutcome" placeholder="Outcome / status notes" rows="2"></textarea>
+                    </div>
+                    <div class="field-row">
+                        <button class="btn" onclick="injectMIST()">⚡ Insert MIST Handoff Template</button>
+                        <button class="btn" onclick="addPatientLog()">Save Entry</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2><span>Log Entries</span>
+                        <span>
+                            <button class="action-btn" onclick="exportPatientLog('json')">Export JSON</button>
+                            <button class="action-btn" onclick="exportPatientLog('txt')">Export Text</button>
+                        </span>
+                    </h2>
+                    <div id="patientLogList"></div>
+                </div>
+            </div>
+
+            <!-- SUPPLIES & INVENTORY -->
+            <div class="tab-panel" id="tab-supplies">
+                <div class="card">
+                    <h2>Add / Update Supply Item</h2>
+                    <div class="field-row">
+                        <input type="text" id="supDesc" placeholder="Item description">
+                        <input type="text" id="supLoc" placeholder="Location">
+                        <input type="number" id="supQty" placeholder="Qty" min="0">
+                        <input type="text" id="supExp" placeholder="Expiration (YYYY-MM-DD or N/A)">
+                        <button class="btn" onclick="addSupplyItem()">Add</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2><span>Medical Supplies</span><span id="supplyHealthText" style="font-family:monospace; font-size:0.72rem; color:var(--text-faint); text-transform:none; letter-spacing:0;"></span></h2>
+                    <table>
+                        <thead><tr><th>Item</th><th>Location</th><th>Qty</th><th>Expiration</th><th>Status</th><th></th></tr></thead>
+                        <tbody id="supplyBody"></tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h2>Custom Supply Lists</h2>
+                    <p style="color:var(--text-faint); font-size:0.85rem;">Not built yet — today there's one flat medical supply list above. Naming and switching between multiple named lists (e.g. "Home IFAK" vs "Truck Kit") would need its own category scheme on top of the existing inventory API.</p>
+                </div>
+            </div>
+
+            <!-- RESOURCES (OFFLINE) -->
+            <div class="tab-panel" id="tab-resources">
+                <div class="card">
+                    <h2>Upload Reference Manuals &amp; Videos</h2>
+                    <div class="card-sub">Uploads go into the Digital Media Vault's existing "Medical" category (alongside what's already there) — .pdf for manuals, .mp4/.mkv/.webm/.mov/.avi for videos. Large videos may take a while on this connection.</div>
+                    <div class="field-row">
+                        <input type="file" id="refUploadFile" accept=".pdf,.mp4,.mkv,.webm,.mov,.avi" style="flex:1;">
+                        <button class="btn" style="flex:0;" onclick="uploadReferenceFile()">Upload</button>
+                    </div>
+                    <div id="refUploadStatus" style="font-size:0.78rem; color:var(--text-faint); margin-top:6px;"></div>
+                    <div class="row-4" style="margin-top:14px; grid-template-columns: 1fr 1fr;">
+                        <div>
+                            <h3 style="color:var(--text-dim); font-size:0.8rem; text-transform:uppercase; margin:0 0 8px 0;">📄 Manuals (PDF)</h3>
+                            <ul class="link-list" id="refPdfList"></ul>
+                        </div>
+                        <div>
+                            <h3 style="color:var(--text-dim); font-size:0.8rem; text-transform:uppercase; margin:0 0 8px 0;">🎬 Videos</h3>
+                            <ul class="link-list" id="refVideoList"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Vital Signs — Normal Ranges (Adult)</h2>
+                    <table>
+                        <thead><tr><th>Measure</th><th>Normal Range</th></tr></thead>
+                        <tbody>
+                            <tr><td>Heart rate</td><td>60–100 beats/min</td></tr>
+                            <tr><td>Respiratory rate</td><td>12–20 breaths/min</td></tr>
+                            <tr><td>Blood pressure</td><td>~90/60 to 120/80 mmHg</td></tr>
+                            <tr><td>Body temperature</td><td>97–99°F (36.1–37.2°C)</td></tr>
+                            <tr><td>Oxygen saturation</td><td>95–100%</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="card-sub" style="margin-top:10px;">Reference ranges only — individual baselines vary. Children have different normal ranges than adults.</p>
+                </div>
+                <div class="card">
+                    <h2>Common Medical Abbreviations</h2>
+                    <table>
+                        <tbody>
+                            <tr><td>LOC</td><td>Level of consciousness</td><td>BP</td><td>Blood pressure</td></tr>
+                            <tr><td>HR</td><td>Heart rate</td><td>RR</td><td>Respiratory rate</td></tr>
+                            <tr><td>SOB</td><td>Shortness of breath</td><td>N/V</td><td>Nausea / vomiting</td></tr>
+                            <tr><td>DOI</td><td>Date/day of injury</td><td>MOI</td><td>Mechanism of injury</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <h2>Infection Control</h2>
+                    <ul style="color: var(--text-dim); line-height:1.7;">
+                        <li>Wash hands or use hand sanitizer before and after treating any wound.</li>
+                        <li>Wear gloves whenever available, especially with any blood or body fluid contact.</li>
+                        <li>Clean wounds with clean water; avoid re-touching a cleaned wound with unwashed hands.</li>
+                        <li>Dispose of used dressings and sharps safely, away from where people live.</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>Poison Control Information</h2>
+                    <p style="color: var(--text-dim);">US Poison Control: <strong>1-800-222-1222</strong> (free, confidential, available anytime service is reachable). Verify and record the correct number for your own region here if different.</p>
+                </div>
+            </div>
+
+            <!-- TRAINING & DRILLS (Personal Notes only for now) -->
+            <div class="tab-panel" id="tab-training">
+                <div class="card">
+                    <h2>Personal Notes</h2>
+                    <div class="card-sub">Step-by-step skill images, video demonstrations, scenario drills, and printable field cards aren't built yet — this notes box is real and saved locally.</div>
+                    <textarea id="trainingNotes" rows="10" placeholder="Notes on skills to practice, drill outcomes, things to remember..."></textarea>
+                </div>
+            </div>
+
+            <!-- AI MEDICAL ASSISTANT -->
+            <div class="tab-panel" id="tab-ai">
+                <div class="disclaimer">Supplemental only — check Triage, Emergency Guides, and Conditions &amp; Treatments first. This queries a local, offline model; it can be wrong, and it will not calculate medication doses.</div>
+                <div class="card">
+                    <div class="chat-stream" id="medChat">
+                        <div class="msg ai">CITADEL MEDICAL AI ONLINE. Use this for general questions after checking the structured guides.</div>
+                    </div>
+                    <div style="background: #2a1414; padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-family: monospace; font-size: 0.85rem; color: var(--accent); font-weight: bold;">🫀 EMERGENCY CPR PACER (110 BPM)</span>
+                        <button class="action-btn" id="cprBtn" onclick="toggleCPRMetronome()">START COMPRESSION PACER</button>
+                    </div>
+                    <div class="field-row">
+                        <button class="btn" style="flex:0;" onclick="activateVoiceDictation()" title="Hands-Free Voice Query">🎤</button>
+                        <input type="text" id="medInput" placeholder="Query medical assistant, or use voice..." onkeydown="if(event.key==='Enter') queryMedAI('full')">
+                        <button class="btn" style="flex:0;" onclick="queryMedAI('full')">EXECUTE</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div class="tab-panel" id="tab-settings">
+                <div class="card">
+                    <h2>Local Data Management</h2>
+                    <p class="card-sub">Everything on this page (checklist state, medication log, patient log, notes) is stored in this browser's local storage, not synced anywhere. Clearing browser data will erase it — export the Patient Log first if you need a copy.</p>
+                    <div class="field-row">
+                        <button class="btn-ghost btn" onclick="if(confirm('Clear the medication log?')){localStorage.removeItem('citadel_med_log'); renderMedLog();}">Clear Medication Log</button>
+                        <button class="btn-ghost btn" onclick="if(confirm('Clear the patient log? Export first if needed.')){localStorage.removeItem('citadel_patient_log'); renderPatientLog();}">Clear Patient Log</button>
+                        <button class="btn-ghost btn" onclick="resetChecklist()">Reset IFAK Checklist</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>About</h2>
+                    <p class="card-sub">Shared account/config settings for the whole station live on the Citadel-level <a href="settings.html" style="color:var(--accent);">System Settings</a> page.</p>
+                </div>
+            </div>
+
+            <div class="footer-block">
+                <div class="brand2">🩹 Project Citadel — First Aid &amp; Medical Support</div>
+                <div>&ldquo;Prepared people help more people.&rdquo; &middot; Medical Support &middot; Knowledge &middot; Readiness &middot; Resilience</div>
             </div>
         </div>
     </div>
+
     <script>
+        // ---------- Nav ----------
+        const NAV = [
+            { id: 'overview', label: '🏠 Overview' },
+            { id: 'triage', label: '⚠️ Triage' },
+            { id: 'guides', label: '📖 Emergency Guides' },
+            { id: 'conditions', label: '🩺 Conditions & Treatments' },
+            { id: 'procedures', label: '🛠 Procedures (Skills)' },
+            { id: 'medications', label: '💊 Medications' },
+            { id: 'checklists', label: '✅ Checklists' },
+            { id: 'patientlog', label: '📋 Patient Log' },
+            { id: 'resources', label: '📚 Resources (Offline)' },
+            { id: 'training', label: '🎓 Training & Drills' },
+            { id: 'ai', label: '🧠 AI Medical Assistant' },
+            { id: 'settings', label: '⚙️ Settings' },
+        ];
+        function buildNav() {
+            const el = document.getElementById('navList');
+            el.innerHTML = NAV.map(t => `<button class="nav-btn" data-tab="${t.id}">${t.label}</button>`).join('');
+            el.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => showTab(btn.dataset.tab)));
+        }
+        function showTab(id) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            const btn = document.querySelector(`.nav-btn[data-tab="${id}"]`);
+            if (btn) btn.classList.add('active');
+            localStorage.setItem('citadel_med_lasttab', id);
+            window.scrollTo(0, 0);
+        }
+
+        // ---------- Emergency protocols ----------
         const traumaData = {
-            bleed: { title: "Massive Bleeding Protocol (MARCH)", steps: ["Apply direct pressure using sterile gauze packs immediately.", "If bleeding occurs on a limb, deploy a tourniquet 2-3 inches above the wound layer.", "Tighten the windlass rod securely until bright red arterial flow ceases completely.", "Write down the exact timeline marker on the patient's forehead profile."] },
-            airway: { title: "Airway Clearance Parameters", steps: ["Establish level of responsiveness. Inspect physical breathing loops.", "Perform clean head-tilt / chin-lift maneuver sequence to clear oral cavity blocks.", "Visually scan for loose obstructions and perform clean sweeping maneuvers.", "Roll patient onto their side into a stable recovery position tracking vectors."] },
-            burn: { title: "Thermal Burn Remediation", steps: ["Isolate target safely from the heat source signature immediately.", "Cool target envelope using low-pressure fresh running water for 10-20 minutes.", "Gently cut away tight clothing and remove metal rings before inflammation.", "Apply clear sterile dressings loosely. Avoid oil, grease, or unauthorized topical creams."] },
-            fracture: { title: "Immobilization Splinting Protocols", steps: ["Never apply manual compression force to push bones back inside the skin system.", "Immobilize the frame completely above and below the fractured structure.", "Apply robust splint materials padded thoroughly with field towels or rags.", "Bandage cleanly while verifying distal circulation and toe/finger warmths remain active."] }
+            bleed: { title: "Massive Bleeding", icon: "🩸", desc: "Stop-the-bleed steps, pressure, tourniquets.", steps: ["Apply firm direct pressure with sterile gauze or the cleanest cloth available.", "If bleeding is on a limb and doesn't stop with pressure, apply a tourniquet 2-3 inches above the wound.", "Tighten the tourniquet until bleeding stops. Note the time it was applied — write it on the patient if possible.", "Do not remove a tourniquet once applied. Keep the patient warm and get professional help as soon as possible."] },
+            airway: { title: "Airway Block", icon: "🫁", desc: "Clear airway, choking, positioning.", steps: ["Check responsiveness and look/listen/feel for breathing.", "Tilt the head back and lift the chin to open the airway.", "If a visible object is blocking the airway, sweep it out with a finger — don't blindly finger-sweep if you can't see it.", "If breathing and unconscious, place in the recovery position (on their side)."] },
+            choke: { title: "Choking (Conscious Adult)", icon: "😮", desc: "Back blows and abdominal thrusts.", steps: ["Ask 'Are you choking?' — if they can cough or speak, encourage coughing and do not intervene further.", "If they cannot breathe, cough, or speak: stand behind them, give 5 back blows between the shoulder blades with the heel of your hand.", "If that doesn't clear it, give 5 abdominal thrusts (Heimlich maneuver): fist above the navel, grasp with other hand, pull sharply inward and upward.", "Alternate 5 back blows and 5 abdominal thrusts until the object clears or the person becomes unresponsive (then begin CPR)."] },
+            burn: { title: "Severe Burns", icon: "🔥", desc: "Classification, cooling, dressings.", steps: ["Remove the person from the heat source.", "Cool the burn under cool (not ice-cold) running water for 10-20 minutes.", "Remove tight clothing and jewelry near the burn before swelling starts, unless stuck to the skin.", "Cover loosely with a clean, non-fluffy dressing. Do not apply ice, butter, or ointments to severe burns."] },
+            fracture: { title: "Fractures", icon: "🦴", desc: "Stabilization, splinting, immobilization.", steps: ["Do not try to push a bone back into place or straighten a badly deformed limb.", "Immobilize the area, supporting the joints above and below the injury.", "Pad a splint with soft material before securing it, and check color/warmth of fingers or toes below the injury afterward.", "Treat for shock (keep warm, lying down if possible) and get professional care."] },
+            shock: { title: "Shock", icon: "⚠️", desc: "Recognition and stabilization.", steps: ["Recognize the signs: pale/clammy skin, rapid weak pulse, rapid breathing, confusion or weakness.", "Lay the person down and, if no spinal or leg injury is suspected, raise their legs slightly.", "Keep them warm with a blanket or coat, and calm.", "Do not give food or drink. Get professional help as soon as possible."] },
         };
+        const traumaOrder = ['bleed', 'airway', 'burn', 'fracture', 'choke', 'shock'];
 
-        function loadTrauma(id) {
-            document.getElementById('viewTitle').innerText = traumaData[id].title;
-            document.getElementById('viewSteps').innerHTML = traumaData[id].steps.map(s => `<li>${s}</li>`).join('');
-            document.getElementById('viewport').style.display = 'block';
+        function renderTraumaGrid(containerId, keys, onClick) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = keys.map(key => {
+                const d = traumaData[key];
+                return `<div class="trauma-card" data-key="${key}"><h3>${d.icon} ${d.title} <span class="arrow">→</span></h3><p>${d.desc}</p></div>`;
+            }).join('');
+            el.querySelectorAll('.trauma-card').forEach(card => card.addEventListener('click', () => onClick(card.dataset.key)));
+        }
+        function loadGuide(key) {
+            const d = traumaData[key];
+            document.getElementById('guideTitle').innerText = d.icon + ' ' + d.title;
+            document.getElementById('guideSteps').innerHTML = d.steps.map(s => `<li>${s}</li>`).join('');
+            document.getElementById('guideViewport').style.display = 'block';
+        }
+        function buildEmergencyOverlay() {
+            document.getElementById('emergencyGrid').innerHTML = traumaOrder.map(key => {
+                const d = traumaData[key];
+                return `<div class="em-card"><h3>${d.icon} ${d.title}</h3><ol>${d.steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+            }).join('');
+        }
+        function toggleEmergencyMode() { document.body.classList.toggle('emergency-mode'); }
+
+        // ---------- Conditions & Treatments ----------
+        const conditions = [
+            { title: "Hypothermia", body: "Move to a warm, dry place. Remove wet clothing. Warm the body's core first (chest/neck/head/groin) with dry blankets or skin-to-skin contact, not the limbs first. Give warm sweet drinks only if fully alert. Do not use direct high heat (fires, heating pads) on the skin." },
+            { title: "Heat Exhaustion / Heat Stroke", body: "Heat exhaustion: move to shade/cool area, loosen clothing, cool with water and fanning, sip water if alert. Heat stroke (confusion, hot dry skin, very high temperature) is a medical emergency: cool aggressively with water and get professional help immediately." },
+            { title: "Dehydration", body: "Give small, frequent sips of water or an oral rehydration solution. Avoid large amounts at once if nauseated. Watch for confusion, sunken eyes, or no urination — signs of severe dehydration needing professional care." },
+            { title: "Allergic Reaction / Anaphylaxis", body: "Mild reaction: remove the trigger if known, monitor. Anaphylaxis (swelling of face/throat, difficulty breathing, widespread hives, dizziness) is life-threatening: if the person has their own epinephrine auto-injector, help them use it per its own label, then get emergency help immediately regardless of improvement." },
+            { title: "Sprains / Strains (RICE)", body: "Rest the area. Ice for 15-20 minutes at a time. Compress with an elastic bandage (not too tight). Elevate above heart level when possible. Seek care if there's severe pain, obvious deformity, or inability to bear weight/use the limb." },
+            { title: "Seizures", body: "Protect from injury by clearing the area of hard/sharp objects. Do not restrain them or put anything in their mouth. Time the seizure. After it stops, place in the recovery position. Get professional help if it lasts over 5 minutes, repeats, or this is a first seizure." },
+        ];
+        function renderConditions() {
+            document.getElementById('conditionsList').innerHTML = conditions.map(c => `
+                <div class="protocol-block"><h3>${c.title}</h3><p style="color:#d0d6c9; line-height:1.6; margin:0;">${c.body}</p></div>
+            `).join('');
         }
 
-        function injectHandoff() {
-            const el = document.getElementById('medScratchpad');
-            el.value = `=== MEDICAL HANDOFF (MIST) ===\n[M] Mechanism:\n[I] Injuries:\n[S] Vitals:\n[T] Treatment:\n============================\n` + el.value;
-            localStorage.setItem('citadel_med_scratchpad', el.value);
+        // ---------- Procedures / Skills ----------
+        const procedures = [
+            { title: "Checking Responsiveness (AVPU)", body: "Alert (spontaneously responsive) → Voice (responds to being spoken to) → Pain (responds only to a painful stimulus) → Unresponsive. Tap and shout, then use a firm pinch/pressure if there's no response to voice." },
+            { title: "Taking a Pulse", body: "Use two fingers (not the thumb) on the wrist (radial) or side of the neck (carotid). Count beats for 30 seconds and multiply by 2, or count a full 60 seconds if the rhythm feels irregular." },
+            { title: "Recovery Position", body: "With the person on their back, extend the arm nearest you above their head, bring the far arm across their chest, bend the far knee, then roll them toward you onto that side. Tilt the head back slightly to keep the airway open." },
+            { title: "Wound Cleaning & Dressing", body: "Wash your hands first. Rinse the wound with clean water to remove debris. Pat dry, apply an antiseptic if available, cover with a sterile non-stick dressing, and secure with tape or a bandage. Change the dressing if it becomes wet or dirty." },
+            { title: "Improvised Splinting", body: "Immobilize the joint above and below the injury using a rigid item (stick, rolled magazine, board) padded with cloth. Secure with cloth strips or tape, snug but not tight enough to cut off circulation. Recheck color/warmth below the splint regularly." },
+        ];
+        function renderProcedures() {
+            document.getElementById('proceduresList').innerHTML = procedures.map(p => `
+                <div class="protocol-block"><h3>${p.title}</h3><p style="color:#d0d6c9; line-height:1.6; margin:0;">${p.body}</p></div>
+            `).join('');
         }
 
-        const medScratchpad = document.getElementById('medScratchpad');
-        const saveStatus = document.getElementById('saveStatus');
+        // ---------- Checklist ----------
+        const checklistDefault = [
+            "Tourniquet(s)", "Compressed/pressure gauze", "Chest seal", "Nitrile gloves (multiple pairs)",
+            "Trauma shears", "SAM splint", "Israeli/pressure bandage", "Triangular bandages",
+            "Adhesive bandages (assorted)", "Antiseptic wipes", "Burn gel/dressing", "Instant cold pack",
+            "Space/emergency blanket", "Medical tape", "Permanent marker (for tourniquet time / MIST notes)",
+            "Medications list checked for expired items",
+        ];
+        function renderChecklist() {
+            const saved = JSON.parse(localStorage.getItem('citadel_med_checklist') || '{}');
+            const el = document.getElementById('checklistItems');
+            el.innerHTML = checklistDefault.map((item, i) => `
+                <label style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-dim); cursor:pointer;">
+                    <input type="checkbox" data-idx="${i}" ${saved[i] ? 'checked' : ''} style="width:16px; height:16px;">
+                    <span style="${saved[i] ? 'color:var(--text-faint); text-decoration:line-through;' : ''}">${item}</span>
+                </label>
+            `).join('');
+            el.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
+                const state = JSON.parse(localStorage.getItem('citadel_med_checklist') || '{}');
+                state[cb.dataset.idx] = cb.checked;
+                localStorage.setItem('citadel_med_checklist', JSON.stringify(state));
+                renderChecklist();
+            }));
+        }
+        function resetChecklist() { localStorage.removeItem('citadel_med_checklist'); renderChecklist(); }
 
-        if (localStorage.getItem('citadel_med_scratchpad')) {
-            medScratchpad.value = localStorage.getItem('citadel_med_scratchpad');
+        // ---------- Medication Log ----------
+        function getMedLog() { return JSON.parse(localStorage.getItem('citadel_med_log') || '[]'); }
+        function saveMedLog(list) { localStorage.setItem('citadel_med_log', JSON.stringify(list)); }
+        function addMedLog() {
+            const name = document.getElementById('medLogName').value.trim();
+            if (!name) { alert('Medication name is required.'); return; }
+            const entry = { id: String(Date.now()), time: new Date().toLocaleString(), name,
+                patient: document.getElementById('medLogPatient').value.trim() || 'Unspecified',
+                dose: document.getElementById('medLogDose').value.trim() || 'Not recorded',
+                by: document.getElementById('medLogBy').value.trim() || 'Unspecified' };
+            const list = getMedLog(); list.unshift(entry); saveMedLog(list);
+            ['medLogName','medLogPatient','medLogDose','medLogBy'].forEach(id => document.getElementById(id).value = '');
+            renderMedLog();
+        }
+        function deleteMedLog(id) { saveMedLog(getMedLog().filter(e => e.id !== id)); renderMedLog(); }
+        function renderMedLog() {
+            document.getElementById('medLogBody').innerHTML = getMedLog().map(e => `
+                <tr><td>${e.time}</td><td>${e.name}</td><td>${e.patient}</td><td>${e.dose}</td><td>${e.by}</td>
+                <td><button class="action-btn" onclick="deleteMedLog('${e.id}')">Delete</button></td></tr>
+            `).join('') || '<tr><td colspan="6" style="color:var(--text-faint);">No entries yet.</td></tr>';
         }
 
-        medScratchpad.addEventListener('input', () => {
-            localStorage.setItem('citadel_med_scratchpad', medScratchpad.value);
-            saveStatus.innerText = "SAVING MATRIX...";
-            saveStatus.style.color = "#ffb000";
-            setTimeout(() => {
-                saveStatus.innerText = "SECURED OFF-GRID";
-                saveStatus.style.color = "#687259";
-            }, 600);
-        });
+        // ---------- Patient Log ----------
+        function getPatientLog() { return JSON.parse(localStorage.getItem('citadel_patient_log') || '[]'); }
+        function savePatientLog(list) { localStorage.setItem('citadel_patient_log', JSON.stringify(list)); }
+        function injectMIST() {
+            const ta = document.getElementById('plTreatment');
+            ta.value = `[M] Mechanism:\n[I] Injuries:\n[S] Vitals/Signs:\n[T] Treatment given:\n` + ta.value;
+        }
+        function addPatientLog() {
+            const name = document.getElementById('plName').value.trim();
+            if (!name) { alert('Patient name/ID is required.'); return; }
+            const entry = { id: String(Date.now()), time: new Date().toLocaleString(), dateKey: new Date().toDateString(), name,
+                vitals: document.getElementById('plVitals').value.trim(),
+                status: document.getElementById('plStatus').value,
+                treatment: document.getElementById('plTreatment').value.trim(),
+                outcome: document.getElementById('plOutcome').value.trim() };
+            const list = getPatientLog(); list.unshift(entry); savePatientLog(list);
+            ['plName','plVitals','plTreatment','plOutcome'].forEach(id => document.getElementById(id).value = '');
+            renderPatientLog();
+        }
+        function deletePatientLog(id) { savePatientLog(getPatientLog().filter(e => e.id !== id)); renderPatientLog(); }
+        function statusBadge(status) {
+            if (status === 'Critical') return '<span class="badge badge-bad">CRITICAL</span>';
+            if (status === 'Monitoring') return '<span class="badge badge-warn">MONITORING</span>';
+            return '<span class="badge badge-ok">STABLE</span>';
+        }
+        function renderPatientLog() {
+            const list = getPatientLog();
+            document.getElementById('patientLogList').innerHTML = list.map(e => `
+                <div class="protocol-block" style="margin-bottom:10px; border-color: var(--border);">
+                    <h3 style="display:flex; justify-content:space-between; align-items:center; color:var(--text);"><span>${e.name} ${statusBadge(e.status)} <span style="color:var(--text-faint); font-size:0.75rem; font-weight:normal;">${e.time}</span></span>
+                    <button class="action-btn" onclick="deletePatientLog('${e.id}')">Delete</button></h3>
+                    ${e.vitals ? `<p style="margin:4px 0;"><strong>Vitals:</strong> ${e.vitals}</p>` : ''}
+                    ${e.treatment ? `<p style="margin:4px 0; white-space:pre-wrap;"><strong>Treatment:</strong> ${e.treatment}</p>` : ''}
+                    ${e.outcome ? `<p style="margin:4px 0;"><strong>Outcome:</strong> ${e.outcome}</p>` : ''}
+                </div>
+            `).join('') || '<p style="color:var(--text-faint);">No patient log entries yet.</p>';
+            renderOverviewStats();
+        }
+        function downloadBlob(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        function exportPatientLog(fmt) {
+            const list = getPatientLog();
+            if (fmt === 'json') downloadBlob(`patient-log-${Date.now()}.json`, JSON.stringify(list, null, 2), 'application/json');
+            else downloadBlob(`patient-log-${Date.now()}.txt`, list.map(e => `${e.time} — ${e.name} [${e.status}]\nVitals: ${e.vitals}\nTreatment: ${e.treatment}\nOutcome: ${e.outcome}\n---`).join('\n\n'), 'text/plain');
+        }
 
-        async function queryMedAI() {
-            const el = document.getElementById('medInput');
+        // ---------- Supplies & Inventory (real vault-api backend, category "medical") ----------
+        let supplyData = [];
+        async function fetchSupplies() {
+            try { const res = await fetch('/api/inventory/medical'); supplyData = await res.json(); }
+            catch (e) { supplyData = []; console.error('Failed to fetch medical inventory:', e); }
+            renderSupplies();
+        }
+        function expiryStatus(exp) {
+            const d = new Date(exp);
+            if (isNaN(d.getTime())) return null;
+            const days = Math.floor((d - new Date()) / 86400000);
+            if (days < 0) return 'expired';
+            if (days <= 60) return 'soon';
+            return 'ok';
+        }
+        function renderSupplies() {
+            const tbody = document.getElementById('supplyBody');
+            tbody.innerHTML = supplyData.map(item => {
+                const status = expiryStatus(item.exp);
+                let badge = '<span class="badge badge-ok">OK</span>';
+                if (item.qty <= 1) badge = '<span class="badge badge-warn">LOW STOCK</span>';
+                if (status === 'soon') badge = '<span class="badge badge-warn">EXPIRING SOON</span>';
+                if (status === 'expired') badge = '<span class="badge badge-bad">EXPIRED</span>';
+                return `<tr><td>${item.desc}</td><td>${item.loc}</td><td>${item.qty}</td><td>${item.exp}</td><td>${badge}</td>
+                    <td><button class="action-btn" onclick="deleteSupplyItem('${item.id}')">Delete</button></td></tr>`;
+            }).join('') || '<tr><td colspan="6" style="color:var(--text-faint);">No medical supplies logged yet.</td></tr>';
+
+            const lowStock = supplyData.filter(i => i.qty <= 1).length;
+            const expiring = supplyData.filter(i => expiryStatus(i.exp) === 'soon' || expiryStatus(i.exp) === 'expired').length;
+            document.getElementById('supplyHealthText').innerText = supplyData.length ? `${expiring} expiring, ${lowStock} low stock` : '';
+
+            document.getElementById('overviewSupplyList').innerHTML = `
+                <li><a onclick="event.preventDefault(); showTab('supplies')" href="#">Inventory List <span>›</span></a></li>
+                <li><a onclick="event.preventDefault(); showTab('supplies')" href="#">Expiring Soon ${expiring ? `<span class="badge-count">${expiring}</span>` : '<span>›</span>'}</a></li>
+                <li><a onclick="event.preventDefault(); showTab('supplies')" href="#">Low Stock ${lowStock ? `<span class="badge-count">${lowStock}</span>` : '<span>›</span>'}</a></li>
+                <li><a onclick="event.preventDefault(); showTab('checklists')" href="#">Restock Checklist <span>›</span></a></li>
+                <li><span class="stub">Custom Supply Lists <span class="not-built">not built yet</span></span></li>
+            `;
+            renderOverviewStats();
+        }
+        async function addSupplyItem() {
+            const desc = document.getElementById('supDesc').value.trim();
+            if (!desc) { alert('Item description is required.'); return; }
+            const item = { id: String(Date.now()), category: 'medical', desc,
+                loc: document.getElementById('supLoc').value.trim() || 'Unassigned',
+                qty: parseInt(document.getElementById('supQty').value) || 0,
+                exp: document.getElementById('supExp').value.trim() || 'N/A' };
+            await fetch('/api/inventory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) });
+            ['supDesc','supLoc','supQty','supExp'].forEach(id => document.getElementById(id).value = '');
+            fetchSupplies();
+        }
+        async function deleteSupplyItem(id) { await fetch(`/api/inventory/${id}`, { method: 'DELETE' }); fetchSupplies(); }
+
+        // ---------- Reference library uploads (real vault-api backend) ----------
+        const REF_CATEGORY = 'Medical';
+        const REF_EXT_KIND = {
+            '.pdf': 'pdfs',
+            '.mp4': 'videos', '.mkv': 'videos', '.webm': 'videos', '.mov': 'videos', '.avi': 'videos',
+        };
+        async function uploadReferenceFile() {
+            const input = document.getElementById('refUploadFile');
+            const statusEl = document.getElementById('refUploadStatus');
+            const file = input.files[0];
+            if (!file) { statusEl.innerText = 'Choose a file first.'; return; }
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            const kind = REF_EXT_KIND[ext];
+            if (!kind) { statusEl.innerText = `Unsupported file type: ${ext}`; return; }
+
+            statusEl.innerText = 'Uploading...';
+            const form = new FormData();
+            form.append('file', file);
+            try {
+                const res = await fetch(`/api/media/${kind}/${REF_CATEGORY}`, { method: 'POST', body: form });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Upload failed');
+                statusEl.innerText = `Uploaded ${file.name}.`;
+                input.value = '';
+                fetchReferenceLibrary();
+            } catch (e) {
+                statusEl.innerText = `Upload failed: ${e.message}`;
+            }
+        }
+        async function fetchReferenceLibrary() {
+            try {
+                const [pdfRes, vidRes] = await Promise.all([
+                    fetch('/api/media/pdfs').then(r => r.json()),
+                    fetch('/api/media/videos').then(r => r.json()),
+                ]);
+                const pdfFiles = pdfRes[REF_CATEGORY] || [];
+                const vidFiles = vidRes[REF_CATEGORY] || [];
+                document.getElementById('refPdfList').innerHTML = pdfFiles.map(f =>
+                    `<li><a href="/files/pdfs/${REF_CATEGORY}/${encodeURIComponent(f)}" target="_blank">${f} <span>›</span></a></li>`
+                ).join('') || '<li><span class="stub">No manuals uploaded yet.</span></li>';
+                document.getElementById('refVideoList').innerHTML = vidFiles.map(f =>
+                    `<li><a href="/files/videos/${REF_CATEGORY}/${encodeURIComponent(f)}" target="_blank">${f} <span>›</span></a></li>`
+                ).join('') || '<li><span class="stub">No videos uploaded yet.</span></li>';
+            } catch (e) {
+                console.error('Failed to fetch reference library:', e);
+            }
+        }
+
+        // ---------- Overview stats ----------
+        function renderOverviewStats() {
+            const log = getPatientLog();
+            const today = new Date().toDateString();
+            const patientsToday = log.filter(e => e.dateKey === today).length;
+            const critical = log.filter(e => e.status === 'Critical').length;
+            const row = document.getElementById('patientStatRow');
+            if (row) row.innerHTML = `
+                <div class="stat"><div class="num">${patientsToday}</div><div class="lbl">Patients Today</div></div>
+                <div class="stat"><div class="num">${log.length}</div><div class="lbl">Total Records</div></div>
+                <div class="stat"><div class="num" style="color:${critical ? 'var(--red)' : 'var(--text)'}">${critical}</div><div class="lbl">Critical (Unresolved)</div></div>
+            `;
+        }
+
+        // ---------- Health strip (real checks, same pattern as the cockpit home) ----------
+        async function checkSameOrigin(url) {
+            try { const r = await fetch(url, { cache: 'no-store' }); return r.ok; } catch { return false; }
+        }
+        async function runHealthChecks() {
+            const ai = await checkSameOrigin('/api/tags');
+            return { ai };
+        }
+        function renderHealthStrip(results) {
+            const items = [
+                { name: 'Medical Guides', val: 'AVAILABLE', dot: 'green' },
+                { name: 'Triage Tools', val: 'READY', dot: 'green' },
+                { name: 'Treatment Protocols', val: 'LOADED', dot: 'green' },
+                { name: 'AI Assistant', val: results.ai ? 'ONLINE' : 'OFFLINE', dot: results.ai ? 'green' : 'red' },
+                { name: 'Storage', val: 'N/A', dot: 'gray' },
+                { name: 'Last Updated', val: new Date().toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}), dot: 'gray' },
+            ];
+            document.getElementById('healthStrip').innerHTML = items.map(i =>
+                `<div class="health-item"><span class="dot dot-${i.dot}"></span><span class="name">${i.name}</span><span class="val">${i.val}</span></div>`
+            ).join('');
+        }
+        async function pollHealth() { renderHealthStrip(await runHealthChecks()); }
+
+        // ---------- AI assistant (secondary) ----------
+        function askChip(text) { document.getElementById('medInputMini').value = text; queryMedAI('mini'); }
+        async function queryMedAI(which) {
+            const inputId = which === 'mini' ? 'medInputMini' : 'medInput';
+            const chatId = which === 'mini' ? 'medChatMini' : 'medChat';
+            const el = document.getElementById(inputId);
             const prompt = el.value.trim();
-            if(!prompt) return;
-
-            const chat = document.getElementById('medChat');
+            if (!prompt) return;
+            const chat = document.getElementById(chatId);
             chat.innerHTML += `<div class="msg user">${prompt}</div>`;
             el.value = '';
             chat.scrollTop = chat.scrollHeight;
-
             const aiDiv = document.createElement('div');
-            aiDiv.className = "msg ai";
-            aiDiv.innerText = "QUERYING OFFLINE HEALTH REPOSITORY...";
+            aiDiv.className = 'msg ai';
+            aiDiv.innerText = 'Querying offline model...';
             chat.appendChild(aiDiv);
-
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: 'llama3.2:1b',
-                        messages: [{ role: 'user', content: "Give short emergency triage advice for: " + prompt }],
-                        stream: false
-                    })
-                });
+                const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: 'llama3.2:1b', messages: [{ role: 'user', content: 'Give short general first-aid guidance for: ' + prompt + '. Do not give a specific medication dose; tell the user to follow the label or a provider instead.' }], stream: false }) });
                 const data = await response.json();
                 aiDiv.innerText = data.message.content;
-            } catch(e) { aiDiv.innerText = "LINK DISRUPTION: INTERNAL AI ENGINE ENVELOPE SEVERED."; }
+            } catch (e) { aiDiv.innerText = 'Local AI unreachable — use the Triage / Emergency Guides / Conditions tabs instead.'; }
             chat.scrollTop = chat.scrollHeight;
         }
-        // --- EMERGENCY HANDS-FREE VOICE TRANSLATION ENGINE ---
         function activateVoiceDictation() {
             const inputField = document.getElementById('medInput');
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            
-            if (!SpeechRecognition) {
-                alert("CRITICAL: Voice recognition is not supported on this device/browser.");
-                return;
-            }
-
+            if (!SpeechRecognition) { alert('Voice recognition is not supported on this browser.'); return; }
             const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            inputField.placeholder = "🔴 LISTENING... SPEAK ACTIVE SYMPTOMS NOW...";
-            inputField.style.borderColor = "#ff3333";
+            recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+            inputField.placeholder = '🔴 LISTENING...'; inputField.style.borderColor = 'var(--accent)';
             recognition.start();
-
-            recognition.onresult = function(event) {
-                const speechToText = event.results.transcript;
-                inputField.value = speechToText;
-            };
-
-            recognition.onspeechend = function() {
-                recognition.stop();
-                inputField.placeholder = "Query medical assistant node...";
-                inputField.style.borderColor = "#3a4031";
-            };
-
-            recognition.onerror = function(event) {
-                inputField.placeholder = "Voice failed. Type input matrix manually...";
-                inputField.style.borderColor = "#3a4031";
-                console.error("Speech error:", event.error);
-            };
+            recognition.onresult = (event) => { inputField.value = event.results[0][0].transcript; };
+            recognition.onspeechend = () => { recognition.stop(); inputField.placeholder = 'Query medical assistant...'; inputField.style.borderColor = 'var(--border)'; };
+            recognition.onerror = (event) => { inputField.placeholder = 'Voice failed. Type manually...'; inputField.style.borderColor = 'var(--border)'; console.error('Speech error:', event.error); };
         }
-
-        // --- HARDWARE-INDEPENDENT OFFLINE CPR AUDIO METRONOME ---
-        let metronomeInterval = null;
-        let audioCtx = null;
-
+        let metronomeInterval = null, audioCtx = null;
         function toggleCPRMetronome() {
             const btn = document.getElementById('cprBtn');
-            
-            if (metronomeInterval) {
-                clearInterval(metronomeInterval);
-                metronomeInterval = null;
-                btn.innerText = "START COMPRESSION PACER";
-                btn.style.background = "#7a2d2d";
-                return;
-            }
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            btn.innerText = "🚨 STOP PACER (PUSH TO THIS BEAT)";
-            btn.style.background = "#ff3333";
-
-            // 110 BPM translates to an explicit 545ms interval loop cycle
+            if (metronomeInterval) { clearInterval(metronomeInterval); metronomeInterval = null; btn.innerText = 'START COMPRESSION PACER'; return; }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            btn.innerText = '🚨 STOP PACER (PUSH TO THIS BEAT)';
             metronomeInterval = setInterval(() => {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                
-                const osc = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-                
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-                
-                osc.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
-            }, 545); 
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }, 545);
         }
 
+        // ---------- Training notes ----------
+        function initTrainingNotes() {
+            const ta = document.getElementById('trainingNotes');
+            ta.value = localStorage.getItem('citadel_med_training_notes') || '';
+            ta.addEventListener('input', () => localStorage.setItem('citadel_med_training_notes', ta.value));
+        }
+
+        // ---------- Boot ----------
+        buildNav();
+        renderTraumaGrid('overviewTraumaGrid', ['bleed','airway','burn','fracture'], (key) => { showTab('guides'); loadGuide(key); });
+        renderTraumaGrid('guidesTraumaGrid', traumaOrder, loadGuide);
+        buildEmergencyOverlay();
+        renderConditions();
+        renderProcedures();
+        renderChecklist();
+        renderMedLog();
+        renderPatientLog();
+        fetchSupplies();
+        fetchReferenceLibrary();
+        initTrainingNotes();
+        pollHealth();
+        setInterval(pollHealth, 30000);
+        showTab(localStorage.getItem('citadel_med_lasttab') || 'overview');
     </script>
 </body>
 </html>

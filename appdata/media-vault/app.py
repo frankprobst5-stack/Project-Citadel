@@ -407,6 +407,46 @@ def get_weather_state():
         "same_alerts": [],
     })
 
+# --- MEDIA UPLOAD (PDF / VIDEO REFERENCE LIBRARY) ---
+
+UPLOAD_KINDS = {
+    'pdfs': {'exts': {'.pdf'}},
+    'videos': {'exts': {'.mp4', '.mkv', '.webm', '.mov', '.avi'}},
+}
+
+@app.route('/api/media/<kind>', methods=['GET'])
+def list_media(kind):
+    """JSON version of the category->files listing /pdf and /videos already
+    render as HTML, so a page like medical.html can show what's uploaded
+    without scraping the human-facing pages."""
+    if kind not in UPLOAD_KINDS:
+        return jsonify({"error": "unknown kind"}), 404
+    return jsonify(scan_media_folder(kind))
+
+@app.route('/api/media/<kind>/<category>', methods=['POST'])
+def upload_media(kind, category):
+    if kind not in UPLOAD_KINDS:
+        return jsonify({"error": "unknown kind"}), 404
+    if not _is_safe_category(category):
+        return jsonify({"error": "invalid category"}), 400
+    if 'file' not in request.files:
+        return jsonify({"error": "no file in request"}), 400
+
+    upload = request.files['file']
+    filename = upload.filename or ""
+    if not is_safe_filename(filename):
+        return jsonify({"error": "invalid filename"}), 400
+
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in UPLOAD_KINDS[kind]['exts']:
+        return jsonify({"error": f"extension {ext} not allowed for {kind}"}), 400
+
+    dest_dir = f"/app/{kind}/{category}"
+    os.makedirs(dest_dir, exist_ok=True)
+    dest_path = os.path.join(dest_dir, filename)
+    upload.save(dest_path)
+    return jsonify({"status": "success", "kind": kind, "category": category, "filename": filename})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
 
