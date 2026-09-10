@@ -9,16 +9,24 @@
         html, body { height: 100%; margin: 0; }
         body { font-family: 'Ubuntu', sans-serif; background: #070806; color: #e6e8e3; box-sizing: border-box; display: flex; flex-direction: column; }
 
-        .header-block { display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; border-bottom: 2px solid #2a4dad; }
-        h1 { color: #528eff; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(82, 142, 255, 0.3); }
+        .header-block { display: flex; align-items: center; justify-content: space-between; padding: 12px 25px; border-bottom: 2px solid #2a4dad; flex-wrap: wrap; gap: 10px; }
+        h1 { color: #528eff; margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(82, 142, 255, 0.3); }
         .action-btn { background: #131b2e; border: 1px solid #2a4dad; color: #e6e8e3; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
         .action-btn:hover { background: #1c2a47; border-color: #528eff; }
         .action-btn.active { background: #1c2a47; border-color: #528eff; color: #528eff; }
-        .layer-toggle { display: flex; gap: 8px; }
+        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .toolbar-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
         #map { flex: 1; min-height: 0; }
 
         .status-line { padding: 6px 25px; font-family: monospace; font-size: 0.75rem; color: #687259; border-top: 1px solid #23291e; }
+
+        .tool-panel { display: none; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 25px; font-family: monospace; font-size: 0.8rem; background: #0d0f0a; border-top: 1px solid #23291e; color: #b8c2b0; }
+        .tool-panel.visible { display: flex; }
+        .tool-panel input[type="text"] { background: #11120e; border: 1px solid #3a4031; color: #ffb000; padding: 5px 8px; border-radius: 4px; font-family: monospace; }
+        .tool-panel input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid #3a4031; border-radius: 4px; background: none; cursor: pointer; }
+        .tool-panel .action-btn { padding: 5px 10px; }
+        .elevation-caution { padding: 6px 25px; font-family: monospace; font-size: 0.7rem; color: #687259; font-style: italic; background: #0d0f0a; }
 
         /* MapLibre's own attribution/controls should stay legible against
            the dark theme rather than fight it. */
@@ -26,18 +34,46 @@
         .maplibregl-ctrl-attrib a { color: #87986a !important; }
         .maplibregl-popup-content { background: #131611 !important; color: #e6e8e3 !important; font-family: monospace; font-size: 0.8rem; }
         .maplibregl-popup-tip { border-top-color: #131611 !important; border-bottom-color: #131611 !important; }
+        .pin-popup-remove { margin-top: 6px; background: #2a1414; border: 1px solid #7a2d2d; color: #e6e8e3; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 0.72rem; }
+        .pin-popup-remove:hover { border-color: #ff3333; color: #ff5555; }
     </style>
 </head>
 <body>
     <div class="header-block">
         <h1>🗺️ PROJECT CITADEL // TACTICAL MAP</h1>
-        <div class="layer-toggle">
+        <div class="toolbar-row">
             <button class="action-btn active" id="btn-terrain" onclick="toggleTerrain()">Terrain</button>
+            <button class="action-btn" id="btn-pin" onclick="setTool('pin')">Drop Pin</button>
+            <button class="action-btn" id="btn-measure" onclick="setTool('measure')">Measure</button>
+            <button class="action-btn" id="btn-profile" onclick="setTool('profile')">Elevation Profile</button>
+            <button class="action-btn" onclick="exportPins('gpx')" id="btn-export-gpx">Export GPX</button>
+            <button class="action-btn" onclick="exportPins('kml')" id="btn-export-kml">Export KML</button>
             <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
         </div>
     </div>
 
     <div id="map"></div>
+
+    <div class="tool-panel" id="panel-pin">
+        <span>Click the map to drop a pin.</span>
+    </div>
+
+    <div class="tool-panel" id="panel-measure">
+        <span id="measure-readout">Click at least two points to measure distance.</span>
+        <button class="action-btn" onclick="undoMeasurePoint()">Undo Point</button>
+        <button class="action-btn" onclick="clearMeasure()">Clear</button>
+    </div>
+
+    <div class="tool-panel" id="panel-profile">
+        <span id="profile-readout">Click at least two points to define a route.</span>
+        <button class="action-btn" onclick="undoProfilePoint()">Undo Point</button>
+        <button class="action-btn" onclick="clearProfile()">Clear</button>
+        <button class="action-btn" onclick="computeElevationProfile()" id="btn-compute-profile">Compute Profile</button>
+    </div>
+    <div class="elevation-caution" id="elevation-caution" style="display:none;">
+        Sampled from the loaded DEM tiles only — doesn't account for trees, buildings, or Earth's curvature at range. Treat as a rough guide, not a surveyed reading.
+    </div>
+
     <div class="status-line" id="statusLine">Loading local tiles — comms_base.pmtiles / tactical_terrain.pmtiles (no internet required)...</div>
 
     <script src="vendor/maplibre/maplibre-gl.js"></script>
@@ -131,6 +167,7 @@
         const statusLine = document.getElementById('statusLine');
         map.on('load', () => {
             statusLine.textContent = 'Live — comms_base.pmtiles (roads/labels, z0-14) + tactical_terrain.pmtiles (elevation) — served locally, zero internet used.';
+            renderPins();
         });
         map.on('error', (e) => {
             // A missing/misnamed tile file surfaces here rather than a
@@ -147,6 +184,275 @@
             map.setLayoutProperty('hillshade', 'visibility', terrainOn ? 'visible' : 'none');
             document.getElementById('btn-terrain').classList.toggle('active', terrainOn);
         };
+
+        // ==================================================================
+        // TOOLS: personal pins, measurement, elevation profile, export.
+        // Deliberately local-only (localStorage, this browser), not synced
+        // anywhere -- this is a "mark up my own area" tool, not WayStation's
+        // radio-coordination pins (those live in its own SQLite-backed,
+        // mesh-synced map_markers table and have their own page). Kept
+        // separate on purpose: see the note in TacticalMapPanel.tsx.
+        // ==================================================================
+
+        let activeTool = 'none'; // 'none' | 'pin' | 'measure' | 'profile'
+        function setTool(tool) {
+            activeTool = activeTool === tool ? 'none' : tool;
+            ['pin', 'measure', 'profile'].forEach(t => {
+                document.getElementById('btn-' + t).classList.toggle('active', activeTool === t);
+                document.getElementById('panel-' + t).classList.toggle('visible', activeTool === t);
+            });
+            document.getElementById('elevation-caution').style.display = (activeTool === 'profile' && profileResult) ? 'block' : 'none';
+            if (activeTool !== 'measure') clearMeasure();
+            if (activeTool !== 'profile') clearProfile();
+        }
+
+        map.on('click', (e) => {
+            const point = { lat: e.lngLat.lat, lon: e.lngLat.lng };
+            if (activeTool === 'pin') {
+                addPinAt(point);
+            } else if (activeTool === 'measure') {
+                measurePoints.push(point);
+                renderMeasureLine();
+                updateMeasureReadout();
+            } else if (activeTool === 'profile') {
+                profilePoints.push(point);
+                renderProfileLine();
+                updateProfileReadout();
+            }
+        });
+
+        // ---- Personal pins (localStorage, colors + description) ----
+        const PIN_STORAGE_KEY = 'citadel_map_pins';
+        let pinMarkers = [];
+
+        function getPins() { return JSON.parse(localStorage.getItem(PIN_STORAGE_KEY) || '[]'); }
+        function savePins(list) { localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(list)); }
+
+        function addPinAt(point) {
+            const label = prompt('Description for this pin:');
+            if (label === null || !label.trim()) return;
+            const color = prompt('Pin color (name or hex, e.g. red, #33cc99):', '#e8b93f') || '#e8b93f';
+            const pin = { id: String(Date.now()), lat: point.lat, lon: point.lon, label: label.trim(), color: color.trim() };
+            const pins = getPins();
+            pins.push(pin);
+            savePins(pins);
+            renderPins();
+        }
+
+        function deletePin(id) {
+            savePins(getPins().filter(p => p.id !== id));
+            renderPins();
+        }
+
+        function renderPins() {
+            pinMarkers.forEach(m => m.remove());
+            pinMarkers = [];
+            for (const pin of getPins()) {
+                const content = document.createElement('div');
+                const text = document.createElement('div');
+                text.textContent = pin.label;
+                content.appendChild(text);
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'pin-popup-remove';
+                removeBtn.textContent = 'Remove pin';
+                removeBtn.onclick = () => deletePin(pin.id);
+                content.appendChild(removeBtn);
+
+                const marker = new maplibregl.Marker({ color: pin.color })
+                    .setLngLat([pin.lon, pin.lat])
+                    .setPopup(new maplibregl.Popup({ offset: 16 }).setDOMContent(content))
+                    .addTo(map);
+                pinMarkers.push(marker);
+            }
+        }
+
+        function downloadTextFile(filename, content, mime) {
+            const blob = new Blob([content], { type: mime });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+        function escapeXml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+        }
+        function exportPins(format) {
+            const pins = getPins();
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            if (format === 'gpx') {
+                const wpts = pins.map(p => `  <wpt lat="${p.lat}" lon="${p.lon}"><name>${escapeXml(p.label)}</name></wpt>`).join('\n');
+                downloadTextFile(`citadel-map-pins-${stamp}.gpx`,
+                    `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Project Citadel Tactical Map" xmlns="http://www.topografix.com/GPX/1/1">\n${wpts}\n</gpx>\n`,
+                    'application/gpx+xml');
+            } else {
+                const placemarks = pins.map(p => `    <Placemark><name>${escapeXml(p.label)}</name><Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>`).join('\n');
+                downloadTextFile(`citadel-map-pins-${stamp}.kml`,
+                    `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Document>\n${placemarks}\n  </Document>\n</kml>\n`,
+                    'application/vnd.google-earth.kml+xml');
+            }
+        }
+
+        // ---- Shared geometry: haversine distance, shoelace area ----
+        const EARTH_RADIUS_M = 6371000;
+        function haversineMeters(a, b) {
+            const toRad = d => d * Math.PI / 180;
+            const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+            return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
+        }
+        function pathLengthMeters(points) {
+            let total = 0;
+            for (let i = 1; i < points.length; i++) total += haversineMeters(points[i - 1], points[i]);
+            return total;
+        }
+        function polygonAreaSquareMeters(points) {
+            if (points.length < 3) return 0;
+            const toRad = d => d * Math.PI / 180;
+            const lat0 = toRad(points[0].lat);
+            const xy = points.map(p => [
+                toRad(p.lon - points[0].lon) * Math.cos(lat0) * EARTH_RADIUS_M,
+                toRad(p.lat - points[0].lat) * EARTH_RADIUS_M,
+            ]);
+            let sum = 0;
+            for (let i = 0; i < xy.length; i++) {
+                const [x1, y1] = xy[i], [x2, y2] = xy[(i + 1) % xy.length];
+                sum += x1 * y2 - x2 * y1;
+            }
+            return Math.abs(sum) / 2;
+        }
+        function formatDistance(m) {
+            const miles = m / 1609.344;
+            if (miles < 0.5) return `${Math.round(m * 3.28084)} ft`;
+            return `${miles.toFixed(2)} mi`;
+        }
+        function formatArea(m2) { return `${(m2 / 4046.8564224).toFixed(2)} acres`; }
+        function pointsToLineGeoJson(points) {
+            return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points.map(p => [p.lon, p.lat]) } };
+        }
+        function ensureLine(sourceId, layerId, color, points) {
+            const data = pointsToLineGeoJson(points);
+            const source = map.getSource(sourceId);
+            if (source) {
+                source.setData(data);
+            } else if (points.length > 0) {
+                map.addSource(sourceId, { type: 'geojson', data });
+                map.addLayer({ id: layerId, type: 'line', source: sourceId, paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [2, 1] } });
+            }
+        }
+
+        // ---- Measure tool ----
+        let measurePoints = [];
+        function renderMeasureLine() { ensureLine('measure-line', 'measure-line-layer', '#c9a227', measurePoints); }
+        function updateMeasureReadout() {
+            const el = document.getElementById('measure-readout');
+            if (measurePoints.length < 2) { el.textContent = 'Click at least two points to measure distance.'; return; }
+            let text = `Distance: ${formatDistance(pathLengthMeters(measurePoints))}`;
+            if (measurePoints.length >= 3) text += ` · Area: ${formatArea(polygonAreaSquareMeters(measurePoints))}`;
+            el.textContent = text;
+        }
+        function undoMeasurePoint() { measurePoints.pop(); renderMeasureLine(); updateMeasureReadout(); }
+        function clearMeasure() { measurePoints = []; renderMeasureLine(); updateMeasureReadout(); }
+
+        // ---- Elevation profile tool ----
+        let profilePoints = [];
+        let profileResult = null;
+        function renderProfileLine() { ensureLine('profile-line', 'profile-line-layer', '#2fb8c4', profilePoints); }
+        function updateProfileReadout() {
+            const el = document.getElementById('profile-readout');
+            if (profilePoints.length < 2) { el.textContent = 'Click at least two points to define a route.'; return; }
+            el.textContent = `${profilePoints.length} route points — ${formatDistance(pathLengthMeters(profilePoints))} total`;
+        }
+        function undoProfilePoint() { profilePoints.pop(); renderProfileLine(); updateProfileReadout(); }
+        function clearProfile() {
+            profilePoints = [];
+            profileResult = null;
+            renderProfileLine();
+            updateProfileReadout();
+            document.getElementById('elevation-caution').style.display = 'none';
+            const chart = document.getElementById('elevation-chart');
+            if (chart) chart.remove();
+        }
+        function sampleAlongPath(points, sampleCount) {
+            const cum = [0];
+            for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversineMeters(points[i - 1], points[i]));
+            const total = cum[cum.length - 1];
+            const samples = [];
+            for (let i = 0; i <= sampleCount; i++) {
+                const target = total * i / sampleCount;
+                let seg = 0;
+                while (seg < cum.length - 2 && cum[seg + 1] < target) seg++;
+                const segStart = cum[seg], segEnd = cum[seg + 1];
+                const t = segEnd > segStart ? (target - segStart) / (segEnd - segStart) : 0;
+                const a = points[seg], b = points[seg + 1];
+                samples.push({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t, distanceM: target });
+            }
+            return samples;
+        }
+        // Briefly enables MapLibre's terrain mode purely to borrow its
+        // tested tile-fetch/decode pipeline for queryTerrainElevation --
+        // never left on, pitch is never touched, toggled back off right
+        // after sampling so the map never visibly becomes a 3D view.
+        window.computeElevationProfile = async function () {
+            if (profilePoints.length < 2) return;
+            const btn = document.getElementById('btn-compute-profile');
+            btn.disabled = true;
+            btn.textContent = 'Sampling…';
+            try {
+                map.setTerrain({ source: 'terrain', exaggeration: 1 });
+                await new Promise(resolve => {
+                    map.once('idle', resolve);
+                    setTimeout(resolve, 4000);
+                });
+                const samples = sampleAlongPath(profilePoints, 40);
+                const result = samples.map(s => ({ distanceM: s.distanceM, elevationM: map.queryTerrainElevation([s.lon, s.lat]) }));
+                map.setTerrain(null);
+                if (result.every(r => r.elevationM === null)) {
+                    document.getElementById('profile-readout').textContent = 'No elevation data returned for this route.';
+                } else {
+                    profileResult = result;
+                    renderElevationChart(result);
+                    document.getElementById('elevation-caution').style.display = 'block';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Compute Profile';
+            }
+        };
+        function renderElevationChart(samples) {
+            const existing = document.getElementById('elevation-chart');
+            if (existing) existing.remove();
+            const known = samples.filter(s => s.elevationM !== null);
+            if (known.length < 2) return;
+            const width = 560, height = 100, padding = 24;
+            const minElev = Math.min(...known.map(s => s.elevationM));
+            const maxElev = Math.max(...known.map(s => s.elevationM));
+            const maxDist = samples[samples.length - 1].distanceM;
+            const elevRange = Math.max(1, maxElev - minElev);
+            const toX = d => padding + (d / maxDist) * (width - 2 * padding);
+            const toY = e => height - padding + 10 - ((e - minElev) / elevRange) * (height - 2 * padding);
+            let gainM = 0;
+            for (let i = 1; i < known.length; i++) { const d = known[i].elevationM - known[i - 1].elevationM; if (d > 0) gainM += d; }
+            const pathD = known.map((s, i) => `${i === 0 ? 'M' : 'L'} ${toX(s.distanceM).toFixed(1)} ${toY(s.elevationM).toFixed(1)}`).join(' ');
+
+            const wrap = document.createElement('div');
+            wrap.id = 'elevation-chart';
+            wrap.style.padding = '8px 25px';
+            wrap.style.background = '#0d0f0a';
+            wrap.style.borderTop = '1px solid #23291e';
+            wrap.innerHTML = `
+                <svg width="${width}" height="${height + 20}" viewBox="0 0 ${width} ${height + 20}">
+                    <path d="${pathD}" fill="none" stroke="#2fb8c4" stroke-width="2"/>
+                </svg>
+                <div style="font-family:monospace; font-size:0.72rem; color:#b8c2b0; display:flex; gap:16px;">
+                    <span>Min: ${Math.round(minElev * 3.28084)} ft</span>
+                    <span>Max: ${Math.round(maxElev * 3.28084)} ft</span>
+                    <span>Gain: ${Math.round(gainM * 3.28084)} ft</span>
+                </div>
+            `;
+            document.getElementById('map').insertAdjacentElement('afterend', wrap);
+        }
     </script>
 </body>
 </html>
