@@ -94,6 +94,26 @@
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track animal populations, health logs, feeding requirements, and production outputs.</p>
                 <button class="action-btn" onclick="openPanel('animalPanel')">Access Ledger</button>
             </div>
+            <div class="log-card">
+                <h2>💧 Water Storage <span id="water-alert-badge"></span></h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track drums, jugs, filters, and treated reserves, with rotation dates on anything that needs it.</p>
+                <button class="action-btn" onclick="openPanel('waterPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🖊️ Office & School Supplies <span id="office-alert-badge"></span></h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Paper, ink, workbooks, and general office/school stock levels.</p>
+                <button class="action-btn" onclick="openPanel('officePanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🧪 Fertilizers & Pesticides <span id="fertilizer-alert-badge"></span></h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track product stock, storage location, and expiration/potency dates.</p>
+                <button class="action-btn" onclick="openPanel('fertilizerPanel')">Access Ledger</button>
+            </div>
+            <div class="log-card">
+                <h2>🧊 Freezer Foods <span id="freezer-alert-badge"></span></h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Separate from shelf-stable Food Inventory — freezer contents have their own rotation dates.</p>
+                <button class="action-btn" onclick="openPanel('freezerPanel')">Access Ledger</button>
+            </div>
             <div class="log-card" style="border-color:#6b8e23; box-shadow: 0 0 15px rgba(107, 142, 35, 0.2);">
                 <h2 style="color:#87986a;">🌾 Botanical Garden Tracker</h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Query multi-year spring/fall garden data records, crop varieties, pests, fertilizers, and total yield weights.</p>
@@ -207,6 +227,90 @@
             </table>
         </div>
 
+        <!-- WATER LEDGER -->
+        <div id="waterPanel" class="viewport-panel">
+            <h2>💧 Water Storage Ledger</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query containers or sources..." oninput="renderLedger('water', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">POTABLE RESERVE MATRIX</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_water_desc" placeholder="Water Type / Container..." style="flex-grow:2;">
+                <input type="text" id="add_water_loc" placeholder="Location..." style="flex-grow:1;">
+                <input type="number" id="add_water_qty" placeholder="Qty (gal / units)..." style="width: 130px;">
+                <input type="text" id="add_water_exp" placeholder="Rotation / Treatment Date..." style="flex-grow:1;">
+                <input type="number" id="add_water_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <button class="action-btn" onclick="addNewItem('water')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Water Type / Container</th><th>Location</th><th>Quantity</th><th>Rotation / Treatment Date</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="waterTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- OFFICE & SCHOOL SUPPLIES LEDGER -->
+        <div id="officePanel" class="viewport-panel">
+            <h2>🖊️ Office & School Supplies Ledger</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query supplies..." oninput="renderLedger('office', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">EDUCATION & OFFICE STOCK POOL</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_office_desc" placeholder="Item / Description..." style="flex-grow:2;">
+                <input type="text" id="add_office_loc" placeholder="Location..." style="flex-grow:1;">
+                <input type="number" id="add_office_qty" placeholder="Qty..." style="width: 100px;">
+                <input type="text" id="add_office_exp" placeholder="Notes / Status..." style="flex-grow:1;">
+                <input type="number" id="add_office_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <button class="action-btn" onclick="addNewItem('office')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity</th><th>Notes / Status</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="officeTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- FERTILIZERS & PESTICIDES LEDGER -->
+        <div id="fertilizerPanel" class="viewport-panel">
+            <h2>🧪 Fertilizers & Pesticides Ledger</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query products..." oninput="renderLedger('fertilizer', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">AGRICULTURAL CHEMICAL REGISTRY</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_fertilizer_desc" placeholder="Product Name / Type..." style="flex-grow:2;">
+                <input type="text" id="add_fertilizer_loc" placeholder="Storage Location..." style="flex-grow:1;">
+                <input type="number" id="add_fertilizer_qty" placeholder="Qty (lbs / gal)..." style="width: 130px;">
+                <input type="text" id="add_fertilizer_exp" placeholder="Exp Date / Potency Status..." style="flex-grow:1;">
+                <input type="number" id="add_fertilizer_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <button class="action-btn" onclick="addNewItem('fertilizer')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Product Name / Type</th><th>Storage Location</th><th>Quantity</th><th>Exp Date / Potency Status</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="fertilizerTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- FREEZER FOODS LEDGER -->
+        <div id="freezerPanel" class="viewport-panel">
+            <h2>🧊 Freezer Foods Ledger</h2>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" placeholder="🔍 Query freezer contents..." oninput="renderLedger('freezer', this.value)">
+                <span style="font-family: monospace; font-size: 0.8rem; color: #687259;">COLD STORAGE MATRIX</span>
+            </div>
+            <div class="add-ribbon">
+                <input type="text" id="add_freezer_desc" placeholder="Item / Description..." style="flex-grow:2;">
+                <input type="text" id="add_freezer_loc" placeholder="Freezer / Shelf..." style="flex-grow:1;">
+                <input type="number" id="add_freezer_qty" placeholder="Qty..." style="width: 100px;">
+                <input type="text" id="add_freezer_exp" placeholder="Frozen-On / Exp Date..." style="flex-grow:1;">
+                <input type="number" id="add_freezer_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <button class="action-btn" onclick="addNewItem('freezer')">+ Commit Entry</button>
+            </div>
+            <table>
+                <thead><tr><th>Item / Description</th><th>Freezer / Shelf</th><th>Quantity</th><th>Frozen-On / Exp Date</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <tbody id="freezerTableBody"></tbody>
+            </table>
+        </div>
+
         <!-- ADVANCED BOTANICAL GARDEN LEDGER (YEAR-OVER-YEAR TRACKER) -->
         <div id="gardenPanel" class="viewport-panel" style="border-color:#6b8e23;">
             <h2>🌾 Year-Over-Year Botanical Garden Matrix Ledger</h2>
@@ -265,7 +369,7 @@
     </div>
     <script>
         // Core Memory Containers
-        let inventoryData = { food: [], fuel: [], ppe: [], orchard: [], animal: [] };
+        let inventoryData = { food: [], fuel: [], ppe: [], orchard: [], animal: [], water: [], office: [], fertilizer: [], freezer: [] };
         let activeGardenList = [];
 
         // Fetch category data from SQLite via Python API
