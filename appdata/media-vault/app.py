@@ -33,7 +33,19 @@ def init_db():
             exp TEXT
         )
     ''')
-    
+
+    # min_qty (low-stock threshold, real per-item data): added after this
+    # table already had real rows in it, so CREATE TABLE IF NOT EXISTS above
+    # is a no-op on an existing install -- has to be a real ALTER TABLE, not
+    # just a wider CREATE statement, or an already-running Citadel would
+    # never actually gain the column. Defaults to 0 ("not tracked") rather
+    # than guessing a universal low-stock number: a homestead's quantities
+    # span 50lbs-of-rice to 3-tourniquets to 12-chickens, and a single fixed
+    # threshold would misfire constantly across that range.
+    cursor.execute("PRAGMA table_info(inventory)")
+    if "min_qty" not in [row[1] for row in cursor.fetchall()]:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN min_qty INTEGER DEFAULT 0")
+
     # Table for Botanical Garden Year-Over-Year Records
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS garden (
@@ -156,10 +168,15 @@ def save_inventory_item():
     except (ValueError, TypeError):
         qty_sanitized = 0
 
+    try:
+        min_qty_sanitized = int(data.get('min_qty', 0))
+    except (ValueError, TypeError):
+        min_qty_sanitized = 0
+
     cursor.execute('''
-        INSERT OR REPLACE INTO inventory (id, category, desc, loc, qty, exp)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (str(data['id']), data['category'], data['desc'], data['loc'], qty_sanitized, data['exp']))
+        INSERT OR REPLACE INTO inventory (id, category, desc, loc, qty, exp, min_qty)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (str(data['id']), data['category'], data['desc'], data['loc'], qty_sanitized, data['exp'], min_qty_sanitized))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})

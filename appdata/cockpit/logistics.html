@@ -48,6 +48,14 @@
 
         .select-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .selector { background: #11120e; border: 1px solid #4b533f; color: #ffb000; padding: 8px; font-family: monospace; border-radius: 4px; outline: none; }
+
+        .min-qty-input { width: 50px; background: transparent; border: none; border-bottom: 1px dashed #4b533f; color: #aea79f; font-size: 0.85rem; text-align: center; outline: none; }
+        .min-qty-input:focus { background: #1c1f16; color: #ffb000; border-bottom-color: #a4b38a; }
+        .badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; font-family: monospace; text-transform: uppercase; white-space: nowrap; }
+        .badge-ok { background: rgba(89,214,124,0.15); color: #59d67c; border: 1px solid #59d67c; }
+        .badge-warn { background: rgba(255,176,0,0.15); color: #ffb000; border: 1px solid #ffb000; }
+        .badge-bad { background: rgba(224,82,82,0.15); color: #e05252; border: 1px solid #e05252; }
+        .tile-alert-badge { background: rgba(255,176,0,0.15); color: #ffb000; border: 1px solid #ffb000; border-radius: 10px; font-size: 0.7rem; padding: 2px 8px; font-family: monospace; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -62,27 +70,27 @@
         <!-- 3-COLUMN LOGISTICS EXECUTIVE DECK -->
         <div class="logistics-grid">
             <div class="log-card">
-                <h2>🥫 Food Inventory</h2>
+                <h2>🥫 Food Inventory <span id="food-alert-badge"></span></h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track home provisions, freeze-dried storage stacks, shelf-life matrices, and calorie indexes.</p>
                 <button class="action-btn" onclick="openPanel('foodPanel')">Access Ledger</button>
             </div>
             <div class="log-card">
-                <h2>⛽ Fuel Resources</h2>
+                <h2>⛽ Fuel Resources <span id="fuel-alert-badge"></span></h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Monitor stabilized gasoline reserves, diesel drums, propane levels, and rotation timelines.</p>
                 <button class="action-btn" onclick="openPanel('fuelPanel')">Access Ledger</button>
             </div>
             <div class="log-card">
-                <h2>🥽 PPE & Equipment</h2>
+                <h2>🥽 PPE & Equipment <span id="ppe-alert-badge"></span></h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Manage personal protective kits, gas mask canisters, respirator gear, and filtration items.</p>
                 <button class="action-btn" onclick="openPanel('ppePanel')">Access Ledger</button>
             </div>
             <div class="log-card">
-                <h2>🍏 Orchard & Fruit Trees</h2>
+                <h2>🍏 Orchard & Fruit Trees <span id="orchard-alert-badge"></span></h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Log individual tree counts, varieties, pruning records, watering routines, and seasonal health charts.</p>
                 <button class="action-btn" onclick="openPanel('orchardPanel')">Access Ledger</button>
             </div>
             <div class="log-card">
-                <h2>🐓 Livestock & Animals</h2>
+                <h2>🐓 Livestock & Animals <span id="animal-alert-badge"></span></h2>
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Track animal populations, health logs, feeding requirements, and production outputs.</p>
                 <button class="action-btn" onclick="openPanel('animalPanel')">Access Ledger</button>
             </div>
@@ -107,10 +115,11 @@
                 <input type="text" id="add_food_loc" placeholder="Location..." style="flex-grow:1;">
                 <input type="number" id="add_food_qty" placeholder="Qty..." style="width: 80px;">
                 <input type="text" id="add_food_exp" placeholder="Exp Date / Status..." style="flex-grow:1;">
+                <input type="number" id="add_food_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
                 <button class="action-btn" onclick="addNewItem('food')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="foodTableBody"></tbody>
             </table>
         </div>
@@ -127,10 +136,11 @@
                 <input type="text" id="add_fuel_loc" placeholder="Container Profile..." style="flex-grow:1;">
                 <input type="number" id="add_fuel_qty" placeholder="Total Volume (Gal)..." style="width: 150px;">
                 <input type="text" id="add_fuel_exp" placeholder="Rotation Date..." style="flex-grow:1;">
+                <input type="number" id="add_fuel_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
                 <button class="action-btn" onclick="addNewItem('fuel')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Fuel Type</th><th>Container Profile</th><th>Total Volume</th><th>Rotation Date</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Fuel Type</th><th>Container Profile</th><th>Total Volume</th><th>Rotation Date</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="fuelTableBody"></tbody>
             </table>
         </div>
@@ -147,10 +157,11 @@
                 <input type="text" id="add_ppe_loc" placeholder="Kit Size..." style="flex-grow:1;">
                 <input type="number" id="add_ppe_qty" placeholder="Quantity..." style="width: 100px;">
                 <input type="text" id="add_ppe_exp" placeholder="Inspection Status..." style="flex-grow:1;">
+                <input type="number" id="add_ppe_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
                 <button class="action-btn" onclick="addNewItem('ppe')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Equipment Profile</th><th>Kit Size</th><th>Quantity</th><th>Inspection Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Equipment Profile</th><th>Kit Size</th><th>Quantity</th><th>Inspection Status</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="ppeTableBody"></tbody>
             </table>
         </div>
@@ -166,10 +177,11 @@
                 <input type="text" id="add_orchard_loc" placeholder="Tree Variety..." style="flex-grow:1;">
                 <input type="number" id="add_orchard_qty" placeholder="Count..." style="width: 80px;">
                 <input type="text" id="add_orchard_exp" placeholder="Fertilizer / Health Note..." style="flex-grow:2;">
+                <input type="number" id="add_orchard_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when count drops to or below this">
                 <button class="action-btn" onclick="addNewItem('orchard')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Tree ID / Plot Location</th><th>Tree Variety</th><th>Count</th><th>Fertilizer / Health Note</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Tree ID / Plot Location</th><th>Tree Variety</th><th>Count</th><th>Fertilizer / Health Note</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="orchardTableBody"></tbody>
             </table>
         </div>
@@ -186,10 +198,11 @@
                 <input type="text" id="add_animal_loc" placeholder="Feed Log / Ration..." style="flex-grow:2;">
                 <input type="number" id="add_animal_qty" placeholder="Head Count..." style="width: 120px;">
                 <input type="text" id="add_animal_exp" placeholder="Production Yield Info..." style="flex-grow:2;">
+                <input type="number" id="add_animal_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when head count drops to or below this">
                 <button class="action-btn" onclick="addNewItem('animal')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Animal Group / Breed</th><th>Feed Log / Ration Metric</th><th>Total Head Count</th><th>Production Yield Info</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Animal Group / Breed</th><th>Feed Log / Ration Metric</th><th>Total Head Count</th><th>Production Yield Info</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="animalTableBody"></tbody>
             </table>
         </div>
@@ -261,7 +274,20 @@
                 const res = await fetch(`/api/inventory/${cat}`);
                 inventoryData[cat] = await res.json();
                 renderLedger(cat);
+                updateTileBadge(cat);
             } catch (err) { console.error(`Failed fetching ${cat}:`, err); }
+        }
+
+        function updateTileBadge(cat) {
+            const el = document.getElementById(`${cat}-alert-badge`);
+            if (!el) return;
+            const needsAttention = inventoryData[cat].filter(item => {
+                const minQty = parseInt(item.min_qty) || 0;
+                if (minQty > 0 && item.qty <= minQty) return true;
+                const status = expiryStatus(item.exp);
+                return status === 'expired' || status === 'soon';
+            }).length;
+            el.innerHTML = needsAttention > 0 ? `<span class="tile-alert-badge">${needsAttention} NEED ATTENTION</span>` : '';
         }
 
         // Global Boot Loader Loop
@@ -275,14 +301,46 @@
             document.getElementById(id).style.display = 'block';
         }
 
+        // Expiration parsing is deliberately generic, not per-category: the
+        // "exp" column is relabeled per category (Exp Date for food, Rotation
+        // Date for fuel, Inspection Status for PPE, a free-text health note
+        // for orchard/animal). Rather than hardcoding which categories get an
+        // expiry badge, this just tries to parse whatever's actually there --
+        // a real date shows a real badge, free text like "Pass" or a health
+        // note safely parses as Invalid Date and shows nothing, which is the
+        // correct behavior either way without categoryspecific logic.
+        function expiryStatus(exp) {
+            const d = new Date(exp);
+            if (isNaN(d.getTime())) return null;
+            const days = Math.floor((d - new Date()) / 86400000);
+            if (days < 0) return 'expired';
+            if (days <= 60) return 'soon';
+            return 'ok';
+        }
+
+        // Low-stock uses a real per-item min_qty field, not a fixed number --
+        // a homestead's quantities span 50lbs-of-rice to 3-tourniquets to
+        // 12-chickens, so one universal threshold would misfire constantly.
+        // min_qty of 0 (the default for every item until someone sets it)
+        // means "not tracked," not "always out of stock."
+        function statusBadges(item) {
+            const badges = [];
+            const minQty = parseInt(item.min_qty) || 0;
+            if (minQty > 0 && item.qty <= minQty) badges.push('<span class="badge badge-warn">LOW STOCK</span>');
+            const status = expiryStatus(item.exp);
+            if (status === 'expired') badges.push('<span class="badge badge-bad">EXPIRED</span>');
+            else if (status === 'soon') badges.push('<span class="badge badge-warn">EXPIRING SOON</span>');
+            return badges.join(' ') || '<span class="badge badge-ok">OK</span>';
+        }
+
         function renderLedger(cat, query = "") {
             const tbody = document.getElementById(`${cat}TableBody`);
             if (!tbody) return;
             tbody.innerHTML = "";
 
             const normalizedQuery = query.toLowerCase();
-            const filtered = inventoryData[cat].filter(item => 
-                item.desc.toLowerCase().includes(normalizedQuery) || 
+            const filtered = inventoryData[cat].filter(item =>
+                item.desc.toLowerCase().includes(normalizedQuery) ||
                 item.loc.toLowerCase().includes(normalizedQuery) ||
                 item.exp.toLowerCase().includes(normalizedQuery)
             );
@@ -298,6 +356,8 @@
                         <button class="qty-btn" onclick="adjustQty('${cat}', '${item.id}', 1)">+</button>
                     </td>
                     <td><input type="text" class="table-input" value="${item.exp}" onchange="updateItemValue('${cat}', '${item.id}', 'exp', this.value)"></td>
+                    <td><input type="number" class="min-qty-input" value="${item.min_qty || 0}" min="0" onchange="updateItemValue('${cat}', '${item.id}', 'min_qty', this.value)"></td>
+                    <td>${statusBadges(item)}</td>
                     <td><button class="del-btn" onclick="deleteItem('${cat}', '${item.id}')">Wipe</button></td>
                 `;
                 tbody.appendChild(tr);
@@ -313,6 +373,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...item, category: cat })
                 });
+                renderLedger(cat, document.querySelector(`#${cat}Panel .search-bar`)?.value || '');
+                updateTileBadge(cat);
             }
         }
 
@@ -322,6 +384,7 @@
                 const newQty = Math.max(0, parseInt(item.qty || 0) + amount);
                 updateItemValue(cat, id, 'qty', newQty);
                 renderLedger(cat);
+                updateTileBadge(cat);
             }
         }
 
@@ -330,6 +393,7 @@
             const locEl = document.getElementById(`add_${cat}_loc`);
             const qtyEl = document.getElementById(`add_${cat}_qty`);
             const expEl = document.getElementById(`add_${cat}_exp`);
+            const minEl = document.getElementById(`add_${cat}_min`);
 
 if (!descEl.value.trim()) { alert("CRITICAL: DESCRIPTION FIELD CANNOT BE EMPTY."); return; }
 if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0; }
@@ -340,7 +404,8 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
                 desc: descEl.value.trim(),
                 loc: locEl.value.trim() || "Unassigned",
                 qty: parseInt(qtyEl.value) || 0,
-                exp: expEl.value.trim() || "N/A"
+                exp: expEl.value.trim() || "N/A",
+                min_qty: parseInt(minEl.value) || 0
             };
 
             await fetch('/api/inventory', {
@@ -349,7 +414,7 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
                 body: JSON.stringify(newItem)
             });
 
-            descEl.value = ""; locEl.value = ""; qtyEl.value = ""; expEl.value = "";
+            descEl.value = ""; locEl.value = ""; qtyEl.value = ""; expEl.value = ""; minEl.value = "";
             fetchCategory(cat);
         }
 
