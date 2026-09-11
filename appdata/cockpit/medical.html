@@ -918,7 +918,12 @@
         initTrainingNotes();
         pollHealth();
         setInterval(pollHealth, 30000);
-        showTab(localStorage.getItem('citadel_med_lasttab') || 'overview');
+        // Deep-link support (e.g. medical.html#supplies from the cockpit's
+        // Supply Status strip) -- takes priority over the remembered last
+        // tab, since arriving via a red-light click means "show me the
+        // problem now," not "resume where I left off."
+        const requestedTab = location.hash.replace('#', '');
+        showTab(document.getElementById('tab-' + requestedTab) ? requestedTab : (localStorage.getItem('citadel_med_lasttab') || 'overview'));
     </script>
 </body>
 </html>

@@ -294,6 +294,13 @@
         function initLedgerMatrix() {
             Object.keys(inventoryData).forEach(cat => fetchCategory(cat));
             loadGardenLedger();
+            // Deep-link support (e.g. logistics.html#food from the cockpit's
+            // Supply Status strip) -- jumps straight to the right ledger
+            // instead of landing on the tile grid every time.
+            const requested = location.hash.replace('#', '');
+            if (requested && document.getElementById(requested + 'Panel')) {
+                openPanel(requested + 'Panel');
+            }
         }
 
         function openPanel(id) {
