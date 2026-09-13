@@ -64,7 +64,7 @@
 
         <div class="panel">
             <h2>Restore From Upload</h2>
-            <div class="note" style="margin-bottom:14px;">Restoring <b>overwrites your current live data</b> with whatever's in the backup. A safety snapshot of your current state is always taken automatically first, so this is never a one-way door — but treat it as a real, deliberate action, not a casual click.</div>
+            <div class="note" style="margin-bottom:14px;">Restoring <b>overwrites your current live data</b> with whatever's in the backup. A safety snapshot of your current state is always taken automatically first, so this is never a one-way door — but treat it as a real, deliberate action, not a casual click. <b>After any restore, run <code>docker compose restart</code> for the whole fleet (no service name)</b> — other containers that share a restored directory (e.g. the cockpit dashboard) can otherwise show a stale/empty view until restarted, even though the underlying data restored correctly.</div>
             <input type="file" id="restoreFileInput" accept=".tar.gz" style="margin-bottom:10px; display:block; color: var(--text-dim);">
             <button class="row-btn" style="border-color:var(--red); color:var(--red);" onclick="restoreFromUpload()">Restore From This File</button>
             <div id="restoreStatus" class="note"></div>
