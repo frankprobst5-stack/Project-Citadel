@@ -27,6 +27,12 @@
         .dot-gray { background: var(--gray); }
         .note { font-size: 0.78rem; color: var(--text-faint); line-height: 1.5; margin-top: 4px; }
         code { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 3px; padding: 1px 5px; }
+        .row-btn { background: var(--panel-alt, var(--bg)); border: 1px solid var(--border); color: var(--text); font-family: monospace; font-size: 0.8rem; text-transform: uppercase; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        .row-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .row-btn.small { padding: 4px 10px; font-size: 0.72rem; margin-left: 8px; }
+        .backup-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 0.82rem; border-bottom: 1px solid var(--border-dim); }
+        .backup-row:last-child { border-bottom: none; }
+        .backup-meta { color: var(--text-dim); font-family: monospace; font-size: 0.75rem; }
     </style>
 </head>
 <body>
@@ -45,14 +51,29 @@
         <div class="panel">
             <h2>Live Service Diagnostics</h2>
             <div id="diagList"></div>
-            <div class="note">These checks run the same reachability probes as the cockpit health strip. This page does not yet support editing networking, integrations, or backup configuration — that's not wired up, shown here honestly rather than with disabled-looking controls that imply it almost works.</div>
+            <div class="note">These checks run the same reachability probes as the cockpit health strip. This page does not yet support editing networking or integrations — that's not wired up, shown here honestly rather than with disabled-looking controls that imply it almost works.</div>
+        </div>
+
+        <div class="panel">
+            <h2>Backups</h2>
+            <div class="note" style="margin-bottom:14px;">Backs up everything under <code>appdata/</code> plus <code>.env</code>, except large/regenerable content (downloaded AI models, the Kolibri course library, your media vault's own video/audio/PDF library). Backup files contain real secrets (API tokens, your exact station location if set) — store them somewhere secure, not casually shared.</div>
+            <button class="row-btn" id="createBackupBtn" onclick="createBackup()">Create Backup Now</button>
+            <div id="backupCreateStatus" class="note"></div>
+            <div id="backupList" style="margin-top:14px;">Loading...</div>
+        </div>
+
+        <div class="panel">
+            <h2>Restore From Upload</h2>
+            <div class="note" style="margin-bottom:14px;">Restoring <b>overwrites your current live data</b> with whatever's in the backup. A safety snapshot of your current state is always taken automatically first, so this is never a one-way door — but treat it as a real, deliberate action, not a casual click.</div>
+            <input type="file" id="restoreFileInput" accept=".tar.gz" style="margin-bottom:10px; display:block; color: var(--text-dim);">
+            <button class="row-btn" style="border-color:var(--red); color:var(--red);" onclick="restoreFromUpload()">Restore From This File</button>
+            <div id="restoreStatus" class="note"></div>
         </div>
 
         <div class="panel">
             <h2>Not Monitored (no backend yet)</h2>
             <div class="row"><span class="label">Disk / storage usage</span><span class="value">— no endpoint exposes this</span></div>
             <div class="row"><span class="label">WayStation running state</span><span class="value">— native app, not observable from a browser page</span></div>
-            <div class="row"><span class="label">Backup age</span><span class="value">— no backup-timestamp endpoint exists</span></div>
         </div>
     </div>
 
@@ -103,6 +124,109 @@
         }
 
         runDiagnostics();
+
+        // ---- Backups ----
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+            return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+        }
+
+        async function loadBackupList() {
+            const box = document.getElementById('backupList');
+            try {
+                const res = await fetch('/api/backup/list', { cache: 'no-store' });
+                const backups = await res.json();
+                if (!backups.length) {
+                    box.innerHTML = '<div class="note">No backups yet — click "Create Backup Now" above.</div>';
+                    return;
+                }
+                box.innerHTML = backups.map(b => `
+                    <div class="backup-row">
+                        <div>
+                            <div>${b.filename}</div>
+                            <div class="backup-meta">${b.created} — ${formatBytes(b.size_bytes)}</div>
+                        </div>
+                        <div>
+                            <a href="/api/backup/download/${encodeURIComponent(b.filename)}"><button class="row-btn small">Download</button></a>
+                            <button class="row-btn small" style="border-color:var(--red); color:var(--red);" onclick="restoreFromExisting('${b.filename}')">Restore</button>
+                            <button class="row-btn small" onclick="deleteBackup('${b.filename}')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = '<div class="note" style="color:var(--red);">Could not load backup list.</div>';
+            }
+        }
+
+        async function createBackup() {
+            const btn = document.getElementById('createBackupBtn');
+            const status = document.getElementById('backupCreateStatus');
+            btn.disabled = true;
+            status.textContent = 'Creating backup — this can take a while depending on how much data you have...';
+            try {
+                const res = await fetch('/api/backup/create', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    status.textContent = `Created ${data.filename} (${formatBytes(data.size_bytes)}).`;
+                    loadBackupList();
+                } else {
+                    status.textContent = `Failed: ${data.detail || 'unknown error'}`;
+                }
+            } catch (e) {
+                status.textContent = 'Request failed — see console.';
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteBackup(filename) {
+            if (!confirm(`Delete ${filename}? This cannot be undone.`)) return;
+            await fetch(`/api/backup/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+            loadBackupList();
+        }
+
+        async function doRestore(formData, label) {
+            const status = document.getElementById('restoreStatus');
+            if (!confirm(
+                `This will OVERWRITE your current live data with ${label}.\n\n` +
+                `A safety snapshot of what you have RIGHT NOW will be taken automatically first, ` +
+                `so this can be undone -- but it will still replace your data immediately.\n\n` +
+                `Continue?`
+            )) return;
+            status.textContent = 'Restoring — taking a safety snapshot first, then restoring...';
+            try {
+                const res = await fetch('/api/backup/restore', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    status.innerHTML = `<span style="color:var(--green);">${data.detail}</span>`;
+                    loadBackupList();
+                } else {
+                    status.innerHTML = `<span style="color:var(--red);">Failed: ${data.detail || 'unknown error'}</span>`;
+                }
+            } catch (e) {
+                status.innerHTML = '<span style="color:var(--red);">Request failed — see console.</span>';
+                console.error(e);
+            }
+        }
+
+        function restoreFromExisting(filename) {
+            const formData = new FormData();
+            formData.append('filename', filename);
+            doRestore(formData, filename);
+        }
+
+        function restoreFromUpload() {
+            const input = document.getElementById('restoreFileInput');
+            if (!input.files.length) { alert('Choose a .tar.gz backup file first.'); return; }
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            doRestore(formData, `the uploaded file "${input.files[0].name}"`);
+        }
+
+        loadBackupList();
     </script>
 </body>
 </html>

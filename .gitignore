@@ -17,6 +17,11 @@ appdata/cockpit/station-config.json
 # Packaged distributable — not source, regenerate from the repo instead.
 citadel.zip
 
+# Real backup archives (created via Settings -> Backups) -- contain
+# most of appdata/ plus .env (API tokens, real station location), never
+# belongs in git regardless of how the rest of appdata/ is handled.
+backups/
+
 # Runtime data every bundled service writes into appdata/ once running —
 # none of this belongs in git (media libraries, model weights, chat
 # history, encyclopedia archives, etc. are all real user data, not code).

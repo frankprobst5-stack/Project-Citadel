@@ -30,6 +30,7 @@ fi
 mkdir -p appdata/kiwix-library appdata/kolibri_home appdata/ollama appdata/open-webui appdata/flatnotes
 mkdir -p appdata/media-vault/videos appdata/media-vault/mp3s appdata/media-vault/pdfs appdata/media-vault/notes-data
 mkdir -p appdata/mealie/data appdata/whisper-models appdata/cloud9/data appdata/cloud9/models
+mkdir -p backups
 
 echo "Starting Citadel — this pulls a handful of container images the first"
 echo "time, so it may take a few minutes..."

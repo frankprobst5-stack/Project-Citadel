@@ -139,6 +139,33 @@ services:
       - ./appdata/media-vault/mp3s:/app/mp3s
       - ./appdata/media-vault/pdfs:/app/pdfs
       - ./appdata/media-vault/notes-data:/app/notes-data
+      # Real backup/restore (/api/backup/*), added 2026-09-13 -- vault-api
+      # needs to see the OTHER services' real data (it only had its own
+      # ./appdata/media-vault before) to actually back up more than
+      # itself. Read-write on purpose: restore has to be able to write
+      # into these too. Backups are stored at ./backups (repo root, NOT
+      # under ./appdata) specifically so a backup archive never ends up
+      # recursively containing earlier backups of itself.
+      #
+      # CRITICAL: these three mount at container ROOT paths, deliberately
+      # NOT nested under /app. /app is ITSELF a bind mount of
+      # ./appdata/media-vault -- a live bug this session mounted new
+      # paths under /app/... instead, which meant (a) Docker created
+      # mount-point placeholder files/dirs for the nested mounts by
+      # writing them onto /app's own backing host directory, littering
+      # ./appdata/media-vault with junk, and (b) far worse, restoring
+      # walked into what LOOKED like a separate "/app/citadel-appdata/
+      # media-vault" path but was actually the exact same host directory
+      # as /app itself -- rmtree-ing the running Flask process's own
+      # working directory mid-request, which really deleted backup.py
+      # and test_transcription.py before failing with "Resource busy".
+      # Root-level paths here can never nest inside another mount this
+      # container has. backup.py's own EXCLUDE_DIRS additionally excludes
+      # "media-vault" from ever being walked via citadel-appdata at all,
+      # as defense in depth -- see that file's module docstring.
+      - ./appdata:/citadel-appdata
+      - ./.env:/citadel-appdata-env
+      - ./backups:/citadel-backups
     environment:
       # Lets /api/pantry-check (app.py) call the mealie container below
       # server-to-server -- see that route's own comment for why this

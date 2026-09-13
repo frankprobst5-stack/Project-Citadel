@@ -11,6 +11,7 @@ from scanner_config import (
     validate_talkgroups_csv,
 )
 from transcription import is_safe_filename, list_recordings, transcribe_file
+import backup as backup_module
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -561,6 +562,115 @@ def upload_media(kind, category):
     dest_path = os.path.join(dest_dir, filename)
     upload.save(dest_path)
     return jsonify({"status": "success", "kind": kind, "category": category, "filename": filename})
+
+# --- BACKUP / RESTORE ---
+# Real logic lives in backup.py (independently unit-tested, including a
+# genuine path-traversal/"zip-slip" rejection test, and a regression
+# test for the real mount-overlap data-loss bug found live 2026-09-13 --
+# see that file's module docstring for the full story) -- these routes
+# are thin wrappers. Mounted at container ROOT paths (docker-compose.yml
+# has the full reasoning), deliberately NOT nested under /app, since
+# /app is itself a bind mount of this exact appdata/media-vault
+# directory.
+CITADEL_APPDATA_ROOT = "/citadel-appdata"
+CITADEL_ENV_PATH = "/citadel-appdata-env"
+BACKUP_DIR = "/citadel-backups"
+RESTORE_STAGING_DIR = "/citadel-restore-staging"
+
+# citadel.db and notes-data are the only real user data actually inside
+# appdata/media-vault (everything else there is source code, or the
+# already-excluded video/audio/PDF library) -- addressed here through
+# vault-api's OWN existing /app mount (safe: a single file replace and a
+# single purpose-built directory replace, neither of which is the
+# process's own working directory), never through CITADEL_APPDATA_ROOT's
+# generic walk. See backup.py's module docstring for why that distinction
+# is load-bearing, not stylistic.
+BACKUP_EXTRA_PATHS = {
+    "appdata/media-vault/citadel.db": "/app/citadel.db",
+    "appdata/media-vault/notes-data": "/app/notes-data",
+}
+
+
+@app.route('/api/backup/create', methods=['POST'])
+def api_create_backup():
+    filename, _, size = backup_module.create_backup(
+        CITADEL_APPDATA_ROOT, CITADEL_ENV_PATH, BACKUP_DIR, extra_paths=BACKUP_EXTRA_PATHS,
+    )
+    return jsonify({"status": "success", "filename": filename, "size_bytes": size})
+
+
+@app.route('/api/backup/list', methods=['GET'])
+def api_list_backups():
+    return jsonify(backup_module.list_backups(BACKUP_DIR))
+
+
+@app.route('/api/backup/download/<filename>', methods=['GET'])
+def api_download_backup(filename):
+    if not is_safe_filename(filename) or not filename.endswith(".tar.gz"):
+        return jsonify({"error": "invalid filename"}), 400
+    return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
+
+
+@app.route('/api/backup/delete/<filename>', methods=['DELETE'])
+def api_delete_backup(filename):
+    if not is_safe_filename(filename) or not filename.endswith(".tar.gz"):
+        return jsonify({"error": "invalid filename"}), 400
+    full_path = os.path.join(BACKUP_DIR, filename)
+    if os.path.exists(full_path):
+        os.remove(full_path)
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/backup/restore', methods=['POST'])
+def api_restore_backup():
+    """Restores from either an uploaded .tar.gz (multipart field
+    "file") or an existing on-server backup (form field "filename").
+    Always creates a fresh safety-snapshot backup of the CURRENT state
+    first -- a restore should never be a one-way door. Rejects (400,
+    without touching anything) any archive backup_module.restore_backup
+    flags as containing a path-traversal entry."""
+    try:
+        backup_module.create_backup(CITADEL_APPDATA_ROOT, CITADEL_ENV_PATH, BACKUP_DIR,
+                                     extra_paths=BACKUP_EXTRA_PATHS, timestamp=None)
+    except Exception as e:
+        return jsonify({"status": "error", "detail": f"safety snapshot failed, aborting restore: {e}"}), 500
+
+    cleanup_path = None
+    if 'file' in request.files:
+        upload = request.files['file']
+        filename = upload.filename or ""
+        if not is_safe_filename(filename) or not filename.endswith('.tar.gz'):
+            return jsonify({"status": "error", "detail": "invalid backup file"}), 400
+        archive_path = os.path.join(BACKUP_DIR, f"_restore_upload_{filename}")
+        upload.save(archive_path)
+        cleanup_path = archive_path
+    else:
+        filename = request.form.get('filename', '')
+        if not is_safe_filename(filename) or not filename.endswith('.tar.gz'):
+            return jsonify({"status": "error", "detail": "invalid filename"}), 400
+        archive_path = os.path.join(BACKUP_DIR, filename)
+        if not os.path.exists(archive_path):
+            return jsonify({"status": "error", "detail": "backup not found"}), 404
+
+    try:
+        backup_module.restore_backup(archive_path, CITADEL_APPDATA_ROOT, CITADEL_ENV_PATH, RESTORE_STAGING_DIR,
+                                      extra_paths=BACKUP_EXTRA_PATHS, chown_to=(1000, 1000))
+        return jsonify({
+            "status": "success",
+            "detail": "Restored. A safety snapshot of the pre-restore state was taken first. "
+                      "IMPORTANT: run 'docker compose restart' (no service name -- the whole fleet) now. "
+                      "Found live: a restored directory can leave OTHER containers that also mount it "
+                      "(e.g. cockpit) showing a stale/empty view until they're restarted too -- the data "
+                      "itself is fine either way, but the dashboard can appear broken until you do this.",
+        })
+    except backup_module.UnsafeArchiveError as e:
+        return jsonify({"status": "error", "detail": str(e)}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "detail": str(e)}), 500
+    finally:
+        if cleanup_path and os.path.exists(cleanup_path):
+            os.remove(cleanup_path)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
