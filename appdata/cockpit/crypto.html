@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // CRYPTO VAULT</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #0b0c10; color: #c5c6c7; padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #45a29e; padding-bottom: 15px; }
+        h1 { color: #66fcf1; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(102, 252, 241, 0.3); }
+        
+        .action-btn { background: #1f2833; border: 1px solid #45a29e; color: #66fcf1; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; font-family: monospace; }
+        .action-btn:hover { background: #45a29e; color: #0b0c10; box-shadow: 0 0 15px rgba(69, 162, 158, 0.4); }
+
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 25px; text-transform: uppercase; }
+
+        /* Split Row Workspaces */
+        .crypto-split { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
+        .vault-panel { background: #1f2833; border: 1px solid #45a29e; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        .panel-header { font-family: monospace; font-size: 0.9rem; color: #66fcf1; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #45a29e; padding-bottom: 8px; letter-spacing: 1px; }
+
+        /* Cryptographic Textboxes & Inputs */
+        textarea { width: 100%; height: 140px; background: #0b0c10; border: 1px solid #45a29e; color: #66fcf1; font-family: monospace; font-size: 0.95rem; padding: 12px; resize: none; box-sizing: border-box; outline: none; margin-bottom: 15px; border-radius: 4px; }
+        textarea:focus { border-color: #66fcf1; box-shadow: 0 0 10px rgba(102, 252, 241, 0.2); }
+        
+        .input-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
+        .input-crypto { background: #0b0c10; border: 1px solid #45a29e; padding: 10px; color: #ffb000; font-family: monospace; font-size: 0.95rem; border-radius: 4px; outline: none; flex-grow: 1; }
+        .label-crypto { font-family: monospace; font-size: 0.85rem; color: #c5c6c7; text-transform: uppercase; font-weight: bold; min-width: 140px; }
+
+        .shard-output { background: #0b0c10; border: 1px dashed #45a29e; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #ffb000; margin-top: 10px; word-break: break-all; max-height: 180px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- CRYTOGRAPHIC CONTROL HEADER -->
+        <div class="header-block">
+            <h1>🔐 PROJECT CITADEL // CRYPTOGRAPHIC SECURITY VAULT</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        <div class="status-bar">CRYPTO NODE LAYER // MODULE: CLIENT_SIDE_AIR_GAPPED // ALGORITHMS: AES-256-GCM & SHAMIR_SPLIT // ACTIVE</div>
+
+        <div class="crypto-split">
+            <!-- LEFT PANEL: MILITARY GRADE AES-256 MULTI-PURPOSE TEXT SCRAMBLER -->
+            <div class="vault-panel">
+                <div class="panel-header">🔒 AES-256 TACTICAL TEXT ENCRYPTOR / DECRYPTOR</div>
+                
+                <textarea id="aesText" placeholder="Enter raw tactical logs, communications traffic handles, or sensitive records to scramble/unscramble..."></textarea>
+                
+                <div class="input-row">
+                    <span class="label-crypto">🔑 MASTER SECURE KEY:</span>
+                    <input type="password" id="aesPassphrase" class="input-crypto" placeholder="Enter unique encryption passphrase...">
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button class="action-btn" style="flex: 1; background: #1a423a;" onclick="executeAES(true)">Encrypt Text</button>
+                    <button class="action-btn" style="flex: 1; background: #42251a; border-color: #a84332; color: #ff9999;" onclick="executeAES(false)">Decrypt Text</button>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <span class="label-crypto" style="display:block; margin-bottom:5px;">📋 OUTPUT SYSTEM TELEMETRY:</span>
+                    <textarea id="aesOutput" style="height: 100px; margin-bottom: 0;" readonly placeholder="Scrambled cipher string outputs or decrypted text returns inject here..."></textarea>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: SHAMIR'S SECRET SHARING KEY SHARD MATRIX -->
+            <div class="vault-panel">
+                <div class="panel-header">🧩 HIGH-VALUE ASSET PASS-KEY SHARD SPLITTER</div>
+                
+                <div class="input-row">
+                    <span class="label-crypto">💎 MASTER SECRET KEY:</span>
+                    <input type="text" id="shardSecret" class="input-crypto" placeholder="e.g., Master vault combo, Bitcoin recovery seed, radio cipher key...">
+                </div>
+
+                <div class="input-row">
+                    <span class="label-crypto">📦 TOTAL SHARD BLOCKS:</span>
+                    <input type="number" id="shardTotal" class="input-crypto" style="max-width: 80px;" value="3" min="2" max="10">
+                    <span class="label-crypto" style="min-width: unset; margin-left: 15px;">⚠️ THRESHOLD REQ:</span>
+                    <input type="number" id="shardThreshold" class="input-crypto" style="max-width: 80px;" value="2" min="2" max="10">
+                </div>
+
+                <button class="action-btn" style="background: #2a3a4d; border-color: #3b5ca8; color: #b0d4ff;" onclick="generateKeyShards()">⚡ Fractured Key Shard Shunts</button>
+                
+                <div id="shardBox" class="shard-output" style="display:none; margin-bottom: 15px;"></div>
+
+                <div class="panel-header" style="margin-top: 20px; border-top: 1px solid #45a29e; padding-top: 10px;">🧬 RECONSTRUCT MASTER FRACTURED KEY ASSET</div>
+                
+                <textarea id="shardReconstructInput" style="height: 80px;" placeholder="Paste separate shards here (one shard per line). Requires matching threshold block count to unlock..."></textarea>
+                <button class="action-btn" style="background: #223a1a; border-color: #55cc33; color: #a4ffb0;" onclick="rebuildKeyFromShards()">🧩 Rebuild Master Asset Key</button>
+                
+                <div id="reconstructOutput" class="shard-output" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // ================= MILITARY-GRADE NATIVE AES-256-GCM CRYPTO MATRIX =================
+        async function getCryptoKey(passphrase, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function executeAES(encryptMode) {
+            const pass = document.getElementById('aesPassphrase').value;
+            if (!pass) return alert("CRITICAL FAULT: Master encryption passphrase key required.");
+
+            try {
+                const enc = new TextEncoder();
+                const dec = new TextDecoder();
+
+                if (encryptMode) {
+                    const text = document.getElementById('aesText').value;
+                    if (!text) return alert("ERROR: Plaintext buffer string is empty.");
+                    
+                    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                    const key = await getCryptoKey(pass, salt);
+                    
+                    const cipherBuffer = await window.crypto.subtle.encrypt(
+                        { name: "AES-GCM", iv: iv }, key, enc.encode(text)
+                    );
+
+                    // Package up Payload Matrix: Salt(16B) + IV(12B) + Ciphertext
+                    const packed = new Uint8Array(salt.length + iv.length + cipherBuffer.byteLength);
+                    packed.set(salt, 0);
+                    packed.set(iv, salt.length);
+                    packed.set(new Uint8Array(cipherBuffer), salt.length + iv.length);
+
+                    // Convert binary byte stream array safely to printable hex text
+                    document.getElementById('aesOutput').value = Array.from(packed).map(b => b.toString(16).padStart(2, '0')).join('');
+                } else {
+                    const hexStr = document.getElementById('aesText').value.trim();
+                    if (!hexStr) return alert("ERROR: Hex encoded cipher array string required.");
+                    
+                    const packed = new Uint8Array(hexStr.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                    const salt = packed.slice(0, 16);
+                    const iv = packed.slice(16, 28);
+                    const ciphertext = packed.slice(28);
+
+                    const key = await getCryptoKey(pass, salt);
+                    const decryptedBuffer = await window.crypto.subtle.decrypt(
+                        { name: "AES-GCM", iv: iv }, key, ciphertext
+                    );
+
+                    document.getElementById('aesOutput').value = dec.decode(decryptedBuffer);
+                }
+            } catch (e) {
+                alert("DECRYPTION CRITICAL FAILURE: Access denied. Invalid password array key or corrupted block data.");
+            }
+        }
+
+        // ================= GF(256) FINITE FIELD ARITHMETIC =================
+        // Real Shamir's Secret Sharing requires polynomial math over a finite
+        // field, not plain integers. This is the same field AES/Rijndael uses
+        // (primitive polynomial 0x11B) — log/antilog tables give correct,
+        // fast multiplication/division for every non-zero byte value.
+        // Generator is 3, not 2 — 2 is NOT a primitive root of this field
+        // (it only cycles through 51 of 255 elements), which was caught by
+        // an actual round-trip test before shipping, not by inspection.
+        const GF256_EXP = new Uint8Array(255);
+        const GF256_LOG = new Uint8Array(256);
+        (function initGF256() {
+            let x = 1;
+            for (let i = 0; i < 255; i++) {
+                GF256_EXP[i] = x;
+                GF256_LOG[x] = i;
+                let doubled = x << 1;
+                if (doubled & 0x100) doubled ^= 0x11B;
+                doubled &= 0xFF;
+                x = doubled ^ x; // x *= 3, i.e. (x*2) XOR x
+            }
+        })();
+
+        function gfMul(a, b) {
+            if (a === 0 || b === 0) return 0;
+            return GF256_EXP[(GF256_LOG[a] + GF256_LOG[b]) % 255];
+        }
+
+        function gfDiv(a, b) {
+            if (a === 0) return 0;
+            if (b === 0) throw new Error("GF(256) division by zero");
+            return GF256_EXP[(GF256_LOG[a] - GF256_LOG[b] + 255) % 255];
+        }
+
+        function gfPow(a, n) {
+            if (n === 0) return 1;
+            return GF256_EXP[(GF256_LOG[a] * n) % 255];
+        }
+
+        // ================= SHAMIR'S SECRET SHARING OVER GF(256) =================
+        function generateKeyShards() {
+            const secret = document.getElementById('shardSecret').value;
+            const n = parseInt(document.getElementById('shardTotal').value);
+            const t = parseInt(document.getElementById('shardThreshold').value);
+
+            if (!secret) return alert("ERROR: Master tracking target asset secret string is empty.");
+            if (t > n) return alert("CONFIGURATION BREACH: Threshold block count cannot outnumber overall total shard blocks.");
+
+            // Convert raw input string cleanly to ascii integer arrays
+            const secretBytes = Array.from(new TextEncoder().encode(secret));
+            const shardList = Array.from({ length: n }, () => []);
+
+            // Process every single byte position independently through GF(256) polynomials
+            secretBytes.forEach(byte => {
+                const coefficients = [byte];
+                // Cryptographically secure random coefficients, not Math.random()
+                // — a predictable polynomial defeats Shamir's security guarantee.
+                const randCoeffs = window.crypto.getRandomValues(new Uint8Array(Math.max(0, t - 1)));
+                for (let i = 1; i < t; i++) {
+                    coefficients.push(randCoeffs[i - 1]);
+                }
+                for (let x = 1; x <= n; x++) {
+                    let y = 0;
+                    for (let i = 0; i < t; i++) {
+                        y ^= gfMul(coefficients[i], gfPow(x, i));
+                    }
+                    shardList[x - 1].push(y);
+                }
+            });
+
+            // Convert to final unified hex key outputs string templates
+            const box = document.getElementById('shardBox');
+            box.innerHTML = "<b>🔒 GENERATED SECURE FRACTURED KEY SHARDS (DISTRIBUTE OFFLINE):</b><br><br>";
+            shardList.forEach((bytes, idx) => {
+                const xVal = (idx + 1).toString(16).padStart(2, '0');
+                const hexData = bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+                box.innerHTML += `<div><b>Shard-${idx+1}:</b> <span style="user-select:all; cursor:pointer;">${xVal}-${hexData}</span></div><br>`;
+            });
+            box.style.display = "block";
+        }
+
+        function rebuildKeyFromShards() {
+            const rawInput = document.getElementById('shardReconstructInput').value.trim().split('\n');
+            const shares = [];
+
+            rawInput.forEach(line => {
+                const clean = line.replace(/Shard-\d+:\s*/i, '').trim();
+                if (!clean) return;
+                const parts = clean.split('-');
+                if (parts.length !== 2) return;
+
+                const x = parseInt(parts[0], 16);
+                const bytes = parts[1].match(/.{1,2}/g).map(b => parseInt(b, 16));
+                shares.push({ x: x, y: bytes });
+            });
+
+            if (shares.length < 2) return alert("ERROR: Reassembly parameters require at least 2 distinct shard block rows.");
+
+            try {
+                const secretLength = shares[0].y.length;
+                const resultBytes = [];
+
+                // Lagrange interpolation at x=0, over GF(256). Subtraction in
+                // GF(2^n) is XOR (it's its own inverse), so "0 - x_k" is just
+                // x_k, and "x_j - x_k" is x_j ^ x_k.
+                for (let i = 0; i < secretLength; i++) {
+                    let secretByte = 0;
+                    for (let j = 0; j < shares.length; j++) {
+                        let basis = 1;
+                        for (let k = 0; k < shares.length; k++) {
+                            if (k === j) continue;
+                            const numerator = shares[k].x;
+                            const denominator = shares[j].x ^ shares[k].x;
+                            basis = gfMul(basis, gfDiv(numerator, denominator));
+                        }
+                        secretByte ^= gfMul(shares[j].y[i], basis);
+                    }
+                    resultBytes.push(secretByte);
+                }
+
+                const outBox = document.getElementById('reconstructOutput');
+                outBox.innerHTML = `<b>🔓 MASTER RECONSTRUCTED SECRET KEY RECOVERED:</b><br><br><span style="color:#00ff66; font-size:1.1rem; font-weight:bold;">${new TextDecoder().decode(new Uint8Array(resultBytes))}</span>`;
+                outBox.style.display = "block";
+            } catch (err) {
+                alert("CRITICAL RECONSTRUCTION FAILURE: Incompatible shard polynomials or insufficient threshold block metrics.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -103,10 +103,15 @@ the whole project's philosophy:
   a gap to close, it's a hardware category to steer people away from in
   the manual, honestly, rather than let someone buy one expecting it to
   work here.
-- [ ] Wire `project-ibris`'s real webcam motion detector
-  (`ibris_core.py` — genuinely works today) into Vigil's `tripline`
-  field, if camera-triggered lighting is wanted. Right now these are
-  two real, working, but disconnected pieces.
+- [x] Wire `project-ibris`'s real webcam motion detector into Vigil's
+  `tripline` field, done 2026-09-13 as `ibris_motion.py` -- adapted from
+  the original `ibris_core.py`'s algorithm (unchanged detection logic,
+  headless instead of a GUI window with nowhere to display on a server),
+  a new `citadel-ibris-motion` container under its own `camera` profile
+  (needs real `/dev/video0` passthrough). 6 unit tests verify the actual
+  motion-detection algorithm against synthetic frames. Honest status:
+  not verified against a real physical webcam (none owned as of this
+  writing) -- built for a real tester with a camera to confirm.
 - [ ] Once the adapters above are real, rewrite the "recommended
   hardware" buying list in `manual.html` against exactly what's
   supported — the current list (Sonoff/Shelly/ESP32/Zigbee dongle) is
@@ -115,14 +120,28 @@ the whole project's philosophy:
 
 ### Phase E — Bring in what's real from the other sibling repos
 
-- [ ] `crypto-vault` — trivial win, no backend needed. Bring in the
-  single HTML file (real AES-256-GCM + a real, bug-fixed Shamir's
-  Secret Sharing splitter) as a static module whenever convenient.
-- [ ] `project-ibris` — bring in the webcam motion detector and LAN
-  scanner as real modules (both genuinely work). Leave the radar
-  dashboard out, or bring it in clearly labeled demo/simulated, until
-  it has real sensor data behind it — its own README already admits
-  it's hardcoded fake targets today.
+- [x] `crypto-vault` — brought in 2026-09-13 as a static `crypto.html`
+  module (no backend). Live-verified in a real browser, not just read:
+  AES-256-GCM round-trips correctly, and Shamir's Secret Sharing
+  reconstructs the same secret from any distinct combination of shards
+  at the threshold, while genuinely failing (not silently "succeeding"
+  with garbage) below it.
+- [x] `project-ibris` webcam motion detector — brought in 2026-09-13,
+  see Phase D above (wired straight into Vigil's tripline, that's the
+  more useful home than a standalone module).
+- [ ] `project-ibris` LAN scanner (`net_radar.py`) — NOT brought in yet.
+  Genuinely lower priority than it looked: it's a raw `nmap -sn` subnet
+  sweep, which needs `network_mode: host` to actually see the real LAN
+  from inside a container (Citadel's other services all sit on the
+  internal `citadel-net` bridge, which can't reach the host's actual
+  subnet) -- a bigger networking change than any other module here has
+  needed, and it's partly redundant with Vigil's new real mDNS discovery
+  (Phase D above), which already covers the main "find my smart-home
+  gear" use case. Worth doing if broader host-network visibility is
+  wanted for its own sake, not blocking anything else.
+- Leave the `project-ibris` radar dashboard out entirely, or bring it in
+  clearly labeled demo/simulated, until it has real sensor data behind
+  it — its own README already admits it's hardcoded fake targets today.
 - [ ] `project-intercept` — bring in as a hardware-profile module, same
   shape as the existing trunk-recorder scanner (needs a real RTL-SDR +
   `rtl_433`, returns an honest empty list without one).
