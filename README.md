@@ -55,7 +55,7 @@ An embedded **local-only IoT controller** for offline home automation:
 
 - **Device Registry** — DIY smart devices (relays, cameras, sensors) register via HTTP heartbeat to `/api/register`
 - **Relay Control** — Toggle connected devices on/off through the dashboard UI
-- **Power Monitoring** — Separate solar/off-grid power tracking (`vigil_hub.py`)
+- **Power Monitoring** — Solar/off-grid battery and bus telemetry, with real load-shedding automation on low battery
 - **Hardware Support** — Includes ESP32 Arduino sketch (`esp32_relay_node.ino`) for building your own smart relay nodes
 - **Persistent State** — Device registry saved to `vigil_grid_ledger.json`, survives reboots
 - **Zero Internet** — All communication is LAN-local; works during internet outages
@@ -215,8 +215,7 @@ docker compose restart citadel-vault-brain
 |---|---|---|
 | **Cockpit Dashboard** | 8085 | Main command center UI |
 | **Kolibri** (Education) | 8081 | Home-school platform |
-| **Project Vigil** (Home Hub) | 8082 | Device registry & control |
-| **Vigil Power Monitor** | 8083 | Solar/off-grid power tracking |
+| **Project Vigil** (Home Hub) | 8082 | Device registry, relay control, solar/security telemetry, discovery |
 | **Ollama** (Offline AI) | 11500 | Local LLM engine (internal: 11434) |
 | **Open WebUI** (AI Chat) | 8090 | Multi-user AI chat interface |
 | **Kiwix** (Encyclopedia) | 8095 | Offline wiki access |
@@ -303,7 +302,7 @@ Issues and pull requests welcome. This is a hobby project, not a commercial prod
 
 - **Dashboard frontend** is pure HTML/CSS/JS in `appdata/cockpit/` — no build step
 - **Vault API** logic is in `appdata/media-vault/app.py` — Flask-based, handles inventory/garden CRUD and media serving
-- **Project Vigil** smart home logic is in `appdata/project-vigil/vigil_core.py` — device registry and relay control
+- **Project Vigil** smart home logic is in `appdata/project-vigil/vigil_kernel.py` — device registry, relay control, solar/security telemetry, real automation, and hardware adapters (Tasmota/Shelly/ESPHome/Zigbee2MQTT) -- see its own top-of-file comment for what's verified against real hardware vs. written to spec awaiting field reports
 - **Nginx routing** configured in `appdata/cockpit/nginx.conf` — proxy rules for all backend services
 
 All changes are hot-reloaded or require a simple `docker compose restart <service>`.

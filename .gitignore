@@ -87,6 +87,7 @@ appdata/cockpit/tiles/
 # Python bytecode cache
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Standard OS cruft
 .DS_Store

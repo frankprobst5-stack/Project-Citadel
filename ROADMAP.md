@@ -77,28 +77,28 @@ automation logic with no real hardware behind it yet. Real, actually-
 existing local APIs to build against — no cloud, no account, matches
 the whole project's philosophy:
 
-- [ ] **Reconcile `vigil_kernel.py`** (the standalone repo's real
+- [x] **Reconcile `vigil_kernel.py`** (the standalone repo's real
   automation logic — battery-threshold load-shedding, tripline-
   triggered lighting) into Citadel's embedded copy, which is still on
   the older split `vigil_core.py`/`vigil_hub.py` design and doesn't
   have this at all. Decide whether the kernel design replaces both
   files outright.
-- [ ] **Real local device discovery**, replacing "device must know to
+- [x] **Real local device discovery**, replacing "device must know to
   POST to `/api/register`": mDNS/SSDP scan for `_tasmota._tcp`,
   `_shelly._tcp`, common ESPHome names, plus a plain HTTP probe sweep
   for devices that don't advertise themselves. This is the actual
-  the "capture a list, then go buy those devices" build strategy —
+  "capture a list, then go buy those devices" build strategy —
   the discovery has to come before the buying-guide claims a device
   will be found.
-- [ ] **Real hardware-control adapters**, one per supported ecosystem,
+- [x] **Real hardware-control adapters**, one per supported ecosystem,
   each against that ecosystem's actual documented local API (not the
   placeholder raw-UDP-to-a-fake-IP approach `vigil_kernel.py` currently
   has):
-  - [ ] Tasmota (local HTTP `cm?cmnd=Power ON/OFF`, well-documented)
-  - [ ] Shelly (local HTTP API, no cloud needed)
-  - [ ] ESPHome (native API or its HTTP fallback)
-  - [ ] Zigbee2MQTT, if Zigbee sensors/plugs are wanted
-- [ ] **Explicitly do not attempt Blink or SimpliSafe support.** Both
+  - [x] Tasmota (local HTTP `cm?cmnd=Power ON/OFF`, well-documented)
+  - [x] Shelly Gen1 + Gen2/Plus/Pro (local HTTP API, no cloud needed)
+  - [x] ESPHome (web_server component's REST API)
+  - [x] Zigbee2MQTT (needs a reachable MQTT broker)
+- [x] **Explicitly do not attempt Blink or SimpliSafe support.** Both
   are closed cloud ecosystems with no supported local API — this isn't
   a gap to close, it's a hardware category to steer people away from in
   the manual, honestly, rather than let someone buy one expecting it to

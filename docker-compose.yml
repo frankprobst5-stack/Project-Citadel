@@ -67,33 +67,30 @@ services:
       - citadel-net
     restart: unless-stopped
 
-  # Layer 1.2: Project VIGIL Off-Grid Hardware Control Hub (device registry + relay control)
-  vigil-hub:
+  # Layer 1.2: Project VIGIL Unified Smart Home Controller Kernel.
+  # Replaces what used to be two separate containers here (vigil-hub
+  # running vigil_core.py, vigil-power running vigil_hub.py -- yes, those
+  # names really were swapped like that) with one, decided 2026-09-13
+  # (ROADMAP.md Phase D): vigil_kernel.py now carries the device
+  # registry, relay control, solar/security telemetry, real automation
+  # logic (load-shedding, tripline-triggered lighting), a real hardware-
+  # adapter registry (Tasmota/Shelly Gen1+Gen2/ESPHome/Zigbee2MQTT, each
+  # against that project's own documented API -- see vigil_kernel.py's
+  # own comments for exact doc links and the honest caveat that none of
+  # them have real hardware to verify against yet), and real mDNS local
+  # network discovery. zeroconf (mDNS) and paho-mqtt (Zigbee2MQTT) are
+  # real new dependencies this needs, installed the same runtime-pip
+  # pattern as every other lightweight Python service in this file.
+  vigil:
     image: python:3.10-alpine
-    container_name: citadel-vigil-engine
+    container_name: citadel-vigil
     profiles: ["vigil"]
     volumes:
       - ./appdata/project-vigil:/app
     working_dir: /app
     ports:
       - "8082:8085"
-    command: python /app/vigil_core.py
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 1.25: Project VIGIL Solar & Off-Grid Power Monitor (runs alongside vigil-hub,
-  # not in place of it — separate script, separate state file, separate port)
-  vigil-power:
-    image: python:3.10-alpine
-    container_name: citadel-vigil-power
-    profiles: ["vigil"]
-    volumes:
-      - ./appdata/project-vigil:/app
-    working_dir: /app
-    ports:
-      - "8083:8082"
-    command: python /app/vigil_hub.py
+    command: sh -c "pip install zeroconf paho-mqtt && python /app/vigil_kernel.py"
     networks:
       - citadel-net
     restart: unless-stopped

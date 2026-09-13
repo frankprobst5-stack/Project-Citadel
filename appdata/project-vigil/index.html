@@ -16,10 +16,31 @@
 </head>
 <body>
     <h1>🛰️ PROJECT VIGIL // COMMAND MATRIX <button class="btn" style="width: auto; margin: 0; padding: 8px 16px;" onclick="window.location.href='/index.html'">⬅ COCKPIT MATRIX</button></h1>
-    
+
     <div id="status" style="color:#00ff66;font-weight:bold;margin-bottom:20px;">INITIALIZING...</div>
+
+    <!-- Solar/security telemetry -- real data from /api/vigil/state, added
+         2026-09-13. Previously ran as its own container with no dashboard
+         panel anywhere (ROADMAP.md Phase C/D). -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h2>⚡ Power & Security Telemetry</h2>
+        <div id="telemetry-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; font-size: 13px;">Loading...</div>
+        <div style="font-size:11px; color:#556346; margin-top:10px;">Last update: <span id="telemetry-updated">--</span></div>
+    </div>
+
+    <!-- Local network device discovery (mDNS) -- real, added 2026-09-13.
+         Honestly reports whatever it actually finds on your LAN; an empty
+         result on a network with no Tasmota/Shelly/ESPHome hardware yet
+         is correct, not broken. -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h2>🔍 Discover Local Devices</h2>
+        <p style="font-size:12px; color:#8a9478; margin-top:0;">Scans your LAN for Tasmota, Shelly, and ESPHome devices via mDNS (~4 seconds). Register anything found below to bring it under manual/automated control.</p>
+        <button class="btn" style="width:auto; padding: 8px 20px;" onclick="runDiscovery()">Scan Now</button>
+        <div id="discover-results" style="margin-top:12px; font-size:13px;"></div>
+    </div>
+
     <div class="grid" id="container"></div>
-    
+
 </div>
 
     <script>
@@ -74,8 +95,63 @@
             }
         }
 
+        // ---- Power & security telemetry ----
+        const TELEMETRY_LABELS = {
+            solar_battery_soc: "Battery SOC",
+            solar_input_watts: "Solar Input",
+            critical_power_bus: "Critical Bus",
+            secondary_power_bus: "Secondary Bus",
+            perimeter_tripline: "Tripline",
+            smart_plug_fridge: "Fridge Plug",
+            perimeter_lights: "Perimeter Lights",
+        };
+        async function updateTelemetry() {
+            try {
+                const r = await fetch("/api/vigil/state?t=" + Date.now());
+                if (!r.ok) throw new Error("unreachable");
+                const d = await r.json();
+                const grid = document.getElementById("telemetry-grid");
+                grid.innerHTML = Object.entries(TELEMETRY_LABELS).map(([key, label]) => {
+                    const val = d[key];
+                    const isOnOff = val === "ON" || val === "OFF" || val === "SECURE" || val === "TRIPPED";
+                    const color = (val === "ON" || val === "SECURE") ? "#00ff66" : (val === "TRIPPED" ? "#ff3333" : "#a4b28d");
+                    return `<div><div style="color:#556346;">${label}</div><div style="color:${isOnOff ? color : '#ffb000'}; font-weight:bold;">${val}${key === 'solar_battery_soc' ? '%' : key === 'solar_input_watts' ? 'W' : ''}</div></div>`;
+                }).join('');
+                document.getElementById("telemetry-updated").textContent = d.last_update || "--";
+            } catch (e) {
+                document.getElementById("telemetry-grid").innerHTML = '<div style="color:#ff3333;">Telemetry unreachable</div>';
+            }
+        }
+
+        // ---- Local device discovery ----
+        async function runDiscovery() {
+            const box = document.getElementById("discover-results");
+            box.innerHTML = "Scanning local network (~4 seconds)...";
+            try {
+                const r = await fetch("/api/vigil/discover");
+                const d = await r.json();
+                if (d.status !== "success") {
+                    box.innerHTML = `<span style="color:#ff3333;">${d.detail || "Discovery failed"}</span>`;
+                    return;
+                }
+                if (!d.devices.length) {
+                    box.innerHTML = '<span style="color:#8a9478;">No Tasmota/Shelly/ESPHome devices found on this network.</span>';
+                    return;
+                }
+                box.innerHTML = d.devices.map(dev => `
+                    <div style="background:#151c12; padding:8px 12px; margin-bottom:6px; border-radius:3px;">
+                        <b>${dev.name}</b> -- ${dev.likely_protocol} at ${dev.ip || '?'}:${dev.port || '?'}
+                    </div>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = '<span style="color:#ff3333;">Discovery request failed -- see console.</span>';
+                console.error(e);
+            }
+        }
+
         setInterval(updateHUD, 2000);
-        window.onload = updateHUD;
+        setInterval(updateTelemetry, 5000);
+        window.onload = () => { updateHUD(); updateTelemetry(); };
     </script>
 </body>
 </html>
