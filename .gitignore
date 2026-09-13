@@ -10,6 +10,10 @@
 # is bind-mounted into the container.
 appdata/cockpit/modules-enabled.json
 
+# Same as above, generated from .env's STATION_* variables -- holds the
+# real call sign/town/grid/coordinates, so this must never be committed.
+appdata/cockpit/station-config.json
+
 # Packaged distributable — not source, regenerate from the repo instead.
 citadel.zip
 

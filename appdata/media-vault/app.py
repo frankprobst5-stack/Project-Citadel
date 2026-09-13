@@ -405,8 +405,8 @@ def save_scanner_config():
     (control-channel-following, the original and only supported shape
     before 2026-09-06) or "conventional"/"conventionalP25" (fixed-frequency
     channels, added when a real operator brought real conventional
-    Sheriff/Fire/EMS frequencies -- PANCOM, Donley County -- the trunked-
-    only builder couldn't express. Whichever CSV file the chosen type
+    Sheriff/Fire/EMS frequencies (a real county's PANCOM system) the
+    trunked-only builder couldn't express. Whichever CSV file the chosen type
     doesn't use is left untouched from any previous config, not deleted --
     switching system_type and back shouldn't lose data."""
     data = request.json or {}

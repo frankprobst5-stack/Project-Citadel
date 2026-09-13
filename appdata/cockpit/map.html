@@ -90,10 +90,35 @@
         // which sidesteps that whole class of problem. A proven, boring
         // version beat chasing a brand-new one's rough edges at this hour.
 
-        // Station location -- N0CALL, Genericville TX, grid AA00aa. Hardcoded
-        // for now rather than reading Waystation's own database; the two
-        // apps don't share a data layer yet.
-        const HOME = [0.0, 0.0];
+        // Station location -- read from station-config.json (generated at
+        // cockpit container startup from .env's STATION_* variables, see
+        // docker-compose.yml). Fixed 2026-09-12: this used to be the real
+        // call sign/town/grid/coordinates hardcoded directly in this file,
+        // which had already been pushed to a real GitHub repo -- real
+        // values now live only in .env (gitignored), and this file falls
+        // back to an honest generic placeholder if none is configured.
+        // A synchronous XHR (not fetch/await) deliberately, since this is
+        // a plain classic <script> (not type="module"), and the rest of
+        // this file's map/tool code below depends on running top-level,
+        // not nested inside an async wrapper -- this is a same-origin,
+        // few-bytes, nginx-served file, not a real network round-trip.
+        let HOME = [0, 0];
+        let stationCallsign = 'N0CALL';
+        let stationGrid = 'AA00aa';
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'station-config.json', false);
+            xhr.send(null);
+            if (xhr.status === 200) {
+                const cfg = JSON.parse(xhr.responseText);
+                HOME = [parseFloat(cfg.lon), parseFloat(cfg.lat)];
+                stationCallsign = cfg.callsign || stationCallsign;
+                stationGrid = cfg.grid || stationGrid;
+            }
+        } catch {
+            // station-config.json missing/unreachable -- keep the honest
+            // placeholder defaults above rather than guessing.
+        }
 
         // Registers the pmtiles:// URL scheme so MapLibre can read a
         // .pmtiles archive directly over HTTP range requests -- no tile
@@ -161,7 +186,7 @@
 
         new maplibregl.Marker({ color: '#ffb000' })
             .setLngLat(HOME)
-            .setPopup(new maplibregl.Popup().setText('N0CALL — AA00aa'))
+            .setPopup(new maplibregl.Popup().setText(`${stationCallsign} — ${stationGrid}`))
             .addTo(map);
 
         const statusLine = document.getElementById('statusLine');

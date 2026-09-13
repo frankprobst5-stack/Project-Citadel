@@ -127,15 +127,18 @@ class BuildTrunkRecorderConfigTests(unittest.TestCase):
             build_trunk_recorder_config(short_name="t", driver="osmosdr", device=None, center_hz=1, rate_hz=-5, gain=1, control_channels_hz=[100])
 
 
-# Real PANCOM channel-list shape (Donley County, TX) -- brought by Frank
-# 2026-09-06 from a real RadioReference county page, not invented. TG
-# Number is a synthetic per-channel index (trunk-recorder's conventional
-# channelFile requires one; these frequencies don't have real talkgroup
-# numbers the way a trunked system would).
+# Real PANCOM channel-list shape (a real Texas county, not named here --
+# see 2026-09-12's ROADMAP.md note about not committing identifying
+# location data) brought from a real RadioReference county page,
+# 2026-09-06, not invented. TG Number is a synthetic per-channel index
+# (trunk-recorder's conventional channelFile requires one; these
+# frequencies don't have real talkgroup numbers the way a trunked system
+# would). Frequencies/tones are real (public-record RadioReference data,
+# not sensitive by themselves); place/agency names are genericized.
 REAL_CONVENTIONAL_CSV = (
     "TG Number,Frequency,Tone,Alpha Tag,Description\n"
-    "1,155.7750,114.8,Sheriff Disp,Donley Co Sheriff Dispatch\n"
-    "2,154.1450,156.7,Clarendon VFD,Clarendon VFD Tactical\n"
+    "1,155.7750,114.8,Sheriff Disp,County Sheriff Dispatch\n"
+    "2,154.1450,156.7,VFD Tactical 1,VFD Tactical 1\n"
 )
 
 
@@ -146,8 +149,8 @@ class ValidateChannelFileCsvTests(unittest.TestCase):
         self.assertIsNone(err)
 
     def test_accepts_a_frequency_with_no_tone_or_alpha_tag_yet(self):
-        # e.g. Genericville VFD Tactical (154.1375 MHz), listed as plain
-        # analog with no PL tone at all in the real county data.
+        # e.g. VFD Tactical 2 (154.1375 MHz), listed as plain analog with
+        # no PL tone at all in the real county data.
         ok, err = validate_channel_file_csv("TG Number,Frequency\n3,154.1375\n")
         self.assertTrue(ok, err)
 

@@ -10,7 +10,7 @@ known gap.
 
 ## Path to Public Release — Master Checklist
 
-Frank has been building this alone for a long time, jumping between
+This has been built alone for a long time, jumping between
 Citadel and five sibling repos as ideas came up
 (`crypto-vault`, `project-ibris`, `project-intercept`, `Project-Nexus`,
 `project-vigil`) — normal for solo iteration, but it means those repos
@@ -87,7 +87,7 @@ the whole project's philosophy:
   POST to `/api/register`": mDNS/SSDP scan for `_tasmota._tcp`,
   `_shelly._tcp`, common ESPHome names, plus a plain HTTP probe sweep
   for devices that don't advertise themselves. This is the actual
-  "capture a list, then go buy those devices" step Frank described —
+  the "capture a list, then go buy those devices" build strategy —
   the discovery has to come before the buying-guide claims a device
   will be found.
 - [ ] **Real hardware-control adapters**, one per supported ecosystem,

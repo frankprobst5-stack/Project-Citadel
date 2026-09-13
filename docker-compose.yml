@@ -32,6 +32,17 @@ services:
       # COMPOSE_PROFILES, this won't see it (Compose's own ${VAR}
       # substitution here only reads .env/shell env, not CLI flags).
       - COMPOSE_PROFILES=${COMPOSE_PROFILES}
+      # Real per-install station info (call sign, town, grid locator, home
+      # coordinates) used only by map.html's marker -- decided 2026-09-12
+      # after finding these had been hardcoded directly into map.html and
+      # already pushed to this repo's real GitHub remote. Real values live
+      # in .env (gitignored, never committed); the committed map.html now
+      # only ever sees generic placeholders unless a real .env sets these.
+      - STATION_CALLSIGN=${STATION_CALLSIGN:-N0CALL}
+      - STATION_LOCATION=${STATION_LOCATION:-Unconfigured}
+      - STATION_GRID=${STATION_GRID:-AA00aa}
+      - STATION_LAT=${STATION_LAT:-0}
+      - STATION_LON=${STATION_LON:-0}
     command: >
       sh -c "
       json='[';
@@ -42,6 +53,7 @@ services:
       done;
       json=\"$$json]\";
       echo \"$$json\" > /usr/share/nginx/html/modules-enabled.json;
+      printf '{\"callsign\":\"%s\",\"location\":\"%s\",\"grid\":\"%s\",\"lat\":%s,\"lon\":%s}' \"$$STATION_CALLSIGN\" \"$$STATION_LOCATION\" \"$$STATION_GRID\" \"$$STATION_LAT\" \"$$STATION_LON\" > /usr/share/nginx/html/station-config.json;
       exec nginx -g 'daemon off;'
       "
     ports:

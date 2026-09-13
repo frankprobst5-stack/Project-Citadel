@@ -72,9 +72,9 @@ CHANNEL_FILE_REQUIRED_HEADERS = {"TG Number", "Frequency"}
 def validate_channel_file_csv(raw_csv_text):
     """Returns (is_valid, error_message) for a conventional-system
     channelFile -- the counterpart to validate_talkgroups_csv() for
-    trunked systems, decided 2026-09-06 when a real operator (Frank)
-    brought real conventional Sheriff/Fire/EMS frequencies (PANCOM,
-    Donley County) that the trunked-only builder below couldn't express
+    trunked systems, decided 2026-09-06 when a real operator brought
+    real conventional Sheriff/Fire/EMS frequencies (a real county's
+    PANCOM system) that the trunked-only builder below couldn't express
     at all. Schema verified against trunk-recorder's own CONFIGURE.md,
     not guessed at: "TG Number" must be the first column, "Frequency" is
     the only other required one -- Tone/Alpha Tag/Description/Category/
