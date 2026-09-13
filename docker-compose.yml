@@ -281,6 +281,58 @@ services:
       - citadel-net
     restart: unless-stopped
 
+  # Project Intercept -- passive 433MHz ISM-band signal viewer (weather
+  # sensors, tire-pressure monitors, similar consumer devices), brought
+  # in from the standalone project-intercept repo 2026-09-13 (ROADMAP.md
+  # Phase E). Real, maintained multi-arch image (hertzg/rtl_433_docker,
+  # 225+ stars) wrapping the actual rtl_433 decoder -- not a stub. Same
+  # "hardware" profile and /dev/bus/usb passthrough as `scanner` above,
+  # because it needs the same kind of RTL-SDR dongle -- note this means
+  # `scanner` and `intercept` cannot both run against a single dongle at
+  # once (a tuner can only be opened by one process); if you want both
+  # trunked-radio decode and 433MHz signal viewing simultaneously,
+  # you need two RTL-SDR dongles. Writes JSON-lines output to the same
+  # shared appdata/media-vault/intercept/ directory intercept-backend
+  # (below) reads from.
+  intercept:
+    image: hertzg/rtl_433:latest
+    container_name: citadel-intercept
+    profiles: ["hardware"]
+    devices:
+      - /dev/bus/usb
+    volumes:
+      - ./appdata/media-vault/intercept:/output
+    # -F log alongside -F json: rtl_433 supports multiple simultaneous
+    # output formats -- without it, a missing/unsupported dongle fails
+    # silently (confirmed live: the container just restart-loops with no
+    # error in `docker logs` at all without this flag).
+    command: -F json:/output/airwaves_ledger.json -F log
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Real Python stdlib HTTP server (intercept_backend.py, unchanged in
+  # shape from the standalone repo except a real bug fix -- see that
+  # file's own comment) serving the last 25 lines of `intercept`'s
+  # output as JSON. Same "hardware" profile as `intercept` above -- no
+  # point running this without the decoder that feeds it.
+  intercept-backend:
+    image: python:3.10-alpine
+    container_name: citadel-intercept-backend
+    profiles: ["hardware"]
+    environment:
+      - LEDGER_FILE=/app/intercept-out/airwaves_ledger.json
+    volumes:
+      - ./appdata/media-vault/intercept_backend.py:/app/intercept_backend.py
+      - ./appdata/media-vault/intercept:/app/intercept-out
+    working_dir: /app
+    command: python3 intercept_backend.py
+    networks:
+      - citadel-net
+    restart: unless-stopped
+    depends_on:
+      - intercept
+
   # Offline audio transcription via a real whisper.cpp, decided
   # 2026-09-07 -- the "offline audio transcription" Local AI backlog
   # item, meant to eventually transcribe scanner call recordings (see

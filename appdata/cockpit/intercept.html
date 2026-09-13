@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // PROJECT INTERCEPT</title>
+    <style>
+        body { font-family: 'Ubuntu', sans-serif; background: #070906; color: #cbd5c0; padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        .header-box { border-bottom: 2px solid #556346; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: #87986a; margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .action-btn { background: #1c2116; border: 1px solid #414d34; color: #cbd5c0; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: #87986a; color: #070906; box-shadow: 0 0 10px rgba(135,152,106,0.3); }
+        
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: #00ff66; margin-top: -10px; margin-bottom: 20px; text-transform: uppercase; }
+        
+        .panel { background: #11140e; border: 1px solid #283021; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-height: 500px; }
+        h2 { color: #ffb000; margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed #283021; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .ledger-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
+        
+        .signal-row { background: #050604; border: 1px solid #1c2116; border-radius: 4px; padding: 12px 18px; font-family: monospace; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #ffb000; }
+        .signal-row.weather { border-left-color: #528eff; }
+        .signal-row.security { border-left-color: #ff3333; }
+        
+        .sig-meta { color: #556346; font-size: 0.8rem; text-align: right; }
+        .scanning-text { font-family: monospace; color: #414d34; font-size: 1rem; text-align: center; padding: 60px 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER BLOCK -->
+        <div class="header-box">
+            <h1>📻 PROJECT INTERCEPT // LOCAL AIRWAVE SCANNER</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        
+        <div class="status-bar" id="engineStatus">📡 RADIO STREAM CORE: ONLINE // PASSIVELY SCANNING LOCAL FREQUENCIES (433.92 MHz)...</div>
+        
+        <!-- SIGNAL LEDGER PANEL -->
+        <div class="panel">
+            <h2>📜 Decoded Signal Ledger (Freshest Transmissions First)</h2>
+            <div class="ledger-container" id="ledgerBody">
+                <div class="scanning-text">INITIALIZING CONDUITS... STANDING BY FOR PHYSICAL USB STICK CONNECTION SECTOR LOCK...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function fetchRadioSignals() {
+            try {
+                // Relative, same-origin fetch through nginx's own proxy_pass
+                // (see nginx.conf) -- not a hardcoded hostname/port, which
+                // would only work from the Citadel host itself, not other
+                // devices on the LAN (the exact bug already fixed for
+                // education.html elsewhere in this project).
+                const response = await fetch('/api/intercept?t=' + Date.now());
+                if (!response.ok) throw new Error("Backend connection lost");
+                
+                const signals = await response.json();
+                const container = document.getElementById('ledgerBody');
+                
+                if (!signals || signals.length === 0) {
+                    container.innerHTML = `<div class="scanning-text">📡 NO LOCAL RADIO SIGNALS INTERCEPTED YET... AIRWAVES PRISTINE.</div>`;
+                    return;
+                }
+                
+                let htmlContent = "";
+                signals.forEach(sig => {
+                    // Determine decorative styling border based on intercepted device type profiles
+                    let rowClass = "signal-row";
+                    if (sig.model && (sig.model.toLowerCase().includes("weather") || sig.model.toLowerCase().includes("th"))) {
+                        rowClass = "signal-row weather";
+                    } else if (sig.model && (sig.model.toLowerCase().includes("security") || sig.model.toLowerCase().includes("pir"))) {
+                        rowClass = "signal-row security";
+                    }
+                    
+                    // Flatten key-value telemetry data out into a readable display string
+                    let dataString = "";
+                    for (const key in sig) {
+                        if (!["time", "model", "id", "mic", "snr", "mod"].includes(key)) {
+                            dataString += `<span style="color:#87986a;">${key.toUpperCase()}:</span> <span style="color:#ffb000; margin-right:12px;">${sig[key]}</span> `;
+                        }
+                    }
+                    
+                    htmlContent += `
+                    <div class="${rowClass}">
+                        <div>
+                            <span style="color:#cbd5c0; font-weight:bold; font-size:1.05rem;">[${(sig.model || "UNKNOWN_RF_NODE").toUpperCase()}]</span> 
+                            <span style="color:#687259; margin: 0 10px;">•</span> 
+                            ID: <span style="color:#00ff66; font-weight:bold; margin-right:15px;">${sig.id || "GENERIC"}</span>
+                            <div style="margin-top: 6px; font-size:0.9rem;">${dataString || "<span style='color:#414d34;'>RAW TEXT SIGNAL BURST INTERCEPTED</span>"}</div>
+                        </div>
+                        <div class="sig-meta">
+                            CAPTURED: ${sig.time ? sig.time.substring(11, 19) : "00:00:00"} UTC<br>
+                            <span style="font-size:0.75rem; color:#414d34;">FREQ MATCH // 433.92MHz</span>
+                        </div>
+                    </div>`;
+                });
+                
+                container.innerHTML = htmlContent;
+                document.getElementById('engineStatus').innerText = "📡 RADIO STREAM CORE: ONLINE // PASSIVELY SCANNING LOCAL FREQUENCIES (433.92 MHz)...";
+                document.getElementById('engineStatus').style.color = "#00ff66";
+            } catch (err) {
+                document.getElementById('engineStatus').innerText = "⚠️ INTERCEPT NETWORK LINK INTERRUPTED (CHECK BACKEND CONTAINER LOGS)";
+                document.getElementById('engineStatus').style.color = "#ff3333";
+            }
+        }
+
+        // Cycle data stream request pipelines every 3 seconds to keep UI matching live airwaves
+        setInterval(fetchRadioSignals, 3000);
+        window.onload = fetchRadioSignals;
+    </script>
+</body>
+</html>

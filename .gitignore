@@ -78,6 +78,7 @@ appdata/cockpit/project-vigil/
 # scaffolding dirs but still never belongs in git.
 appdata/media-vault/scanner/
 appdata/media-vault/weather/
+appdata/media-vault/intercept/
 
 # WayStation basemap tiles — 300MB+ of binary map data, not source, and
 # tactical_terrain.pmtiles alone exceeds GitHub's 100MB file limit.

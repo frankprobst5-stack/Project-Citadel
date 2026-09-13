@@ -142,9 +142,19 @@ the whole project's philosophy:
 - Leave the `project-ibris` radar dashboard out entirely, or bring it in
   clearly labeled demo/simulated, until it has real sensor data behind
   it — its own README already admits it's hardcoded fake targets today.
-- [ ] `project-intercept` — bring in as a hardware-profile module, same
-  shape as the existing trunk-recorder scanner (needs a real RTL-SDR +
-  `rtl_433`, returns an honest empty list without one).
+- [x] `project-intercept` — brought in 2026-09-13 as `intercept` +
+  `intercept-backend` services (hardware-profile, same shape as the
+  existing trunk-recorder scanner). Real, maintained `hertzg/rtl_433`
+  image, not a stub. Live-verified without real hardware: correctly
+  crash-loops with an honest "SDR: No supported devices found" (added
+  `-F log` so this actually surfaces -- it silently failed without it),
+  while intercept-backend correctly serves `[]` the whole time. Also
+  fixed a real bug ported over from the original: one malformed JSON
+  line used to discard every valid signal parsed before it, not just
+  itself -- 5 new unit tests cover this and the rest of the ledger-
+  reading logic. Note: `scanner` and `intercept` can't both run against
+  a single RTL-SDR dongle at once (one tuner, one process) -- two
+  dongles needed to run both simultaneously.
 
 ### Phase F — Rewrite `manual.html`
 
