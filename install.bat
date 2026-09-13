@@ -39,6 +39,10 @@ if not exist appdata\media-vault\videos mkdir appdata\media-vault\videos
 if not exist appdata\media-vault\mp3s mkdir appdata\media-vault\mp3s
 if not exist appdata\media-vault\pdfs mkdir appdata\media-vault\pdfs
 if not exist appdata\media-vault\notes-data mkdir appdata\media-vault\notes-data
+if not exist appdata\mealie\data mkdir appdata\mealie\data
+if not exist appdata\whisper-models mkdir appdata\whisper-models
+if not exist appdata\cloud9\data mkdir appdata\cloud9\data
+if not exist appdata\cloud9\models mkdir appdata\cloud9\models
 
 echo Starting Citadel - this pulls a handful of container images the first
 echo time, so it may take a few minutes...

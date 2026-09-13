@@ -119,6 +119,11 @@
                 <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Query multi-year spring/fall garden data records, crop varieties, pests, fertilizers, and total yield weights.</p>
                 <button class="action-btn" style="background:#3a422e; border-color:#6b8e23;" onclick="openPanel('gardenPanel')">Access Ledger</button>
             </div>
+            <div class="log-card">
+                <h2>🍲 Recipe Pantry Check</h2>
+                <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in Mealie and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
+                <button class="action-btn" onclick="openPanel('pantryCheckPanel')">Access Ledger</button>
+            </div>
         </div>
 
         <!-- ================= LIVE DATA WORKSPACE PANELS ================= -->
@@ -365,6 +370,21 @@
                 </thead>
                 <tbody id="gardenTableBody"></tbody>
             </table>
+        </div>
+
+        <!-- RECIPE PANTRY CHECK (MEALIE BRIDGE) -->
+        <div id="pantryCheckPanel" class="viewport-panel">
+            <h2>🍲 Recipe Pantry Check</h2>
+            <p style="color:#aea79f; font-size:0.85rem; margin:0 0 15px 0;">
+                Search for a recipe by name (looked up in <a href="http://localhost:8097" target="_blank" style="color:#87986a;">Mealie</a>)
+                and see which ingredients are already sitting in your Food Inventory or Freezer Foods ledger.
+                Matching is a best-effort text match, not exact — always eyeball the results.
+            </p>
+            <div class="panel-controls">
+                <input type="text" id="pantryCheckQuery" class="search-bar" placeholder="🔍 Recipe name, e.g. 'chicken noodle soup'..." onkeydown="if(event.key==='Enter') runPantryCheck();">
+                <button class="action-btn" onclick="runPantryCheck()">Check Pantry</button>
+            </div>
+            <div id="pantryCheckResults" style="margin-top:15px; font-family:monospace; font-size:0.85rem; color:#aea79f;"></div>
         </div>
     </div>
     <script>
@@ -623,6 +643,53 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
         async function deleteGardenItem(id) {
             await fetch(`/api/garden/${id}`, { method: 'DELETE' });
             loadGardenLedger();
+        }
+
+        // --- RECIPE PANTRY CHECK (MEALIE BRIDGE) ---
+        // Calls vault-api's /api/pantry-check (see app.py), which does the
+        // actual Mealie API call + inventory cross-check server-side --
+        // this page just renders whatever comes back.
+        async function runPantryCheck() {
+            const query = document.getElementById('pantryCheckQuery').value.trim();
+            const resultsEl = document.getElementById('pantryCheckResults');
+            if (!query) { resultsEl.innerHTML = '<span style="color:#e05252;">Type a recipe name first.</span>'; return; }
+
+            resultsEl.innerHTML = '<span>Checking Mealie + pantry ledgers…</span>';
+            try {
+                const res = await fetch(`/api/pantry-check?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+                const data = await res.json();
+
+                if (data.status !== 'success') {
+                    resultsEl.innerHTML = `<span style="color:#e05252;">${data.detail || 'Pantry check failed.'}</span>`;
+                    return;
+                }
+
+                const rows = data.ingredients.map(ing => {
+                    const badge = ing.matched
+                        ? `<span class="badge badge-ok">HAVE IT</span>`
+                        : `<span class="badge badge-warn">NOT FOUND</span>`;
+                    const matchDetail = ing.matched
+                        ? ing.pantry_matches.map(m => `${m.desc} (${m.category}, qty ${m.qty}, ${m.loc})`).join('; ')
+                        : '';
+                    return `<tr>
+                        <td>${ing.ingredient}</td>
+                        <td>${badge}</td>
+                        <td style="color:#687259; font-size:0.8rem;">${matchDetail}</td>
+                    </tr>`;
+                }).join('');
+
+                resultsEl.innerHTML = `
+                    <div style="margin-bottom:10px; color:#e6e8e3;">
+                        <strong>${data.recipe.name}</strong> — ${data.missing_count} of ${data.ingredients.length} ingredient(s) not found in Food Inventory / Freezer Foods.
+                    </div>
+                    <table>
+                        <thead><tr><th>Ingredient</th><th style="width:110px;">Status</th><th>Pantry Match</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            } catch (err) {
+                resultsEl.innerHTML = `<span style="color:#e05252;">Request failed: ${err.message}</span>`;
+            }
         }
 
         // Bootstrap Matrix Engines on Mount

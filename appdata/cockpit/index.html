@@ -196,25 +196,56 @@
         setInterval(tickUptime, 30000);
 
         // ---- Module deck ----
+        // `profile` matches a docker-compose.yml `profiles:` entry (see
+        // ROADMAP.md Phase B) -- null means the tile is always shown
+        // (either a static page, an external app, or backed by vault-api,
+        // which is always-on core infra, not an optional module). Cards
+        // are filtered against /modules-enabled.json at render time so a
+        // lighter install (e.g. a Pi running only a few profiles) doesn't
+        // show tiles for modules that were never started.
         const coreModules = [
-            { key: 'waystation', title: "Communications Hub", desc: "Launch WayStation — the full EmComm command dashboard: net control, ICS forms, mesh, Winlink, JS8Call, space weather, and cross-transport message routing.", meta: "Engine: WayStation", icon: "📡", action: "waystation://open" },
-            { key: 'maps', title: "Tactical Map", desc: "Offline vector map (roads, place names) and real elevation data for the Panhandle region, plus a low-detail world view — no internet required.", meta: "Engine: PMTiles / MapLibre", icon: "🗺️", action: "map.html" },
-            { key: 'vault', title: "Digital Media Vault", desc: "Access your centralized, self-contained media command station for manual video archives, audio playlists, and PDF guides.", meta: "Engine: Native Python Vault", icon: "🎬", action: "vault-root" },
-            { key: 'cloud9', title: "Home Education Hub", desc: "Cloud9 — the kid dashboard: AI homework helper, planner, dictionary, weather labs, video shelf, and a link into the full Kolibri course library.", meta: "Engine: Cloud9", icon: "🎓", action: "http://localhost:8099" },
-            { key: 'kiwix', title: "Knowledge Base", desc: "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html" },
-            { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html" },
-            { key: 'static', title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html" },
-            { key: 'ai', title: "Off-Grid AI", desc: "Query localized, non-networked Large Language Models for secure tactical data analysis.", meta: "Engine: Offline LLM Core", icon: "🧠", action: "ai.html" },
-            { key: 'power', title: "Home Monitor Matrix", desc: "Access the standalone Project Vigil smart hub to manage local camera feeds, analyze solar power bus loads, and control offline hardware relays.", meta: "Engine: Vigil Kernel Core", icon: "🏠", action: "/project-vigil/index.html" },
-            { key: 'flatnotes', title: "Note Storage Vault", desc: "Access your offline secure markdown notepad, edit storage entries, catalog asset inventories, and view local media files safely.", meta: "Engine: Vault Brain Core", icon: "💾", action: "notes.html" },
-            { key: 'static', title: "Master Operations Handbook", desc: "Access complete hardware manifests, radio channel frequencies, and launch directives to clone channel maps offline.", meta: "Engine: Operations Guide", icon: "📟", action: "manual.html" },
-            { key: 'static', title: "System Settings", desc: "View live service diagnostics, station identity, and build info. Configuration editing is not wired up yet.", meta: "Engine: Citadel Core", icon: "⚙️", action: "settings.html" },
+            { key: 'waystation', title: "Communications Hub", desc: "Launch WayStation — the full EmComm command dashboard: net control, ICS forms, mesh, Winlink, JS8Call, space weather, and cross-transport message routing.", meta: "Engine: WayStation", icon: "📡", action: "waystation://open", profile: null },
+            { key: 'maps', title: "Tactical Map", desc: "Offline vector map (roads, place names) and real elevation data for the Panhandle region, plus a low-detail world view — no internet required.", meta: "Engine: PMTiles / MapLibre", icon: "🗺️", action: "map.html", profile: null },
+            { key: 'vault', title: "Digital Media Vault", desc: "Access your centralized, self-contained media command station for manual video archives, audio playlists, and PDF guides.", meta: "Engine: Native Python Vault", icon: "🎬", action: "vault-root", profile: null },
+            { key: 'cloud9', title: "Home Education Hub", desc: "Cloud9 — the kid dashboard: AI homework helper, planner, dictionary, weather labs, video shelf, and a link into the full Kolibri course library.", meta: "Engine: Cloud9", icon: "🎓", action: "http://localhost:8099", profile: 'education' },
+            { key: 'kiwix', title: "Knowledge Base", desc: "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html", profile: 'knowledge' },
+            { key: 'mealie', title: "Recipes & Meal Planner", desc: "Import recipes by URL or hand-enter them, build a weekly meal plan, generate a shopping list, and check a recipe's ingredients against your Food Inventory and Freezer Foods ledgers.", meta: "Engine: Mealie", icon: "🍲", action: "http://localhost:8097", profile: 'recipes' },
+            { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html", profile: null },
+            { key: 'static', title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html", profile: null },
+            { key: 'ai', title: "Off-Grid AI", desc: "Query localized, non-networked Large Language Models for secure tactical data analysis.", meta: "Engine: Offline LLM Core", icon: "🧠", action: "ai.html", profile: 'ai' },
+            { key: 'power', title: "Home Monitor Matrix", desc: "Access the standalone Project Vigil smart hub to manage local camera feeds and control offline hardware relays. Solar/battery telemetry runs as a separate service (vigil-power) but has no dashboard panel yet -- see ROADMAP.md Phase D.", meta: "Engine: Vigil Core", icon: "🏠", action: "/project-vigil/index.html", profile: 'vigil' },
+            { key: 'flatnotes', title: "Note Storage Vault", desc: "Access your offline secure markdown notepad, edit storage entries, catalog asset inventories, and view local media files safely.", meta: "Engine: Vault Brain Core", icon: "💾", action: "notes.html", profile: 'notes' },
+            { key: 'static', title: "Master Operations Handbook", desc: "Access complete hardware manifests, radio channel frequencies, and launch directives to clone channel maps offline.", meta: "Engine: Operations Guide", icon: "📟", action: "manual.html", profile: null },
+            { key: 'static', title: "System Settings", desc: "View live service diagnostics, station identity, and build info. Configuration editing is not wired up yet.", meta: "Engine: Citadel Core", icon: "⚙️", action: "settings.html", profile: null },
         ];
+
+        // Populated by loadEnabledModules() before buildDashboardCockpit()
+        // runs. null means "couldn't determine installed modules" -- treated
+        // as permissive (show everything) rather than hiding tiles because
+        // of a fetch hiccup, matching the same reasoning as the health
+        // checks' honest-default philosophy elsewhere on this page.
+        let enabledModules = null;
+
+        async function loadEnabledModules() {
+            try {
+                const res = await fetch('/modules-enabled.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error('not ok');
+                enabledModules = new Set(await res.json());
+            } catch {
+                enabledModules = null;
+            }
+        }
+
+        function isModuleEnabled(profile) {
+            if (profile === null) return true; // always-on, not gated by any module
+            if (enabledModules === null) return true; // couldn't determine -- fail open
+            return enabledModules.has(profile);
+        }
 
         function buildDashboardCockpit() {
             const grid = document.getElementById('cockpitGrid');
             grid.innerHTML = '';
-            coreModules.forEach((mod, i) => {
+            coreModules.filter(mod => isModuleEnabled(mod.profile)).forEach((mod, i) => {
                 const card = document.createElement('div');
                 card.className = 'module-card';
                 card.innerHTML = `
@@ -279,14 +310,15 @@
         // showing a fabricated green/red state -- see DESIGN.md's "don't let
         // mockups become accidental backend specs" rule.
         const HEALTH_STRIP = [
-            { key: 'power',   name: 'Power' },
-            { key: 'network', name: 'Network' },
-            { key: 'storage', name: 'Storage', unmonitored: true },
-            { key: 'waystation', name: 'Waystation', unmonitored: true },
-            { key: 'maps',    name: 'Maps' },
-            { key: 'kiwix',   name: 'Kiwix' },
-            { key: 'ai',      name: 'AI' },
-            { key: 'backup',  name: 'Backup', unmonitored: true },
+            { key: 'power',   name: 'Power', profile: null },
+            { key: 'network', name: 'Network', profile: null },
+            { key: 'storage', name: 'Storage', unmonitored: true, profile: null },
+            { key: 'waystation', name: 'Waystation', unmonitored: true, profile: null },
+            { key: 'maps',    name: 'Maps', profile: null },
+            { key: 'kiwix',   name: 'Kiwix', profile: 'knowledge' },
+            { key: 'mealie',  name: 'Mealie', profile: 'recipes' },
+            { key: 'ai',      name: 'AI', profile: 'ai' },
+            { key: 'backup',  name: 'Backup', unmonitored: true, profile: null },
         ];
 
         // Same-origin proxied endpoints: a normal fetch tells us reachable vs not.
@@ -319,7 +351,7 @@
         async function runHealthChecks() {
             const host = window.location.hostname;
             const results = {};
-            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9] = await Promise.all([
+            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie] = await Promise.all([
                 checkSameOrigin('/api/grid'),
                 checkSameOrigin('/api/inventory/general'),
                 checkSameOrigin('tiles/comms_base.pmtiles'),
@@ -328,6 +360,7 @@
                 checkNoCors(`http://${host}:8081`),
                 checkNoCors(`http://${host}:8098`),
                 checkNoCors(`http://${host}:8099`),
+                checkNoCors(`http://${host}:8097`),
             ]);
             results.power = power;
             results.network = true; // trivially true: this page loaded over the LAN nginx
@@ -338,6 +371,7 @@
             results.kolibri = kolibri;
             results.flatnotes = flatnotes;
             results.cloud9 = cloud9;
+            results.mealie = mealie;
             results.static = true; // purely local static content, always available
             return results;
         }
@@ -420,7 +454,7 @@
         function renderHealthStrip(results) {
             const strip = document.getElementById('healthStrip');
             strip.innerHTML = '';
-            HEALTH_STRIP.forEach(item => {
+            HEALTH_STRIP.filter(item => isModuleEnabled(item.profile)).forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'health-item';
                 let dotClass = 'gray', text = 'N/A';
@@ -435,7 +469,7 @@
         }
 
         function renderReadiness(results) {
-            const monitored = HEALTH_STRIP.filter(i => !i.unmonitored);
+            const monitored = HEALTH_STRIP.filter(i => !i.unmonitored && isModuleEnabled(i.profile));
             const healthy = monitored.filter(i => results[i.key]).length;
             const total = monitored.length;
             const pct = total ? Math.round((healthy / total) * 100) : 0;
@@ -475,7 +509,7 @@
         }
 
         function diffAndLog(prev, curr) {
-            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard' };
+            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes' };
             Object.keys(labels).forEach(k => {
                 if (!prev) return; // first run: don't spam a log full of "detected" on load
                 if (prev[k] !== curr[k]) {
@@ -497,9 +531,11 @@
         // Mount
         tickClock();
         tickUptime();
-        buildDashboardCockpit();
+        loadEnabledModules().then(() => {
+            buildDashboardCockpit();
+            pollHealth();
+        });
         initScratchpad();
-        pollHealth();
         logActivity('Cockpit loaded — running initial health sweep');
         setInterval(pollHealth, 30000);
     </script>

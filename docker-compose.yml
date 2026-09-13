@@ -1,8 +1,49 @@
+# Module profiles, added 2026-09-12 (ROADMAP.md Phase B) -- each optional
+# service below is tagged with a `profiles:` entry matching its cockpit
+# card, so `docker compose --profile <name> up -d` can bring up just one
+# module (the actual mechanism a Pi-friendly "install only what you want"
+# system needs). `cockpit` and `vault-api` carry NO profile -- they're
+# shared core infrastructure (the dashboard router and the backend many
+# modules' API routes live on), not a single toggleable module.
+#
+# Critical: a bare `docker compose up -d` with NO --profile flag only
+# starts services that have no `profiles:` tag at all -- everything
+# tagged below would silently stop starting on a fresh boot, which would
+# be a real regression on a system already relied on daily. `.env`'s
+# COMPOSE_PROFILES variable is read automatically by the `docker compose`
+# CLI itself (a real Compose feature, not something wired up manually
+# here) and defaults to every module profile -- so today's exact
+# behavior (`docker compose up -d` starts everything except the
+# `hardware`-gated scanner) is unchanged unless COMPOSE_PROFILES is
+# deliberately overridden to a smaller list, e.g. for a lightweight Pi
+# install running only the vigil/notes/knowledge modules.
 services:
   # Layer 1: Your Custom Tactical Dashboard Layout Router
   cockpit:
     image: nginx:alpine
     container_name: citadel-cockpit
+    environment:
+      # Passed straight through from .env's own COMPOSE_PROFILES -- the
+      # exact same value that decided which containers actually started
+      # (see this file's own top-of-file comment and .env), so the
+      # manifest below can never drift from what's really running. Only
+      # reflects profile selection made via .env -- if profiles are ever
+      # chosen with a raw `--profile` CLI flag instead of .env's
+      # COMPOSE_PROFILES, this won't see it (Compose's own ${VAR}
+      # substitution here only reads .env/shell env, not CLI flags).
+      - COMPOSE_PROFILES=${COMPOSE_PROFILES}
+    command: >
+      sh -c "
+      json='[';
+      first=1;
+      for p in $$(echo \"$$COMPOSE_PROFILES\" | tr ',' ' '); do
+        if [ \"$$first\" = '1' ]; then first=0; else json=\"$$json,\"; fi;
+        json=\"$$json\\\"$$p\\\"\";
+      done;
+      json=\"$$json]\";
+      echo \"$$json\" > /usr/share/nginx/html/modules-enabled.json;
+      exec nginx -g 'daemon off;'
+      "
     ports:
       - 8085:80
     volumes:
@@ -18,6 +59,7 @@ services:
   vigil-hub:
     image: python:3.10-alpine
     container_name: citadel-vigil-engine
+    profiles: ["vigil"]
     volumes:
       - ./appdata/project-vigil:/app
     working_dir: /app
@@ -33,6 +75,7 @@ services:
   vigil-power:
     image: python:3.10-alpine
     container_name: citadel-vigil-power
+    profiles: ["vigil"]
     volumes:
       - ./appdata/project-vigil:/app
     working_dir: /app
@@ -55,14 +98,35 @@ services:
       - ./appdata/media-vault/mp3s:/app/mp3s
       - ./appdata/media-vault/pdfs:/app/pdfs
       - ./appdata/media-vault/notes-data:/app/notes-data
+    environment:
+      # Lets /api/pantry-check (app.py) call the mealie container below
+      # server-to-server -- see that route's own comment for why this
+      # bridge lives in vault-api instead of a browser calling Mealie
+      # directly.
+      - MEALIE_BASE_URL=http://citadel-mealie:9000
+      - MEALIE_API_TOKEN=${MEALIE_API_TOKEN}
     networks:
       - citadel-net
     restart: unless-stopped
+    depends_on:
+      mealie:
+        condition: service_started
+        # vault-api is always-on core infra, but mealie is gated behind
+        # the "recipes" profile -- `required: false` means "wait for it
+        # if the recipes profile is active, but don't force mealie to
+        # start (or error out) when it's excluded from a lighter
+        # install." Without this, a Pi install that skips `recipes`
+        # would either fail to start vault-api or be forced to also run
+        # mealie regardless of profile selection -- verified against
+        # real `docker compose config` output for both an all-profiles
+        # and a recipes-excluded profile list before relying on this.
+        required: false
 
   # Layer 2: The Core Offline AI Engine
   ollama:
     image: ollama/ollama:latest
     container_name: citadel-ollama
+    profiles: ["ai"]
     ports:
       - "${OLLAMA_PORT}:11434"
     volumes:
@@ -75,6 +139,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: citadel-webui
+    profiles: ["ai"]
     ports:
       - 8090:8080
     volumes:
@@ -91,6 +156,7 @@ services:
   kiwix:
     image: ghcr.io/kiwix/kiwix-serve:latest
     container_name: citadel-kiwix
+    profiles: ["knowledge"]
     ports:
       - 8095:8080
     volumes:
@@ -104,6 +170,7 @@ services:
   flatnotes:
     image: dullage/flatnotes:latest
     container_name: citadel-flatnotes
+    profiles: ["notes"]
     ports:
       - 8098:8080
     environment:
@@ -116,8 +183,10 @@ services:
 
   # Layer 6: Trunked-radio scanner decode (P25/op25), decided 2026-09-05.
   # Real, mature open-source decoder (robotastic/trunk-recorder) -- not a
-  # stub image. Under the "hardware" profile, so a normal `docker compose
-  # up` never tries to start this: it needs an actual RTL-SDR (or similar)
+  # stub image. Under the "hardware" profile (not listed in
+  # COMPOSE_PROFILES' default set in .env, unlike every module profile
+  # above -- this one genuinely must stay opt-in), so a normal `docker
+  # compose up` never tries to start this: it needs an actual RTL-SDR (or similar)
   # dongle passed through via `devices:` below, plus a real config.json +
   # talkgroups.csv for your own county's trunked system (get these from
   # your own SDR setup or radioreference.com -- never invented/generic
@@ -193,6 +262,7 @@ services:
   whisper:
     image: ubuntu:26.04
     container_name: citadel-whisper
+    profiles: ["audio"]
     command: >
       sh -c "apt-get update && apt-get install -y whisper.cpp curl ca-certificates &&
              mkdir -p /models &&
@@ -220,6 +290,7 @@ services:
   cloud9:
     build: ./appdata/cloud9
     container_name: citadel-cloud9
+    profiles: ["education"]
     ports:
       - "${CLOUD9_PORT}:5057"
     volumes:
@@ -229,10 +300,47 @@ services:
       - citadel-net
     restart: unless-stopped
 
+  # Layer 11: Mealie -- a real, mature self-hosted recipe manager and
+  # meal planner (github.com/mealie-recipes/mealie), not a bespoke clone.
+  # Decided 2026-09-12 after comparing it against Tandoor Recipes: both
+  # cover the full recipe/meal-plan/shopping-list wishlist, but Mealie
+  # runs on SQLite with no separate Postgres container (Tandoor requires
+  # one in every documented compose setup), matching the one-container-
+  # per-service shape every other appdata/ entry in this file already
+  # follows. Pinned to v3.25.1 (current release at decision time) rather
+  # than :latest, consistent with Mealie's own docs example, so an
+  # upstream release doesn't silently change this homestead's recipe
+  # data model out from under it. ALLOW_SIGNUP is false since this is a
+  # single-household LAN tool -- the first admin account is created
+  # through Mealie's own first-run setup screen, same as visiting it
+  # fresh would require regardless. The pantry-check bridge in vault-api
+  # (/api/pantry-check) is the one genuinely custom piece: it calls this
+  # container's API over citadel-net using MEALIE_API_TOKEN (set in
+  # .env, generated from Mealie's own User Settings > API Tokens page
+  # after first login) to cross-check a recipe's ingredients against the
+  # Food Inventory / Freezer Foods ledgers vault-api already tracks --
+  # data no recipe app could know about on its own.
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.25.1
+    container_name: citadel-mealie
+    profiles: ["recipes"]
+    ports:
+      - "${MEALIE_PORT}:9000"
+    volumes:
+      - ./appdata/mealie/data:/app/data
+    environment:
+      ALLOW_SIGNUP: "false"
+      PUID: 1000
+      PGID: 1000
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
   # Layer 10: The Offline Home Schooling Matrix Hub
   kolibri:
     image: learningequality/kolibri:latest
     container_name: citadel-kolibri
+    profiles: ["education"]
     ports:
       - "${KOLIBRI_PORT}:8080"
     volumes:

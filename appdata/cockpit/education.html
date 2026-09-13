@@ -31,8 +31,12 @@
         <!-- EMBEDDED LOCAL KOLIBRI APPLICATION RUNTIME -->
         <div class="school-panel">
             <div class="panel-header">📚 KOLIBRI OFFLINE LEARNING ARCHIVE SECTOR</div>
-            <!-- Launches your containerized learning platform through the reverse proxy lane -->
-            <iframe src="http://localhost:8081" style="width: 100%; height: 78vh; border: 1px solid #3a4031; border-radius: 4px; background: #fff;" allowfullscreen></iframe>
+            <!-- Dynamically embeds Kolibri on the current host -- window.location.hostname,
+                 not a hardcoded "localhost", so this loads correctly from other devices on
+                 the LAN too (a phone/tablet, not just the Citadel host itself). -->
+            <script>
+                document.write('<iframe src="http://' + window.location.hostname + ':8081" style="width: 100%; height: 78vh; border: 1px solid #3a4031; border-radius: 4px; background: #fff;" allowfullscreen></iframe>');
+            </script>
 
         </div>
     </div>

@@ -17,6 +17,11 @@ app.url_map.strict_slashes = False
 
 DB_PATH = "/app/citadel.db"
 
+# Mealie pantry-check bridge (see /api/pantry-check below) -- server-to-
+# server config, never exposed to the browser.
+MEALIE_BASE_URL = os.environ.get("MEALIE_BASE_URL", "http://citadel-mealie:9000")
+MEALIE_API_TOKEN = os.environ.get("MEALIE_API_TOKEN", "")
+
 def init_db():
     """Automatically creates the database and layout tables on startup."""
     conn = sqlite3.connect(DB_PATH)
@@ -223,6 +228,99 @@ def delete_garden_item(item_id):
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
+
+# --- MEALIE PANTRY-CHECK BRIDGE ---
+# The one piece of the Mealie recipe integration that's genuinely
+# Citadel-specific: no recipe app knows about this homestead's own Food
+# Inventory / Freezer Foods ledgers (the `inventory` table's `food` and
+# `freezer` categories, same table logistics.html already reads/writes
+# via /api/inventory above). This calls Mealie's own REST API server-to-
+# server over citadel-net -- never from the browser -- since it needs
+# Mealie's API token, which must stay off the client.
+#
+# Matching a recipe's structured ingredient food name against a ledger
+# row's freeform `desc` text is necessarily a best-effort, case-
+# insensitive substring match in both directions: both sides are typed
+# independently by a person ("chicken breast" in Mealie vs. "Chicken
+# Breasts - Freezer 2" in the ledger), so there's no shared ID to join
+# on.
+@app.route('/api/pantry-check', methods=['GET'])
+def pantry_check():
+    if not MEALIE_API_TOKEN:
+        return jsonify({
+            "status": "error",
+            "detail": "MEALIE_API_TOKEN not configured -- generate one in Mealie's User Settings > API Tokens and set it in .env, then restart vault-api.",
+        }), 400
+
+    query = request.args.get("q", "").strip()
+    slug = request.args.get("slug", "").strip()
+    if not query and not slug:
+        return jsonify({"status": "error", "detail": "pass ?q=<search text> or ?slug=<recipe slug>"}), 400
+
+    headers = {"Authorization": f"Bearer {MEALIE_API_TOKEN}"}
+    try:
+        if not slug:
+            search_res = requests.get(
+                f"{MEALIE_BASE_URL}/api/recipes",
+                params={"search": query, "perPage": 1},
+                headers=headers,
+                timeout=10,
+            )
+            search_res.raise_for_status()
+            items = search_res.json().get("items", [])
+            if not items:
+                return jsonify({"status": "error", "detail": f"no recipe found matching {query!r}"}), 404
+            slug = items[0]["slug"]
+
+        recipe_res = requests.get(f"{MEALIE_BASE_URL}/api/recipes/{slug}", headers=headers, timeout=10)
+        recipe_res.raise_for_status()
+        recipe = recipe_res.json()
+    except requests.RequestException as e:
+        return jsonify({"status": "error", "detail": f"Mealie unreachable or failed: {e}"}), 502
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventory WHERE category IN ('food', 'freezer')")
+    pantry_rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    results = []
+    for ing in recipe.get("recipeIngredient", []):
+        food = ing.get("food") or {}
+        food_name = (food.get("name") or "").strip()
+        # Mealie's own `display` collapses to just the bare quantity when
+        # `food` didn't parse (e.g. "1" instead of "1 bag Egg Noodles") --
+        # originalText/note still hold the real freeform line in that case,
+        # so prefer those over `display` when there's no structured food.
+        if food_name:
+            display = ing.get("display") or ing.get("originalText") or food_name
+        else:
+            display = ing.get("originalText") or ing.get("note") or ing.get("display") or "(unparsed ingredient)"
+        if not food_name:
+            results.append({"ingredient": display, "matched": False, "pantry_matches": []})
+            continue
+        needle = food_name.lower()
+        matches = [
+            row for row in pantry_rows
+            if needle in (row.get("desc") or "").lower() or (row.get("desc") or "").lower() in needle
+        ]
+        results.append({
+            "ingredient": display,
+            "food_name": food_name,
+            "matched": len(matches) > 0,
+            "pantry_matches": [
+                {"desc": m["desc"], "loc": m["loc"], "qty": m["qty"], "category": m["category"]}
+                for m in matches
+            ],
+        })
+
+    return jsonify({
+        "status": "success",
+        "recipe": {"name": recipe.get("name"), "slug": recipe.get("slug")},
+        "ingredients": results,
+        "missing_count": sum(1 for r in results if not r["matched"]),
+    })
 
 # --- PROJECT IBRIS LIVE SIGNAL DATA RELAY ROUTE ---
 @app.route('/api/radar', methods=['GET'])

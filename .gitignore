@@ -4,6 +4,12 @@
 # specific file's contents.
 .env
 
+# Generated at cockpit container startup from .env's COMPOSE_PROFILES
+# (see docker-compose.yml's cockpit service) -- an environment-derived
+# artifact, not source, and it lands on the host because appdata/cockpit
+# is bind-mounted into the container.
+appdata/cockpit/modules-enabled.json
+
 # Packaged distributable — not source, regenerate from the repo instead.
 citadel.zip
 
@@ -22,6 +28,12 @@ appdata/media-vault/mp3s/
 appdata/media-vault/pdfs/
 appdata/media-vault/notes-data/
 appdata/media-vault/citadel.db
+
+# Mealie's real data: the household's actual recipes/photos, a user
+# profile picture, and Mealie's own auth session secrets (.secret,
+# .session_secret) -- same reasoning as every other appdata/ real-data
+# exclusion above, never belongs in git.
+appdata/mealie/data/
 appdata/media-vault/ZIM_Library/
 appdata/project-vigil/vigil_state.json
 appdata/project-vigil/vigil_grid_ledger.json

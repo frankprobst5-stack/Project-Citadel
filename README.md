@@ -11,17 +11,21 @@ Free forever, licensed under the GNU General Public License v3.0 or later (GPL-3
 ## What You Get
 
 ### 🛡️ Command Cockpit Dashboard
-A unified browser-based command center (port **8085**) with 12 integrated modules:
+A unified browser-based command center (port **8085**) with 13 integrated modules:
 
-- **📡 Communications Hub** — Frequency logs, scanner notes, radio reference data, SSTV feed tracking, talkgroup bridges (SDRTrunk integration planned)
+- **📡 Communications Hub** — Launches WayStation, the full EmComm dashboard (net control, ICS forms, mesh, Winlink, JS8Call, space weather)
+- **🗺️ Tactical Map** — Offline vector map with real elevation data, no internet required
 - **🎬 Digital Media Vault** — Self-hosted video, audio, and PDF library with category-based organization
-- **🎓 Home Education Hub** — Kolibri offline learning platform with thousands of lessons, interactive exercises, and student tracking
+- **🎓 Home Education Hub** — Cloud9 kid dashboard plus Kolibri, a full offline learning platform with thousands of lessons and student tracking
+- **🍲 Recipes & Meal Planner** — Mealie: URL/photo recipe import, meal planning, shopping lists, plus a pantry-check bridge against your own Food Inventory/Freezer Foods ledgers
 - **📚 Knowledge Base** — Offline wiki/encyclopedia access (Kiwix + .zim archives), morse code, phonetic alphabets, technical manuals
 - **🌿 Homestead Logistics** — Multi-table inventory system for food, fuel, PPE, orchard/fruit trees, livestock, and botanical gardens (see below)
 - **🩸 First Aid & Medical** — Offline emergency trauma protocols, surgical field manuals, medical reference charts
 - **🧠 Offline AI Assistant** — Local Large Language Models (Ollama) for data analysis, writing, and computation — no cloud, no tracking
-- **🏠 Home Monitor Matrix** — Smart home device registry and relay control (Project Vigil) for cameras, sensors, power monitoring, and automation
+- **🏠 Home Monitor Matrix** — Smart home device registry and relay control (Project Vigil) for cameras and hardware relays. Solar/battery telemetry runs as a separate service but has no dashboard panel yet — see ROADMAP.md.
 - **📝 Secure Notes** — Flatnotes markdown storage for sensitive documentation, asset inventories, and mission profiles
+- **📟 Master Operations Handbook** — Full household operations manual
+- **⚙️ System Settings** — Live service diagnostics and station identity
 
 Plus a **live scratchpad** for quick tactical notes (auto-saved to browser storage).
 
@@ -91,6 +95,21 @@ See `appdata/project-vigil/manual.html` for full integration docs.
 4. **Open your browser** to **http://localhost:8085**
 
 Everything runs locally. Your entire home infrastructure is now up and running.
+
+### First-Run Security Step: Change Mealie's Default Login
+
+Mealie (the recipe manager) ships with self-signup disabled and a
+publicly-documented default admin account: `changeme@example.com` /
+`MyPassword`. Anyone who's read Mealie's own docs knows this login for
+*every* fresh Citadel install, so change it immediately:
+
+1. Open `http://localhost:8097`, log in with the default above.
+2. Avatar (top right) → **Manage Your Account** → set your own email
+   and password.
+
+This is the one credential in Citadel that isn't obviously yours by
+default — everything else has no login at all (see "Known Gaps" below
+for what that means for exposing this beyond your own LAN).
 
 ### Configuration (Optional)
 
@@ -201,7 +220,10 @@ docker compose restart citadel-vault-brain
 | **Ollama** (Offline AI) | 11500 | Local LLM engine (internal: 11434) |
 | **Open WebUI** (AI Chat) | 8090 | Multi-user AI chat interface |
 | **Kiwix** (Encyclopedia) | 8095 | Offline wiki access |
+| **Whisper** (Audio transcription) | 8096 | Local speech-to-text (also used by Mealie's Audio Provider) |
+| **Mealie** (Recipes) | 8097 | Recipe manager & meal planner |
 | **Flatnotes** (Secure Notes) | 8098 | Markdown note storage |
+| **Cloud9** (Kid Dashboard) | 8099 | Homeschool dashboard for one kid's device |
 
 If any port is already in use on your machine, edit `.env` **before running install.sh** and change the value. Example:
 
@@ -248,7 +270,7 @@ This makes Citadel a true **network hub for your home** — a central command an
 
 A few features are stubbed out but not yet implemented. See [ROADMAP.md](ROADMAP.md) for the full plan. Quick summary:
 
-- **Radar tracking** — The vigil.html page has a radar panel that currently shows dummy data. Project IBRIS (radar daemon) exists as a separate script but isn't bundled yet.
+- **Radar tracking** — `vault-api` serves `/api/radar`, but it always returns an empty/sync-error result: no cockpit page currently has a panel for it, and the real Project IBRIS radar daemon (a separate repo — see ROADMAP.md Phase E) hasn't been bundled in yet. Worth noting its own repo already admits the radar output is demo/simulated data, not a real sensor feed, even once wired up.
 - **Radio scanner & local weather** — `vault-api` serves honest live status (`/api/scanner`, `/api/weather`) plus a real setup API (`/api/scanner/config`) that turns an operator's own trunked-system data (free from RadioReference's public pages, digitalfrequencysearch.com, or OpenMHz — no paid subscription required) into a working `trunk-recorder` config. All of this is consumed and displayed by WayStation now, not a page in this repo (the old `comms.html` has been deleted — WayStation is the real comms replacement, launched from the Communications Hub tile). A real `trunk-recorder` service exists in `docker-compose.yml` under a `hardware` profile. Actual P25 decode and local weather capture both still need real RTL-SDR hardware — see ROADMAP.md Phase 2 for exactly what's left.
 - **Raspberry Pi support** — Ollama and Kolibri are genuinely heavy; testing and documentation needed for Pi deployment.
 - **Containerized vault-api** — Currently uses dev-mode Flask; should have a proper Dockerfile with pinned dependencies for reproducibility and offline startup.

@@ -8,6 +8,134 @@ product (Project NOMAD) with something fully self-hosted and owned. See
 [README.md](README.md) for exactly what's real today and what's still a
 known gap.
 
+## Path to Public Release — Master Checklist
+
+Frank has been building this alone for a long time, jumping between
+Citadel and five sibling repos as ideas came up
+(`crypto-vault`, `project-ibris`, `project-intercept`, `Project-Nexus`,
+`project-vigil`) — normal for solo iteration, but it means those repos
+range from "fully real" to "test data only, built to prove the shape of
+something before the real thing existed." This section is the single,
+ordered list for turning all of that into something ready to hand to
+other people: a modular install where someone picks the cards they
+want, on hardware from a Pi to a cheap laptop, with an honest manual and
+working hardware auto-discovery instead of hand-typed device IPs.
+
+Check items off in order — later phases assume earlier ones are done.
+
+### Phase A — Retire dead weight
+
+- [x] **Drop Project-Nexus entirely.** Never progressed past test data,
+  and WayStation now has a real mesh feature that replaces its intended
+  purpose. Remove its card from `manual.html` and don't reference it
+  anywhere new. The repo itself can just stay put, untouched, private —
+  nothing here requires deleting it.
+
+### Phase B — The module system (see the sketch discussed this session)
+
+- [x] Tag every existing `docker-compose.yml` service with a `profiles:`
+  entry — lowest-risk first step, gets real opt-in/opt-out via
+  `docker compose --profile <name> up -d` with zero new files.
+- [x] Replace `index.html`'s hardcoded `coreModules` array with a fetch
+  against a generated `modules-enabled.json`, so the cockpit shows
+  exactly what's installed.
+- [ ] Split real modules into `modules/<name>/` folders (manifest +
+  compose fragment + nginx fragment each), build the actual installer
+  script, once ready to hand this to other people.
+
+### Phase C — Citadel's own outstanding bugs (found in the pre-refactor audit)
+
+These block a clean public release regardless of modularization —
+fix before or alongside Phase B, doesn't matter which:
+
+- [x] `education.html:35` hardcodes `http://localhost:8081` instead of
+  `window.location.hostname` — Kolibri's iframe fails to load from any
+  device other than the Citadel host itself (phone/tablet on the LAN).
+- [x] `install.sh`/`install.bat` don't pre-create every bind-mount
+  directory — missing `mealie`, `whisper-models`, `cloud9/data`,
+  `cloud9/models`. Live proof: `appdata/whisper-models` on this machine
+  is currently root-owned, the exact failure the script's own comment
+  warns about.
+- [x] `vigil-power` (solar/battery telemetry) has a real, working API
+  that nothing in the cockpit UI displays — either build it a panel, or
+  stop claiming "analyze solar power bus loads" in `index.html`'s tile
+  description until it's built.
+- [x] Doc drift from adding Mealie: README's module count/ports table,
+  `settings.html`'s diagnostics `CHECKS` list — all missing Mealie,
+  Cloud9, and Whisper.
+- [x] Document, somewhere a new installer will actually see it, that
+  Mealie ships a public default admin login
+  (`changeme@example.com`/`MyPassword`) that must be changed —
+  currently only exists as something said in chat, not in the repo.
+
+### Phase D — Smart-home hardware discovery + control (Project Vigil)
+
+This is the real unbuilt core of the whole home-automation promise —
+everything else in Vigil today is either a registry (works, but
+requires a device to already know to POST to it) or test-data
+automation logic with no real hardware behind it yet. Real, actually-
+existing local APIs to build against — no cloud, no account, matches
+the whole project's philosophy:
+
+- [ ] **Reconcile `vigil_kernel.py`** (the standalone repo's real
+  automation logic — battery-threshold load-shedding, tripline-
+  triggered lighting) into Citadel's embedded copy, which is still on
+  the older split `vigil_core.py`/`vigil_hub.py` design and doesn't
+  have this at all. Decide whether the kernel design replaces both
+  files outright.
+- [ ] **Real local device discovery**, replacing "device must know to
+  POST to `/api/register`": mDNS/SSDP scan for `_tasmota._tcp`,
+  `_shelly._tcp`, common ESPHome names, plus a plain HTTP probe sweep
+  for devices that don't advertise themselves. This is the actual
+  "capture a list, then go buy those devices" step Frank described —
+  the discovery has to come before the buying-guide claims a device
+  will be found.
+- [ ] **Real hardware-control adapters**, one per supported ecosystem,
+  each against that ecosystem's actual documented local API (not the
+  placeholder raw-UDP-to-a-fake-IP approach `vigil_kernel.py` currently
+  has):
+  - [ ] Tasmota (local HTTP `cm?cmnd=Power ON/OFF`, well-documented)
+  - [ ] Shelly (local HTTP API, no cloud needed)
+  - [ ] ESPHome (native API or its HTTP fallback)
+  - [ ] Zigbee2MQTT, if Zigbee sensors/plugs are wanted
+- [ ] **Explicitly do not attempt Blink or SimpliSafe support.** Both
+  are closed cloud ecosystems with no supported local API — this isn't
+  a gap to close, it's a hardware category to steer people away from in
+  the manual, honestly, rather than let someone buy one expecting it to
+  work here.
+- [ ] Wire `project-ibris`'s real webcam motion detector
+  (`ibris_core.py` — genuinely works today) into Vigil's `tripline`
+  field, if camera-triggered lighting is wanted. Right now these are
+  two real, working, but disconnected pieces.
+- [ ] Once the adapters above are real, rewrite the "recommended
+  hardware" buying list in `manual.html` against exactly what's
+  supported — the current list (Sonoff/Shelly/ESP32/Zigbee dongle) is
+  already close to right, it just needs to describe finished
+  integrations instead of a wishlist.
+
+### Phase E — Bring in what's real from the other sibling repos
+
+- [ ] `crypto-vault` — trivial win, no backend needed. Bring in the
+  single HTML file (real AES-256-GCM + a real, bug-fixed Shamir's
+  Secret Sharing splitter) as a static module whenever convenient.
+- [ ] `project-ibris` — bring in the webcam motion detector and LAN
+  scanner as real modules (both genuinely work). Leave the radar
+  dashboard out, or bring it in clearly labeled demo/simulated, until
+  it has real sensor data behind it — its own README already admits
+  it's hardcoded fake targets today.
+- [ ] `project-intercept` — bring in as a hardware-profile module, same
+  shape as the existing trunk-recorder scanner (needs a real RTL-SDR +
+  `rtl_433`, returns an honest empty list without one).
+
+### Phase F — Rewrite `manual.html`
+
+Do this **last**, once Phases A–E have settled what's actually real —
+otherwise it just needs rewriting again. Should describe exactly what
+exists: no Nexus, Vigil's automation described at whatever real-vs-
+test-data state it's actually in when this phase starts, IBRIS split
+cleanly into its three honestly-labeled tools, and a hardware buying
+guide that matches finished adapters instead of a wishlist.
+
 ## Phase 0 — Fixes shipped this pass ✅
 
 - **Live production bug fixed:** the actual running deployment had its
@@ -74,11 +202,16 @@ gaps"), but they're real, worthwhile features to actually build:
 
 - **Project IBRIS radar integration.** `/api/radar` always returns an
   empty/sync-error result because the actual radar daemon (a separate
-  script, `project-ibris` elsewhere in this account's projects) was
-  never added to `docker-compose.yml` or given a volume mount into
-  `vault-api`. Either add it as a real service and wire the existing
-  endpoint up for real, or remove the vigil.html panel that expects it
-  until it is.
+  repo, `project-ibris` — see the Phase E checklist above) was never
+  added to `docker-compose.yml` or given a volume mount into
+  `vault-api`. No cockpit page currently has a panel expecting this
+  data (checked: `vigil.html` has none, contrary to what this file and
+  README.md used to claim) -- so there's nothing to remove, only a real
+  decision about whether to wire it in. Worth knowing before doing so:
+  `project-ibris`'s own README already admits its radar dashboard is
+  demo/simulated data, not a real sensor feed -- webcam motion
+  detection and the LAN scanner in that same repo are the genuinely
+  real pieces (see Phase E).
 - ~~**SDRTrunk radio console / comms.html**~~ — `comms.html` (the old
   standalone frequency-log/scanner-note page) has been **deleted,
   2026-09-05**. It was dead weight, not a live feature: the
