@@ -191,6 +191,45 @@ class RestoreBackupTests(unittest.TestCase):
         backup.restore_backup(filepath, self.appdata, self.env_path, self.staging)
         self.assertFalse(os.path.exists(self.staging))
 
+    def test_restore_never_deletes_a_real_but_excluded_subpath(self):
+        # Real bug, found live 2026-09-13, that actually destroyed real
+        # data: appdata/cockpit/tiles/ (300MB+ of real map tiles) is
+        # excluded from backups for size, but "cockpit" itself is
+        # backed up. The old restore logic did rmtree(appdata/cockpit)
+        # before replacing it with the archived copy -- which obviously
+        # never had tiles/ either -- so tiles/ was just gone afterward.
+        # Restoring must never delete real content that was deliberately
+        # excluded from the backup; it should only ever add/overwrite
+        # what the backup actually contains.
+        os.makedirs(os.path.join(self.appdata, "cockpit", "tiles"))
+        with open(os.path.join(self.appdata, "cockpit", "tiles", "comms_base.pmtiles"), "w") as f:
+            f.write("real 300MB+ map data (stand-in)")
+        with open(os.path.join(self.appdata, "cockpit", "index.html"), "w") as f:
+            f.write("original dashboard")
+
+        filename, filepath, _ = backup.create_backup(self.appdata, self.env_path, self.backup_dir)
+        # Confirm the backup really doesn't have the tiles (matching the
+        # real exclude rule) -- otherwise this test wouldn't be
+        # exercising the real scenario at all.
+        with tarfile.open(filepath, "r:gz") as tar:
+            names = tar.getnames()
+        self.assertNotIn("appdata/cockpit/tiles/comms_base.pmtiles", names)
+        self.assertIn("appdata/cockpit/index.html", names)
+
+        # Simulate index.html changing after the backup, same as any
+        # normal restore scenario.
+        with open(os.path.join(self.appdata, "cockpit", "index.html"), "w") as f:
+            f.write("CORRUPTED dashboard")
+
+        backup.restore_backup(filepath, self.appdata, self.env_path, self.staging)
+
+        tiles_path = os.path.join(self.appdata, "cockpit", "tiles", "comms_base.pmtiles")
+        self.assertTrue(os.path.exists(tiles_path), "excluded-but-real content must survive a restore")
+        with open(tiles_path) as f:
+            self.assertEqual(f.read(), "real 300MB+ map data (stand-in)")
+        with open(os.path.join(self.appdata, "cockpit", "index.html")) as f:
+            self.assertEqual(f.read(), "original dashboard")
+
     def test_directory_extra_path_survives_as_a_mount_point_would(self):
         # Real bug fixed 2026-09-13: notes-data is its own dedicated
         # bind mount in the real system. rmtree-ing or shutil.move-ing

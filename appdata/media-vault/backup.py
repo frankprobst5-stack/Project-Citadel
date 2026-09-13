@@ -172,6 +172,28 @@ def _chown_recursive(path, uid, gid):
                     pass
 
 
+def _merge_directory(src, dst):
+    """Recursively moves everything in `src` into `dst`, overwriting any
+    matching file/dir at the destination, but never removing anything in
+    `dst` that isn't present in `src`. This is the difference between
+    "restore what was backed up" and "make the live directory an exact
+    mirror of the archive" -- the latter silently deletes anything real
+    that existed but wasn't backed up (see restore_backup's own comment
+    for the real incident this was written to fix)."""
+    os.makedirs(dst, exist_ok=True)
+    for entry in os.listdir(src):
+        s = os.path.join(src, entry)
+        d = os.path.join(dst, entry)
+        if os.path.isdir(s):
+            _merge_directory(s, d)
+        else:
+            if os.path.isdir(d):
+                shutil.rmtree(d)
+            elif os.path.exists(d):
+                os.remove(d)
+            shutil.move(s, d)
+
+
 def restore_backup(archive_path, appdata_root, env_file_path, staging_dir, extra_paths=None, chown_to=None):
     """Extracts `archive_path` into a staging directory (validating
     every member's path first), then moves its appdata/* entries (any
@@ -201,11 +223,31 @@ def restore_backup(archive_path, appdata_root, env_file_path, staging_dir, extra
                     continue
                 src = os.path.join(staged_appdata, item)
                 dst = os.path.join(appdata_root, item)
-                if os.path.isdir(dst):
-                    shutil.rmtree(dst)
-                elif os.path.exists(dst):
-                    os.remove(dst)
-                shutil.move(src, dst)
+                if os.path.isdir(src):
+                    # MERGE, never wholesale rmtree+replace. Real bug,
+                    # found live 2026-09-13, that actually destroyed real
+                    # data: a top-level dir like "cockpit" is only
+                    # PARTIALLY excluded (its own "tiles" subpath is
+                    # skipped by create_backup for size, but "cockpit"
+                    # itself is backed up). The old rmtree(dst) here
+                    # deleted the REAL, live appdata/cockpit/tiles/
+                    # (300MB+ of real map data, never in the backup to
+                    # begin with) before replacing it with the archived
+                    # copy, which obviously never had tiles/ in it
+                    # either -- the tiles were just gone afterward, not
+                    # restored to an older state. Merging instead means
+                    # anything present in the backup overwrites the live
+                    # copy, but anything ONLY live (deliberately excluded
+                    # from backups, like tiles/ or cloud9/models) is left
+                    # alone -- "restore" should mean "bring back what was
+                    # backed up," never "delete whatever wasn't."
+                    _merge_directory(src, dst)
+                else:
+                    if os.path.isdir(dst):
+                        shutil.rmtree(dst)
+                    elif os.path.exists(dst):
+                        os.remove(dst)
+                    shutil.move(src, dst)
                 if chown_to:
                     _chown_recursive(dst, *chown_to)
 

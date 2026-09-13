@@ -320,7 +320,7 @@
             { key: 'kiwix',   name: 'Kiwix', profile: 'knowledge' },
             { key: 'mealie',  name: 'Mealie', profile: 'recipes' },
             { key: 'ai',      name: 'AI', profile: 'ai' },
-            { key: 'backup',  name: 'Backup', unmonitored: true, profile: null },
+            { key: 'backup',  name: 'Backup', profile: null },
         ];
 
         // Same-origin proxied endpoints: a normal fetch tells us reachable vs not.
@@ -353,7 +353,7 @@
         async function runHealthChecks() {
             const host = window.location.hostname;
             const results = {};
-            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie] = await Promise.all([
+            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie, backup] = await Promise.all([
                 checkSameOrigin('/api/grid'),
                 checkSameOrigin('/api/inventory/general'),
                 checkSameOrigin('tiles/comms_base.pmtiles'),
@@ -363,6 +363,7 @@
                 checkNoCors(`http://${host}:8098`),
                 checkNoCors(`http://${host}:8099`),
                 checkNoCors(`http://${host}:8097`),
+                checkSameOrigin('/api/backup/list'),
             ]);
             results.power = power;
             results.network = true; // trivially true: this page loaded over the LAN nginx
@@ -374,6 +375,7 @@
             results.flatnotes = flatnotes;
             results.cloud9 = cloud9;
             results.mealie = mealie;
+            results.backup = backup;
             results.static = true; // purely local static content, always available
             return results;
         }
@@ -511,7 +513,7 @@
         }
 
         function diffAndLog(prev, curr) {
-            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes' };
+            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes', backup: 'Backup system' };
             Object.keys(labels).forEach(k => {
                 if (!prev) return; // first run: don't spam a log full of "detected" on load
                 if (prev[k] !== curr[k]) {
