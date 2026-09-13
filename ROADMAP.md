@@ -179,6 +179,43 @@ simultaneously" claim, stale since Phase B added profiles -- it now
 describes the real default-profile-set behavior and where to check if a
 card is missing.
 
+### Phase G — Real backup/restore ✅ done 2026-09-13
+
+Settings now has real Create/Restore buttons, backed by `backup.py` +
+`/api/backup/*`. Backs up everything under `appdata/` plus `.env` via an
+exclude-list (large/regenerable content only), not an include-list --
+matches the lesson from the `appdata/mealie/` `.gitignore` gap earlier
+this session. Every restore auto-snapshots the current state first, and
+every archive is checked for path-traversal before extraction.
+
+Two real, separate bugs were found and fixed live while building this,
+not caught in review:
+
+1. **nginx crashed entirely** (the whole cockpit, every tile) if any
+   profile-gated container it proxies to wasn't running, since it
+   resolves `proxy_pass` hostnames once at startup. Live-triggerable the
+   moment Phase B added profiles. Fixed with Docker's DNS resolver +
+   `$variables` in `proxy_pass` to defer resolution per-request.
+2. **A near-miss with real data**: the first restore design mounted new
+   paths nested under `/app` (vault-api's own working directory, itself
+   a bind mount of `appdata/media-vault`) instead of at the container
+   root. Restoring "media-vault" as just another subdirectory meant
+   `rmtree`-ing the exact host directory the running Flask process's own
+   code lives in -- it failed partway through, having already deleted
+   `backup.py` and `test_transcription.py`. `citadel.db` (98 real rows)
+   was never touched; fully recovered via `git checkout` + rewriting
+   `backup.py`. Root-caused and fixed: `media-vault` is now excluded
+   from the generic walk entirely (defense in depth, independent of
+   mount paths); `citadel.db`/`notes-data` go through vault-api's own
+   existing safe mount via a new `extra_paths` mechanism. Also fixed:
+   restoring into an active mount-point directory (`notes-data`) needs
+   its contents replaced, not the directory itself; and restored files
+   land root-owned unless explicitly chowned back to the real user.
+
+18 new unit tests cover both bugs directly, the path-traversal
+rejection, and the exclude/extra_paths mechanics -- all against temp
+directories, never real data.
+
 ## Phase 0 — Fixes shipped this pass ✅
 
 - **Live production bug fixed:** the actual running deployment had its
