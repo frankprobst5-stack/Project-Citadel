@@ -156,14 +156,28 @@ the whole project's philosophy:
   a single RTL-SDR dongle at once (one tuner, one process) -- two
   dongles needed to run both simultaneously.
 
-### Phase F — Rewrite `manual.html`
+### Phase F — Rewrite `manual.html` ✅ done 2026-09-13
 
-Do this **last**, once Phases A–E have settled what's actually real —
-otherwise it just needs rewriting again. Should describe exactly what
-exists: no Nexus, Vigil's automation described at whatever real-vs-
-test-data state it's actually in when this phase starts, IBRIS split
-cleanly into its three honestly-labeled tools, and a hardware buying
-guide that matches finished adapters instead of a wishlist.
+Full rewrite against what Phases A-E actually built. Removed: Nexus,
+"Space Weather Intercept" (never real -- not a sibling repo, not a
+cockpit tile, pure invention with nothing behind it at all), the IBRIS
+radar dashboard card (its own README admits fake data), and every
+hardware-list entry tied to those dead features (Bluetooth phone-bridge
+adapter, LiDAR, BME280 sensors, soil moisture loggers, Digirig/SignaLink
+for a homegrown APRS/HF feature that was never actually Citadel's -- redirected
+to WayStation's own docs instead of guessing at WayStation's real
+requirements). Added: real cards for Recipes & Meal Planner and Crypto
+Vault that never had one, an accurate Home Monitor Matrix description
+(real adapters + honest hardware-unverified caveats, explicit Blink/
+SimpliSafe exclusion), the real 9-ledger Homestead Logistics list, a
+realistic Off-Grid AI performance note (~10-15 tok/s on CPU-only
+hardware, not instant), and a hardware guide where every row maps to
+something genuinely built (verified card count: exactly 15, numbered
+1-15 with no gaps or duplicates, matching index.html's real tile list
+exactly). Also fixed the "docker compose up -d launches all 15 modules
+simultaneously" claim, stale since Phase B added profiles -- it now
+describes the real default-profile-set behavior and where to check if a
+card is missing.
 
 ## Phase 0 — Fixes shipped this pass ✅
 

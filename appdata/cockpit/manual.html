@@ -12,12 +12,14 @@
         .card-doc { background: #0b0e09; border-left: 4px solid #ffb000; padding: 15px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
         .card-doc.radio { border-left-color: #528eff; }
         .card-doc.intel { border-left-color: #00ff66; }
+        .card-doc.hardware-needed { border-left-color: #ff8c3d; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
         th, td { border: 1px solid #38402f; padding: 10px; text-align: left; font-size: 13px; }
         th { background: #151c12; color: #d1d5cb; }
         tr:nth-child(even) { background: #12170f; }
         .highlight { color: #ffb000; font-weight: bold; }
         .success { color: #00ff66; font-weight: bold; }
+        .caveat { color: #ff8c3d; }
         code { background: #050704; color: #00ff66; padding: 2px 5px; border-radius: 3px; }
         pre { background: #050704; border: 1px solid #38402f; padding: 15px; border-radius: 4px; overflow-x: auto; }
     </style>
@@ -26,265 +28,232 @@
 
     <h1>🛰️ CITADEL CENTRAL STATION // HOUSEHOLD OPERATIONAL BLUEPRINT</h1>
     <p><b>SECURITY CLASSIFICATION: LOCAL SOVEREIGN // OFF-GRID SURVIVABILITY INFRASTRUCTURE</b></p>
-    <p>This master document provides plain-language instructions, system definitions, and disaster recovery procedures for your family to manage the 15-card command deck safely without third-party internet reliance.</p>
+    <p>This document describes the 15 real cockpit cards as they actually exist today (rewritten 2026-09-13, ROADMAP.md Phase F). Two rules kept it honest: nothing here is described as working unless it's actually been built and tested, and anything genuinely untested (usually because no real hardware exists yet to test it against) says so plainly rather than implying it just works.</p>
 
     <div class="section">
         <h2>🚨 Emergency System Power-Up Protocol (After Outages)</h2>
-        <p>If the main server computer suffers a sudden power loss or manual reboot, follow these 3 basic recovery steps to restore the entire house network dashboard [INDEX]:</p>
-        
+        <p>If the main server computer suffers a sudden power loss or manual reboot, follow these 3 basic recovery steps to restore the dashboard:</p>
+
         <h3>Step 1: Open the System Command Line</h3>
         <p>Turn on the computer monitor, tap the <b>Ubuntu Terminal</b> app icon on the sidebar menu panel layout, or press <code>Ctrl + Alt + T</code> on the keyboard.</p>
-        
+
         <h3>Step 2: Advance to Core Control Directory</h3>
-        <p>Type this exact path routing phrase into your screen prompt line and hit Enter [INDEX]:</p>
+        <p>Type this exact path routing phrase into your screen prompt line and hit Enter:</p>
         <pre><code>cd ~/citadel</code></pre>
-        
-        <h3>Step 3: Ignite the Entire Container Fleet</h3>
-        <p>Type this master orchestration instruction string and hit Enter to launch all 15 modules simultaneously [INDEX]:</p>
+
+        <h3>Step 3: Ignite the Container Fleet</h3>
+        <p>Type this and hit Enter:</p>
         <pre><code>docker compose up -d</code></pre>
-        <p class="success">✓ Expected Confirmation: Every single core service status will print green [Started] across the terminal line.</p>
+        <p>This starts every module in your <code>.env</code> file's <code>COMPOSE_PROFILES</code> line -- by default, everything except two things that need real hardware plugged in first: <code>hardware</code> (an RTL-SDR radio dongle, for the Communications Hub's trunked-radio scanner and Project Intercept) and <code>camera</code> (a real webcam, for the Home Monitor Matrix's motion detector). Add either name to that line once you actually have the matching hardware. If a card is missing from your dashboard entirely, check that line first before assuming something's broken.</p>
+        <p class="success">✓ Expected Confirmation: Every enabled service prints green [Started] across the terminal line.</p>
     </div>
+
     <div class="section">
         <h2>📻 Communications & Airwave Spectrum Modules</h2>
-        <p>These 4 system cards leverage local radio waves and Software Defined Radio (SDR) hardware to intercept, decode, and pass text data across property lines entirely off-grid [INDEX].</p>
+        <p>These 2 cards handle radio and long-distance messaging.</p>
 
         <div class="card-doc radio">
             <h3>🗂️ Card 1: Communications Hub</h3>
-            <p><b>What It Does:</b> Acts as the central administrative station to manage area radio frequencies and view repeater coordination ledgers.</p>
-            <p><b>How to Use:</b> Open to view pre-configured channel lists for local emergency response and family ham radio bands.</p>
+            <p><b>What It Does:</b> Launches WayStation, the full EmComm command dashboard -- net control, ICS forms, mesh, Winlink, JS8Call, space weather, and cross-transport message routing. WayStation is a separate desktop app; this tile just opens it. It has its own hardware requirements for its ham-radio features (Digirig/TNC for packet, a SignaLink-style interface for HF digital modes, etc.) -- see WayStation's own documentation for what those actually are, not this file.</p>
         </div>
 
-        <div class="card-doc radio">
-            <h3>🌧️ Card 2: Space Weather Intercept</h3>
-            <p><b>What It Does:</b> Displays live weather cloud formation maps downloaded directly from US NOAA polar satellites as they pass overhead [INDEX].</p>
-            <p><b>How to Use:</b> If a satellite is passing, check the panel to verify the signal status and look at the decoded infrared thermal image map output.</p>
-        </div>
-
-        <div class="card-doc radio">
-            <h3>📟 Card 3: Project IBRIS Radar</h3>
-            <p><b>What It Does:</b> Operates localized, short-range perimeter sweeps to monitor active local radio signals and verify target nodes around your property line.</p>
-        </div>
-
-        <div class="card-doc radio">
-            <h3>📻 Card 4: Project Intercept (433MHz Scanner)</h3>
-            <p><b>What It Does:</b> Passively intercepts and translates data packets floating through the neighborhood—such as wireless backyard weather instruments, smart home switches, or tire pressure gauges [INDEX].</p>
-            <p><b>How to Use:</b> Check this scrolling ledger page to identify active nearby sensor transmitters broadcasting around your fence lines [INDEX].</p>
+        <div class="card-doc radio hardware-needed">
+            <h3>📻 Card 12: Project Intercept</h3>
+            <p><b>What It Does:</b> Passively decodes 433MHz ISM-band radio traffic -- wireless weather station sensors, tire-pressure monitors, and similar consumer devices -- using the real, open-source <code>rtl_433</code> decoder.</p>
+            <p><b>Requires real hardware:</b> an RTL-SDR USB dongle, plus the <code>hardware</code> profile enabled in <code>.env</code>. Without a dongle plugged in, this card's page will honestly show nothing captured -- that's correct behavior, not a bug.</p>
+            <p><b>Note:</b> a single RTL-SDR dongle can only run <em>one</em> thing at a time -- either this, or WayStation's trunked-radio scanner (which uses the same kind of dongle), not both simultaneously. Two dongles are needed to run both at once.</p>
         </div>
     </div>
+
     <div class="section">
-        <h2>🏡 Homestead Logistics, Storage, & Security Modules</h2>
-        <p>These 5 cards control the localized storage engines, personal documentation vaults, and physical property power grids [INDEX].</p>
+        <h2>🏡 Homestead Logistics, Storage, &amp; Security Modules</h2>
+        <p>These 7 cards handle inventory, secure notes, physical automation, and encryption.</p>
 
         <div class="card-doc intel">
-            <h3>📝 Card 6: Secure Operations Logs</h3>
-            <p><b>What It Does:</b> Your family's primary off-grid secure notepad workspace [INDEX]. Everything typed here saves directly to local disk drives as raw text files with no cloud tracking [INDEX].</p>
-            <p><b>How to Use:</b> Click to log daily events, inventory check sheets, or family emergency action plans. Hit **Save** to lock entries onto local hard storage securely.</p>
+            <h3>📝 Card 11: Note Storage Vault</h3>
+            <p><b>What It Does:</b> Your family's off-grid secure notepad (Flatnotes) -- markdown files saved directly to local disk, no cloud, no account.</p>
+        </div>
+
+        <div class="card-doc intel hardware-needed">
+            <h3>🔋 Card 10: Home Monitor Matrix (Project Vigil)</h3>
+            <p><b>What It Does:</b> A real, working device registry and relay controller, plus real automation: battery-threshold load-shedding and tripline-triggered perimeter lighting run continuously in the background, no manual intervention needed. Also has a real local network scanner ("Scan Now") that finds Tasmota/Shelly/ESPHome devices on your LAN via mDNS.</p>
+            <p><b>Camera feeds:</b> real -- any device registered with a <code>stream_url</code> (e.g. an ESP32-CAM streaming MJPEG) shows a live feed directly on this page.</p>
+            <p><b>Controlling real hardware:</b> supported for four real ecosystems -- Tasmota, Shelly (both generations), ESPHome, and Zigbee2MQTT -- each built against that project's own official API. <span class="caveat">Honest status: none of these four have been tested against real physical hardware yet (none owned as of this writing).</span> If you're trying one, please report back what works.</p>
+            <p><b>Motion-triggered lighting:</b> a real webcam motion detector (adapted from Project IBRIS) can report directly into this card's tripline field. <span class="caveat">Also untested against a real camera</span> -- needs the <code>camera</code> profile and a real <code>/dev/video0</code> device.</p>
+            <p><b>Not supported, and never will be:</b> Blink and SimpliSafe. Both are closed cloud ecosystems with no local API at all -- don't buy either expecting it to work here. See the hardware guide below for what to actually buy instead.</p>
         </div>
 
         <div class="card-doc intel">
-            <h3>🔋 Card 7: Home Monitor Matrix (Project Vigil)</h3>
-            <p><b>What It Does:</b> The main automated smart grid interface tracking physical microcontrollers and switch relays inside your home [INDEX].</p>
-            <p><b>How to Use:</b> Displays green status nodes when equipment is healthy. Use the manual control button toggle tiles to force hard resets or turn high-voltage plugs on or off remotely [INDEX].</p>
+            <h3>📦 Card 3: Digital Media Vault</h3>
+            <p><b>What It Does:</b> Centralized offline video, audio, and PDF library, organized by folder.</p>
         </div>
 
         <div class="card-doc intel">
-            <h3>📦 Card 8: Digital Media Vault</h3>
-            <p><b>What It Does:</b> Accesses your centralized, offline file container storage room to stream audio books, training videos, and critical technical PDF documents without internet bandwidth.</p>
+            <h3>🌽 Card 7: Homestead Logistics</h3>
+            <p><b>What It Does:</b> Nine real inventory ledgers -- Food, Fuel, PPE, Orchard, Livestock, Water, Office/School Supplies, Fertilizer/Pesticide, and Freezer -- each with low-stock and expiration alerts, plus a separate year-over-year Botanical Garden tracker. Also has a Recipe Pantry Check tool: look up any recipe from Card 6 and see which ingredients you already have in Food Inventory or Freezer.</p>
         </div>
 
         <div class="card-doc intel">
-            <h3>🌽 Card 9: Homestead Logistics</h3>
-            <p><b>What It Does:</b> Maintains structured local databases tracking agricultural parameters, seed variety data logs, fertilization intervals, and historical crop yields.</p>
+            <h3>🍲 Card 6: Recipes &amp; Meal Planner</h3>
+            <p><b>What It Does:</b> Mealie, a real, mature self-hosted recipe manager -- import recipes by URL or photo, build a weekly meal plan, generate a shopping list. Local AI (your own Ollama, Card 9) can assist with ingredient parsing and photo import; performance depends on your hardware and is genuinely slow on modest CPUs with no GPU -- expect real delays, not instant results.</p>
+            <p><b>First-time setup:</b> log in with Mealie's default account and change the password immediately -- see README.md for exact steps. This is the one login in all of Citadel that isn't automatically yours.</p>
         </div>
 
         <div class="card-doc intel">
-            <h3>🔐 Card 10: Crypto Security Vault</h3>
-            <p><b>What It Does:</b> Provides local utilities to encrypt mission-critical log text sheets with AES-256 standard protocols or split complex asset keys into multi-signature folders.</p>
+            <h3>🔐 Card 13: Crypto Vault</h3>
+            <p><b>What It Does:</b> Two real, verified tools, both running entirely in your browser with nothing sent over any network: AES-256-GCM text encryption (the browser's own audited Web Crypto API, not a home-rolled cipher), and a real Shamir's Secret Sharing key splitter -- split a secret into N shards where any T of them reconstruct it, but fewer reveal nothing. Both round-trip-tested live before being added here.</p>
         </div>
     </div>
+
     <div class="section">
-        <h2>📚 Local Knowledge Base & Education Modules</h2>
-        <p>These 5 cards preserve civil communication knowledge, medical manuals, school lessons, and artificial intelligence entirely off-grid [INDEX].</p>
+        <h2>📚 Local Knowledge Base &amp; Education Modules</h2>
+        <p>These 6 cards cover reference material, school, AI, and system administration.</p>
 
         <div class="card-doc">
-            <h3>📖 Card 11: Knowledge Base</h3>
-            <p><b>What It Does:</b> Houses reference documentation for international Morse code protocols, phonetic alpha sheets, and off-grid radio communications guides.</p>
+            <h3>📖 Card 5: Knowledge Base</h3>
+            <p><b>What It Does:</b> Offline Wikipedia/wiki archives (Kiwix), plus phonetic alphabets and Morse code reference material.</p>
         </div>
 
         <div class="card-doc">
-            <h3>🎓 Card 12: Home Education Hub (Kolibri Core)</h3>
-            <p><b>What It Does:</b> Serves a full-scale, containerized local school system packed with offline textbooks, math lessons, science books, and structured learning courses for kids.</p>
+            <h3>🎓 Card 4: Home Education Hub</h3>
+            <p><b>What It Does:</b> Cloud9 (a kid-focused dashboard: homework helper, planner, dictionary, weather labs) plus a full Kolibri course library underneath it.</p>
         </div>
 
         <div class="card-doc">
-            <h3>🩺 Card 13: First Aid Encyclopedia</h3>
-            <p><b>What It Does:</b> A critical medical defense asset. It contains offline surgical guidelines, emergency trauma field manuals, and pharmacy drug identification metrics.</p>
+            <h3>🩺 Card 8: First Aid</h3>
+            <p><b>What It Does:</b> Offline emergency trauma protocols, surgical field manuals, and medication reference charts. A handful of sub-features on this page (pediatric dosing charts, step-by-step skill images, printable field cards) are honestly marked "not built yet" directly on the page itself -- check there for the current real status, not this file.</p>
         </div>
 
         <div class="card-doc">
-            <h3>🤖 Card 14: Off-Grid AI (Llama 3.2 Core)</h3>
-            <p><b>What It Does:</b> Your localized, completely offline ChatGPT-style chat interface panel running inside system RAM memory [INDEX].</p>
-            <p><b>How to Use:</b> Type in complex questions regarding engineering repairs, medical diagnosis support, or garden farming formulas to get instant answers with zero internet connection [INDEX].</p>
+            <h3>🤖 Card 9: Off-Grid AI</h3>
+            <p><b>What It Does:</b> A local, fully offline chat interface running <code>llama3.2:1b</code> through Ollama -- no cloud, no API key, no data leaving this machine. <span class="caveat">Realistic expectation:</span> on modest CPU-only hardware with no GPU, this runs at roughly 10-15 tokens/second -- usable, but noticeably slower than a cloud AI service. A small model was chosen deliberately to keep it usable at all on hardware like this; a beefier machine could run a larger, smarter model instead.</p>
         </div>
 
         <div class="card-doc">
-            <h3>📚 Card 15: Master Operations Handbook</h3>
-            <p><b>What It Does:</b> Links directly back into this comprehensive guide framework sheet to maintain family system awareness across generations.</p>
+            <h3>📚 Card 14: Master Operations Handbook</h3>
+            <p><b>What It Does:</b> This document.</p>
         </div>
+
+        <div class="card-doc">
+            <h3>⚙️ Card 15: System Settings</h3>
+            <p><b>What It Does:</b> Live reachability checks for every module, station identity, and build info. Configuration editing isn't wired up here yet -- real config still means editing <code>.env</code> directly and restarting containers.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🗺️ Card 2: Tactical Map</h2>
+        <p>Offline vector map (roads, place names) with real elevation data for your local region, plus a low-detail world view -- fully local, no internet tile server involved. Your own station marker (call sign, location name, grid locator, coordinates) is configured through <code>.env</code>'s <code>STATION_*</code> variables, not hardcoded in the page -- so this file itself never needs to carry your real address.</p>
     </div>
 
     <div class="section">
         <h2>🛠️ Universal Family Fail-Safe Diagnostics</h2>
-        <p>Review these three simple checks if a family member encounters an unexpected layout error panel on screen:</p>
-        
+        <p>Review these checks if a family member encounters an unexpected error on screen:</p>
+
         <ul>
+            <li><strong>Symptom: A card is just missing from the dashboard</strong>
+                <br><em>Resolution:</em> Check <code>.env</code>'s <code>COMPOSE_PROFILES</code> line -- that card's module isn't in your enabled list (common for <code>hardware</code>/<code>camera</code>-gated cards without the matching real device). Add it and run <code>docker compose up -d</code> again.
+            </li>
             <li><strong>Symptom: METRIC DROP (Red Disconnect Header Flashing)</strong>
-                <br><em>Resolution:</em> A background tracking container has gone offline or dropped out of memory space. Open your terminal screen, type <code>cd ~/citadel && docker compose restart</code>, and hit Enter to recycle the network pipelines cleanly [INDEX].
+                <br><em>Resolution:</em> A background container has gone offline. Open your terminal, type <code>cd ~/citadel && docker compose restart</code>, and hit Enter.
             </li>
             <li><strong>Symptom: 502 Bad Gateway Error Web Block</strong>
-                <br><em>Resolution:</em> The central Nginx gateway router is healthy, but the corresponding backend tool app script hasn't answered the door yet [INDEX]. Give the container engine 30 to 45 seconds to finish its initialization boot pass, then hold down <code>Ctrl</code> and tap <code>F5</code> on your keyboard to hard refresh the cache [INDEX].
+                <br><em>Resolution:</em> The nginx gateway is healthy, but the backend it's routing to hasn't answered yet. Give the container 30-45 seconds to finish starting, then hard-refresh (<code>Ctrl+F5</code>).
             </li>
             <li><strong>Symptom: Web Browser Page Returns "File Not Found"</strong>
-                <br><em>Resolution:</em> The browser is looking for a local system path directory route instead of the true server loopback channel. Ensure the address bar reads exactly: <span class="highlight">http://localhost:8085</span> [INDEX].
+                <br><em>Resolution:</em> Confirm the address bar reads exactly <span class="highlight">http://localhost:8085</span> (or your Citadel machine's real LAN IP, not <code>localhost</code>, if browsing from another device).
             </li>
         </ul>
     </div>
-        <!-- SECTION 4: SYSTEM REPLICATION HARDWARE CATALOG -->
+
     <div class="section">
-        <h2>🛠️ Master Hardware Replication Inventory & Budget Sheet</h2>
-        <p>To take all 15 cockpit dashboard tools from simulation loops into live, physical off-grid operations, deploy the following open-source hardware modules. The server computer itself acts as the core mother-ship [INDEX]. All external nodes function over local, non-internet-connected radio or Wi-Fi bridges [INDEX].</p>
-        
+        <h2>🛠️ Real Smart-Home Hardware Guide</h2>
+        <p>What to actually buy if you want the Home Monitor Matrix (Card 10) or Project Intercept (Card 12) to control or capture real hardware, not just show empty registries. Every row below maps to something genuinely built in Citadel today -- nothing here is a wishlist for a feature that doesn't exist yet.</p>
+
         <table>
             <thead>
                 <tr>
-                    <th>System Sector</th>
-                    <th>Required Component / Module</th>
-                    <th>Target Deployment Purpose</th>
+                    <th>Purpose</th>
+                    <th>What to Buy</th>
+                    <th>Why</th>
                     <th>Est. Price</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Radio Spectrum -->
                 <tr>
-                    <td><span class="highlight">Radio Spectrum Intercept</span></td>
-                    <td>Nooelec NESDR SMArt v5 Bundle (RTL2832U & R820T)</td>
-                    <td>Captures raw 433MHz smart property sensor waves and 137MHz orbital NOAA weather satellite imagery [INDEX].</td>
+                    <td><span class="highlight">433MHz / Trunked Radio</span></td>
+                    <td>Nooelec NESDR SMArt v5 (RTL2832U &amp; R820T) or similar RTL-SDR dongle</td>
+                    <td>Powers Project Intercept (Card 12) and WayStation's trunked-radio scanner. Remember: one dongle runs one of these at a time.</td>
                     <td>$35 - $45</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">Long-Range Data Link</span></td>
-                    <td>Class 1 Long Range USB Bluetooth 5.3 Adapter (External Antenna)</td>
-                    <td>Bridges offline cell phones to the server database out to 300+ feet without Wi-Fi [INDEX].</td>
-                    <td>$15 - $20</td>
+                    <td><span class="highlight">Smart Plug / Relay (Tasmota)</span></td>
+                    <td>Any Tasmota-flashed smart plug (e.g. Sonoff S31, or a stock device reflashed with <a href="https://tasmota.github.io/" target="_blank">Tasmota</a>)</td>
+                    <td>Real local HTTP control, no cloud account. Register with <code>"protocol": "tasmota"</code> in Vigil.</td>
+                    <td>$10 - $20</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">VHF Packet Link</span></td>
-                    <td>Digirig Mobile Interface (or TNC hardware soundcard)</td>
-                    <td>Bridges hand-held VHF/UHF radios to map local APRS tactical location data [INDEX].</td>
-                    <td>$55 - $60</td>
-                </tr>
-                <tr>
-                    <td><span class="highlight">HF Ionospheric Modem</span></td>
-                    <td>SignaLink USB Radio Interface (with custom rig data cable)</td>
-                    <td>Modulates encrypted text data blocks across states/countries via HF radio bands [INDEX].</td>
-                    <td>$90 - $100</td>
-                </tr>
-                <!-- Smart Home -->
-                <tr>
-                    <td><span class="highlight">Power Tracking Relays</span></td>
-                    <td>Sonoff S31 Smart Plugs (Pre-flashed with Tasmota/ESPHome)</td>
-                    <td>Plugs into heavy wall equipment to report energy telemetry and secure power cuts [INDEX].</td>
-                    <td>$20 - $25</td>
-                </tr>
-                <tr>
-                    <td><span class="highlight">Inline Infrastructure Relays</span></td>
-                    <td>Shelly Plus 1 / Sonoff Basic R2 Relay Modules</td>
-                    <td>Mounts behind physical lighting switches to control homestead grids remotely [INDEX].</td>
+                    <td><span class="highlight">Smart Plug / Relay (Shelly)</span></td>
+                    <td>Shelly Plus 1 (Gen2) or a classic Shelly 1 (Gen1)</td>
+                    <td>Real local HTTP/RPC control, no cloud account. Register with <code>"protocol": "shelly_gen1"</code> or <code>"shelly_gen2"</code> matching your model.</td>
                     <td>$10 - $25</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">Low-Power Device Bridge</span></td>
-                    <td>Sonoff Zigbee 3.0 USB Dongle Plus (E-Chip or P-Chip)</td>
-                    <td>Plugs into server to communicate with thousands of low-power battery sensors [INDEX].</td>
-                    <td>$10 - $25</td>
-                </tr>
-                <!-- Perimeter Defense -->
-                <tr>
-                    <td><span class="highlight">Perimeter Logic Nodes</span></td>
-                    <td>ESP32 DevKitC v4 Development Microcontrollers (x2)</td>
-                    <td>Acts as the open-source physical brain deployed out along property lines [INDEX].</td>
-                    <td>$10 - $15</td>
+                    <td><span class="highlight">DIY Microcontroller (ESPHome)</span></td>
+                    <td>Any ESP32 or ESP8266 dev board, flashed with <a href="https://esphome.io/" target="_blank">ESPHome</a> and its <code>web_server:</code> component enabled</td>
+                    <td>Real local REST control. Register with <code>"protocol": "esphome"</code> and the entity name from your ESPHome config.</td>
+                    <td>$5 - $15</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">Laser Range Sweepers</span></td>
-                    <td>Benewake TF-Luna LiDAR Distance Sensors (x2)</td>
-                    <td>Fires invisible rangefinder beams to feed real distance threat metrics to Radar [INDEX].</td>
-                    <td>$30 - $40</td>
+                    <td><span class="highlight">Zigbee Sensors/Plugs</span></td>
+                    <td>A Zigbee USB coordinator (e.g. Sonoff Zigbee 3.0 Dongle Plus) running <a href="https://www.zigbee2mqtt.io/" target="_blank">Zigbee2MQTT</a>, plus any Zigbee devices</td>
+                    <td>Real MQTT-based control for battery sensors and plugs. Register with <code>"protocol": "zigbee2mqtt"</code> and your broker's address.</td>
+                    <td>$15 - $30 (coordinator) + device cost</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">Hardened Node Shields</span></td>
-                    <td>Waterproof IP65 Project Junction Box Enclosures</td>
-                    <td>Shields outdoor field electronics, batteries, and sensors from severe weather elements.</td>
-                    <td>$15 - $25</td>
-                </tr>
-                <!-- Homestead Logistics -->
-                <tr>
-                    <td><span class="highlight">Agricultural Loggers</span></td>
-                    <td>LilyGO T-Higrow ESP32 Wireless Soil Moisture Sensors (x2)</td>
-                    <td>Monitors field soil conditions, ambient warmth, and battery charge loops over airwaves [INDEX].</td>
-                    <td>$25 - $30</td>
-                </tr>
-                <tr>
-                    <td><span class="highlight">Storage Bay Visuals</span></td>
-                    <td>ESP32-CAM Development Board with OV2640 Lens Module (x2)</td>
-                    <td>Streams real-time MJPEG visual monitoring feeds of critical medicine/food rooms [INDEX].</td>
+                    <td><span class="highlight">Camera Feed</span></td>
+                    <td>ESP32-CAM board with an OV2640 lens, streaming MJPEG</td>
+                    <td>Register with a real <code>stream_url</code> -- Vigil's device cards already render a live feed from this field.</td>
                     <td>$12 - $18</td>
                 </tr>
                 <tr>
-                    <td><span class="highlight">Climate Monitor Arrays</span></td>
-                    <td>BME280 Temperature, Humidity, & Pressure Sensor breakout chips</td>
-                    <td>Tracks moisture and pressure metrics inside trauma kit bags and food inventory spaces [INDEX].</td>
-                    <td>$8 - $12</td>
+                    <td><span class="highlight">Motion Detection Camera</span></td>
+                    <td>Any real USB webcam</td>
+                    <td>Powers the real (if untested-on-hardware) motion detector feeding Vigil's tripline. Needs <code>/dev/video0</code> and the <code>camera</code> profile.</td>
+                    <td>$15 - $40</td>
                 </tr>
-                <!-- Storage Backups -->
                 <tr>
-                    <td><span class="highlight">Master Security Backups</span></td>
-                    <td>2.0 TB Ruggedized External Hard Drive (e.g., LaCie Rugged)</td>
-                    <td>Stored in a Faraday box to preserve offline system snapshot backups of the server [INDEX].</td>
-                    <td>$75 - $90</td>
+                    <td><span class="highlight">Weatherproof Enclosure</span></td>
+                    <td>Waterproof IP65 project box</td>
+                    <td>Generic protection for any outdoor node above.</td>
+                    <td>$10 - $20</td>
+                </tr>
+                <tr>
+                    <td><span class="highlight">Backups</span></td>
+                    <td>External hard drive, kept offline/off-site when not actively backing up</td>
+                    <td>Citadel's data all lives in <code>appdata/</code> -- back this directory up regularly. No automated backup exists in Citadel itself yet.</td>
+                    <td>$60 - $90</td>
                 </tr>
             </tbody>
         </table>
 
-        <div style="font-family:monospace; font-size:0.85rem; color:#ffb000; background:#050704; padding:15px; border-radius:4px; border:1px solid #38402f;">
-            <b>💰 DEPLOYMENT ESTIMATE SUMMARY:</b><br>
-            • Core Server Base (Dell OptiPlex 9020 + 2TB SSD): <i>Already Procured / In Operation (Ubuntu 26.04 LTS / Kernel 7.0)</i><br>
-            • Remaining Live Component Infrastructure Cost: <b>$390 - $540 Total (Scalable Phase-by-Phase)</b><br>
-            • Monthly Corporate Cloud Fees: <span class="success">$0.00 PERMANENTLY // 100% SOVEREIGN DATA HOLD</span>
-        </div>
+        <p><span class="caveat">Explicitly not on this list, and never will be: Blink and SimpliSafe.</span> Both are closed cloud ecosystems with no supported local API -- Vigil cannot and will not control either, regardless of how they're registered.</p>
     </div>
-    <!-- SECTION 5: OFF-GRID COMMS MAP & HARDWARE SYSTEM SHUTDOWN -->
-    <div class="section">
-        <h2>📻 Local Radio Frequency Matrix & Server Care</h2>
-        <p>Use these reference channels to coordinate local communications during a grid-down event. Follow the shutdown procedure to protect your 2.0 TB hard storage media from data corruption during battery swaps [INDEX].</p>
-        
-        <h3>📡 Local Area Radio Frequency Cheat Sheet</h3>
-        <ul>
-            <li><strong>Family Simplex VHF:</strong> <span class="highlight">146.520 MHz</span> (National Calling Freq - No Repeaters)</li>
-            <li><strong>Digital Packet / APRS Mesh:</strong> <span class="highlight">144.390 MHz</span> (Standard nationwide APRS packet frequency)</li>
-            <li><strong>Homestead Local UHF:</strong> <span class="highlight">446.000 MHz</span> (Handheld Walkie-Talkie Channel 1)</li>
-        </ul>
 
-        <h3>📂 Critical Local File Directory Locations</h3>
+    <div class="section">
+        <h2>📂 Local Reference &amp; Server Care</h2>
+
+        <h3>📂 Real File Locations Worth Knowing</h3>
         <ul>
-            <li><strong>Secure Notebook Markdown Data:</strong> <code>~/citadel/appdata/flatnotes</code> [INDEX]</li>
-            <li><strong>Main Dashboard Layout:</strong> <code>~/citadel/appdata/cockpit/index.html</code> [INDEX]</li>
+            <li><strong>Your real configuration (ports, station info, API tokens):</strong> <code>~/citadel/.env</code> -- never committed to git, this is where every real per-install value lives.</li>
+            <li><strong>Secure Notes data:</strong> <code>~/citadel/appdata/flatnotes</code></li>
+            <li><strong>Main dashboard layout:</strong> <code>~/citadel/appdata/cockpit/index.html</code></li>
+            <li><strong>Full project status and what's still being worked on:</strong> <code>~/citadel/ROADMAP.md</code></li>
         </ul>
 
         <h3>🔌 Controlled Server Power-Down Sequence</h3>
-        <p>Before performing planned solar system maintenance or battery bank swaps, safely stop all running docker containers and flush system cache data to the disk using this terminal command sequence [INDEX]:</p>
+        <p>Before performing planned maintenance or a power/battery-bank swap, stop containers cleanly first:</p>
         <pre><code>cd ~/citadel && docker compose down && sudo shutdown -h now</code></pre>
-        <p class="success">✓ Expected Outcome: All container lanes unbind cleanly, data logs commit to flat storage, and the Dell OptiPlex powers down with zero file strain [INDEX].</p>
+        <p class="success">✓ Expected Outcome: All containers stop cleanly, data commits to disk, and the machine powers down without file corruption risk.</p>
     </div>
 
 </body>
