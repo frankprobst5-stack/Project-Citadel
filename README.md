@@ -104,7 +104,27 @@ lets you turn any of this off later without reinstalling.
 
 ## Installing
 
-### Quick Start
+### One-line install (Linux / macOS)
+
+Open a terminal and paste:
+```bash
+curl -fsSL https://raw.githubusercontent.com/frankprobst5-stack/Project-Citadel/main/get-citadel.sh | bash
+```
+This downloads the repo to `~/citadel` and hands off straight to the real
+installer below (same script, same module picker) — no manual zip/extract
+step. Prefer to read a script before running it? `get-citadel.sh` is short
+and does exactly one job (download + extract + run `install.sh`); open
+[get-citadel.sh](get-citadel.sh) first, or just follow the manual steps
+below instead — both end up in the exact same place.
+
+### One-line install (Windows, PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/frankprobst5-stack/Project-Citadel/main/get-citadel.ps1 | iex
+```
+Same idea — downloads to `%USERPROFILE%\citadel` and hands off to `install.bat`.
+
+### Manual install (any platform)
 
 1. **Download and unzip** this project to a folder on your machine.
 2. **Run the installer for your platform:**
