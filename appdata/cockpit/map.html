@@ -76,19 +76,29 @@
 
     <div class="status-line" id="statusLine">Loading local tiles — comms_base.pmtiles / tactical_terrain.pmtiles (no internet required)...</div>
 
-    <script src="vendor/maplibre/maplibre-gl.js"></script>
     <script src="vendor/pmtiles/pmtiles.js"></script>
     <script src="vendor/pmtiles/protomaps-themes-base.js"></script>
-    <script>
-        // Deliberately v5.24.0's classic UMD bundle, not v6's ESM-only
-        // build. v6 ships worker code as a separate .mjs the browser loads
-        // via a constructed URL at runtime, and something in that path
-        // resolution silently failed here -- tiles fetched over the
-        // network fine, but nothing ever got processed into rendered
-        // layers, with zero errors surfacing anywhere to explain why.
-        // v5.24.0's UMD bundle inlines its worker as a Blob URL instead,
-        // which sidesteps that whole class of problem. A proven, boring
-        // version beat chasing a brand-new one's rough edges at this hour.
+    <script type="module">
+        // Upgraded 2026-09-14 from v5.24.0's classic UMD bundle to v6.8.0's
+        // ESM build -- v5's hillshade rendering has a real, confirmed bug:
+        // a raster-dem tile's "no data" case renders as solid black instead
+        // of transparent (reproduced even with MapLibre's own official demo
+        // terrarium tileset, so it's a genuine v5 defect, not anything
+        // about this project's own tiles). The fix landed in v6.8.0, but
+        // that release dropped the single-file UMD bundle for an ES module
+        // + separate worker file, which an earlier attempt here found threw
+        // no rendered layers with zero errors -- diagnosed then as nginx
+        // serving .mjs as application/octet-stream (module scripts and
+        // module Workers both refuse to execute with the wrong MIME type,
+        // often silently). See nginx.conf's `location ~ \.mjs$` block,
+        // added specifically for this. Loading MapLibre as a real import
+        // (not a global <script src>) means this whole file has to be a
+        // module too -- see the `window.foo = foo` block near the end of
+        // this script for the handful of functions plain onclick="..."
+        // attributes in the HTML above need exposed globally, since a
+        // module's top-level declarations are no longer implicitly global
+        // the way a classic script's were.
+        import * as maplibregl from './vendor/maplibre/maplibre-gl.mjs';
 
         // Station location -- read from station-config.json (generated at
         // cockpit container startup from .env's STATION_* variables, see
@@ -143,9 +153,7 @@
         // 'basemap'" until this was added, confirmed against the official
         // maplibre.org PMTiles example rather than guessed).
         const BASEMAP_URL = new URL('tiles/comms_base.pmtiles', location.href).href;
-        const TERRAIN_URL = new URL('tiles/tactical_terrain.pmtiles', location.href).href;
         protocol.add(new pmtiles.PMTiles(BASEMAP_URL));
-        protocol.add(new pmtiles.PMTiles(TERRAIN_URL));
 
         const map = new maplibregl.Map({
             container: 'map',
@@ -158,28 +166,80 @@
                         url: `pmtiles://${BASEMAP_URL}`,
                         attribution: '<a href="https://openstreetmap.org/copyright" target="_blank">© OpenStreetMap</a>'
                     },
+                    // Plain static {z}/{x}/{y}.png tiles, NOT pmtiles -- found
+                    // live 2026-09-13: MapLibre's raster-dem tile-fetch path
+                    // threw "dem dimension mismatch" on every single tile when
+                    // served via pmtiles:// (confirmed the actual tile bytes
+                    // were correct via direct extraction -- the bug is in the
+                    // pmtiles protocol layer's handling of raster-dem fetches
+                    // specifically, not our data). Left as plain static files
+                    // even after the 2026-09-14 upgrade to MapLibre v6.8.0
+                    // (which fixes a *different* hillshade bug -- see the
+                    // v6.8.0 comment near the top of this file): this is
+                    // also just the most common way MapLibre consumes
+                    // raster-dem tiles generally, no reason to revert it.
                     terrain: {
                         type: 'raster-dem',
-                        url: `pmtiles://${TERRAIN_URL}`,
+                        // A TileJSON reference (url:), NOT an inline tiles:
+                        // array -- found live 2026-09-13: this MapLibre build
+                        // percent-encodes the {z}/{x}/{y} braces into %7Bz%7D
+                        // etc when a tile URL template is declared inline in
+                        // the style (confirmed via map.getSource().tiles
+                        // showing the encoded form immediately on source
+                        // creation, and confirmed every actual tile request
+                        // going out with the literal, never-substituted
+                        // %7Bz%7D%2F%7Bx%7D... path -- tried both an absolute
+                        // URL built via `new URL()` and a plain relative
+                        // string, same result either way, so the encoding
+                        // happens inside MapLibre's own source-normalization,
+                        // not in how this file constructs the string).
+                        // Pointing at a small TileJSON file instead sidesteps
+                        // it entirely: MapLibre fetches and JSON-parses that
+                        // file, and a template string arriving as parsed JSON
+                        // text never passes through the URL-encoding step
+                        // that corrupts an inline style-declared one.
+                        url: new URL('terrain-tilejson.json', location.href).href,
+                        minzoom: 0,
+                        maxzoom: 12,
                         encoding: 'terrarium',
                         tileSize: 256
                     }
                 },
+                // No separate manually-written 'bg' background layer here --
+                // found live 2026-09-14, the actual root cause of hillshade
+                // never being visible (through the whole pmtiles/encoding/
+                // MapLibre-version investigation, none of which was ever the
+                // real bug): protomaps_themes_base.layers() returns its OWN
+                // opaque layers as baseLayers[0] ('background', a flat fill)
+                // AND baseLayers[1] ('earth', the base land-color fill, ALSO
+                // fully opaque -- no fill-opacity set, so it defaults to 1).
+                // Spreading ...baseLayers in AFTER hillshade put both of
+                // those on TOP of hillshade, blotting it out completely --
+                // confirmed by reproducing it in a minimal isolated test
+                // page, then fixing it one layer at a time: removing the
+                // duplicate 'background' wasn't enough by itself, since
+                // 'earth' alone is just as opaque and sat right above
+                // hillshade next. Hillshade has to render AFTER both of
+                // those base fills (so it tints the land color instead of
+                // being hidden under it) but BEFORE landcover/parks/roads/
+                // labels, so those still draw cleanly on top.
                 layers: [
-                    { id: 'bg', type: 'background', paint: { 'background-color': theme.background } },
+                    baseLayers[0],
+                    baseLayers[1],
                     {
                         id: 'hillshade',
                         type: 'hillshade',
                         source: 'terrain',
                         paint: { 'hillshade-shadow-color': '#0a0e07', 'hillshade-highlight-color': '#3a4a2a', 'hillshade-exaggeration': 0.6 }
                     },
-                    ...baseLayers
+                    ...baseLayers.slice(2)
                 ]
             },
             center: HOME,
             zoom: 9,
             attributionControl: { compact: true }
         });
+        window.map = map; // debugging only -- nothing in this file reads it back off window
 
         map.addControl(new maplibregl.NavigationControl(), 'top-left');
         map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
@@ -478,6 +538,19 @@
             `;
             document.getElementById('map').insertAdjacentElement('afterend', wrap);
         }
+
+        // Module scripts don't implicitly expose top-level declarations on
+        // window the way a classic <script> did -- these six are still
+        // plain `function foo(){}` declarations referenced by onclick="..."
+        // attributes in the HTML above (toggleTerrain and
+        // computeElevationProfile already assign to window directly at
+        // their own definitions, so aren't repeated here).
+        window.setTool = setTool;
+        window.exportPins = exportPins;
+        window.undoMeasurePoint = undoMeasurePoint;
+        window.clearMeasure = clearMeasure;
+        window.undoProfilePoint = undoProfilePoint;
+        window.clearProfile = clearProfile;
     </script>
 </body>
 </html>
