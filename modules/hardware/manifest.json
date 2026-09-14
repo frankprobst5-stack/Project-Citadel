@@ -1,0 +1,11 @@
+{
+    "name": "hardware",
+    "profile": "hardware",
+    "title": "Project Intercept / Trunked Scanner",
+    "icon": "📻",
+    "description": "Passively view 433MHz ISM-band signals (weather sensors, tire-pressure monitors, similar consumer devices) decoded by a real RTL-SDR dongle, plus trunked-radio (P25/op25) scanning.",
+    "engine": "rtl_433 + trunk-recorder",
+    "cockpit_tile": true,
+    "requires_hardware": true,
+    "notes": "Bundles two features (433MHz Project Intercept and the trunked-radio scanner) under one profile since both need the same kind of RTL-SDR dongle passed through via /dev/bus/usb -- they can't both run against a single dongle at once (one tuner, one process). The trunked-radio scanner needs a real config.json + talkgroups.csv for your own county's system (get these from radioreference.com or similar -- never invented values). Setup/live display for both live in WayStation, not Citadel's own UI."
+}

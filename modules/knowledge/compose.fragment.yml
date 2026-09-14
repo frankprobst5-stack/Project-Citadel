@@ -1,0 +1,14 @@
+services:
+  # Layer 4: The Offline Knowledge Matrix
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:latest
+    container_name: citadel-kiwix
+    profiles: ["knowledge"]
+    ports:
+      - 8095:8080
+    volumes:
+      - ${KIWIX_STORAGE_PATH}:/data
+    command: --library library.xml
+    networks:
+      - citadel-net
+    restart: unless-stopped

@@ -1,0 +1,37 @@
+services:
+  # Layer 1.3: Project IBRIS webcam motion detector, adapted 2026-09-13
+  # (ROADMAP.md Phase D/E) from project-ibris's own ibris_core.py to run
+  # headless and report into Vigil's real tripline field instead of
+  # opening a local GUI window with nowhere to display on a server. Real
+  # webcam hardware required via /dev/video0 passthrough -- under its
+  # own "camera" profile (not the default set in .env's COMPOSE_PROFILES)
+  # since not everyone running Vigil has a camera to pass through, same
+  # reasoning as the RTL-SDR-dependent "hardware" profile for the
+  # scanner. python:3.10-slim (Debian), not -alpine, because
+  # opencv-python-headless's prebuilt wheels target glibc, not musl --
+  # same reasoning as Cloud9's own Dockerfile comment. Honest status: not
+  # verified against a real physical camera as of this writing (none
+  # attached to the development machine) -- see ibris_motion.py's own
+  # top-of-file note.
+  ibris-motion:
+    # Real Dockerfile as of 2026-09-14 -- see appdata/project-vigil/
+    # Dockerfile.camera's own comment. Used to `pip install
+    # opencv-python-headless numpy` at every restart.
+    build:
+      context: ../../appdata/project-vigil
+      dockerfile: Dockerfile.camera
+    container_name: citadel-ibris-motion
+    profiles: ["camera"]
+    devices:
+      - /dev/video0:/dev/video0
+    volumes:
+      - ../../appdata/project-vigil:/app
+    working_dir: /app
+    environment:
+      - VIGIL_URL=http://citadel-vigil:8085
+    command: python /app/ibris_motion.py
+    networks:
+      - citadel-net
+    restart: unless-stopped
+    depends_on:
+      - vigil

@@ -76,10 +76,29 @@ See `appdata/project-vigil/manual.html` for full integration docs.
 
 ## Requirements
 
-- Docker and the `docker compose` plugin. Get Docker here if you don't have it: https://docs.docker.com/get-docker/
-- Linux, macOS, or Windows.
-- **Minimum hardware:** 4 GB RAM recommended. Lighter services (cockpit, vault-api, vigil, flatnotes, kiwix) run fine on modest hardware; Ollama and Kolibri benefit from more RAM.
-- **Raspberry Pi:** Not yet officially supported (see [ROADMAP.md](ROADMAP.md)). Ollama (LLM) and Kolibri (education platform) are resource-heavy; tested only on desktop/laptop-class hardware so far.
+- **Docker Desktop** (Windows/macOS) or **Docker Engine + the `docker compose` plugin** (Linux). Get it here if you don't have it: https://docs.docker.com/get-docker/ — on Windows this also enables WSL2, which may ask for a restart; that's normal.
+- After installing, **make sure Docker is actually running** (Docker Desktop's whale icon shows "running," not just installed) before you run the installer below.
+- Linux, macOS, or Windows, with **~10 GB free disk space** for container images plus room for your own media/notes/backups.
+
+**Minimum hardware — corrected 2026-09-14 against real measured numbers, not a guess:**
+the old "4 GB recommended" badly understated the default install. Idle, the whole
+core fleet uses under 1 GB combined — but **Ollama alone jumps to ~1.5 GB the moment
+it actually answers a question** (loading a small model into RAM), measured live on
+this project's own hardware. That number grows with a bigger model. Budget by what
+you actually enable in the installer's module picker:
+
+| You enable | Realistic free RAM to budget (beyond your OS's own usage) |
+|---|---|
+| Just the lightweight tier (Home Monitor, Secure Notes, Knowledge Base) | ~1 GB |
+| + Recipes and/or Whisper audio transcription | ~2 GB |
+| + Off-Grid AI and/or Home Education (share one Ollama engine, so enabling both doesn't double this cost) | ~4 GB, more for a larger model than the default `llama3.2:1b` |
+| Everything at once (the installer's non-interactive default) | **8 GB+ free, 16 GB total system RAM is comfortable** — this is what actually froze a real 15 GB test machine when combined with normal desktop use, so don't undersize this |
+
+If you're on a laptop or a machine you also use for other things, pick only the
+modules you actually want in the installer's picker — Settings → Modules also
+lets you turn any of this off later without reinstalling.
+
+- **Raspberry Pi:** Not yet officially supported (see [ROADMAP.md](ROADMAP.md)). Off-Grid AI and Home Education are resource-heavy; tested only on desktop/laptop-class hardware so far.
 
 ---
 
@@ -91,8 +110,21 @@ See `appdata/project-vigil/manual.html` for full integration docs.
 2. **Run the installer for your platform:**
    - **Windows**: double-click `install.bat` (or run from Command Prompt/PowerShell)
    - **Linux / macOS**: open a terminal in the extracted folder and run `./install.sh`
-3. **Wait for first startup** — Docker will pull container images (a few minutes on first run)
-4. **Open your browser** to **http://localhost:8085**
+     (if that prints "Permission denied," the zip didn't preserve the execute
+     bit — run `chmod +x install.sh` once, then `./install.sh` again; or just
+     run `bash install.sh` instead, which needs no execute bit at all)
+3. **Pick your modules** — the installer asks, one at a time, which optional
+   modules you want (Off-Grid AI, Home Education Hub, Recipes, etc.). Each
+   is a real, separate piece documented in its own `modules/<name>/manifest.json`
+   — say no to anything you don't want running, or just press Enter to accept
+   the suggested default. Running the installer non-interactively (e.g. piped
+   into a script) skips the prompts and enables everything, matching this
+   project's behavior before the module picker existed. Change your mind
+   later by editing `COMPOSE_PROFILES` in `.env` and running `docker compose
+   up -d` again — no need to re-run the installer.
+4. **Wait for first startup** — Docker will pull container images for
+   whatever you selected (a few minutes on first run)
+5. **Open your browser** to **http://localhost:8085**
 
 Everything runs locally. Your entire home infrastructure is now up and running.
 
@@ -272,7 +304,6 @@ A few features are stubbed out but not yet implemented. See [ROADMAP.md](ROADMAP
 - **Radar tracking** — `vault-api` serves `/api/radar`, but it always returns an empty/sync-error result: no cockpit page currently has a panel for it, and the real Project IBRIS radar daemon (a separate repo — see ROADMAP.md Phase E) hasn't been bundled in yet. Worth noting its own repo already admits the radar output is demo/simulated data, not a real sensor feed, even once wired up.
 - **Radio scanner & local weather** — `vault-api` serves honest live status (`/api/scanner`, `/api/weather`) plus a real setup API (`/api/scanner/config`) that turns an operator's own trunked-system data (free from RadioReference's public pages, digitalfrequencysearch.com, or OpenMHz — no paid subscription required) into a working `trunk-recorder` config. All of this is consumed and displayed by WayStation now, not a page in this repo (the old `comms.html` has been deleted — WayStation is the real comms replacement, launched from the Communications Hub tile). A real `trunk-recorder` service exists in `docker-compose.yml` under a `hardware` profile. Actual P25 decode and local weather capture both still need real RTL-SDR hardware — see ROADMAP.md Phase 2 for exactly what's left.
 - **Raspberry Pi support** — Ollama and Kolibri are genuinely heavy; testing and documentation needed for Pi deployment.
-- **Containerized vault-api** — Currently uses dev-mode Flask; should have a proper Dockerfile with pinned dependencies for reproducibility and offline startup.
 
 None of these gaps affect the core functionality; they're genuine features to build, not bugs.
 

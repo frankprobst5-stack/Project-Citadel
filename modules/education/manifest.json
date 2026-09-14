@@ -1,0 +1,11 @@
+{
+    "name": "education",
+    "profile": "education",
+    "title": "Home Education Hub",
+    "icon": "🎓",
+    "description": "Cloud9 -- the kid dashboard: AI homework helper, planner, dictionary, weather labs, video shelf, and a link into the full Kolibri course library.",
+    "engine": "Cloud9 + Kolibri",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "Kolibri is a full learning-platform stack -- heavy, desktop/laptop-class hardware recommended, not a Pi target (see ROADMAP.md Phase 1). Cloud9's AI homework helper shares Citadel's own Ollama engine (the 'ai' module's) instead of bundling a private model -- enabling this module alone starts Ollama automatically, no need to also turn on 'ai'."
+}

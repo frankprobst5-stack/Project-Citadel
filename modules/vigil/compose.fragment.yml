@@ -1,0 +1,33 @@
+services:
+  # Layer 1.2: Project VIGIL Unified Smart Home Controller Kernel.
+  # Replaces what used to be two separate containers here (vigil-hub
+  # running vigil_core.py, vigil-power running vigil_hub.py -- yes, those
+  # names really were swapped like that) with one, decided 2026-09-13
+  # (ROADMAP.md Phase D): vigil_kernel.py now carries the device
+  # registry, relay control, solar/security telemetry, real automation
+  # logic (load-shedding, tripline-triggered lighting), a real hardware-
+  # adapter registry (Tasmota/Shelly Gen1+Gen2/ESPHome/Zigbee2MQTT, each
+  # against that project's own documented API -- see vigil_kernel.py's
+  # own comments for exact doc links and the honest caveat that none of
+  # them have real hardware to verify against yet), and real mDNS local
+  # network discovery. zeroconf (mDNS) and paho-mqtt (Zigbee2MQTT) are
+  # real new dependencies this needs, installed the same runtime-pip
+  # pattern as every other lightweight Python service in this file.
+  vigil:
+    # Real Dockerfile as of 2026-09-14 -- see appdata/project-vigil/
+    # Dockerfile.vigil's own comment. Used to `pip install zeroconf
+    # paho-mqtt` at every restart.
+    build:
+      context: ../../appdata/project-vigil
+      dockerfile: Dockerfile.vigil
+    container_name: citadel-vigil
+    profiles: ["vigil"]
+    volumes:
+      - ../../appdata/project-vigil:/app
+    working_dir: /app
+    ports:
+      - "8082:8085"
+    command: python /app/vigil_kernel.py
+    networks:
+      - citadel-net
+    restart: unless-stopped

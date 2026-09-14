@@ -33,6 +33,20 @@
         .backup-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 0.82rem; border-bottom: 1px solid var(--border-dim); }
         .backup-row:last-child { border-bottom: none; }
         .backup-meta { color: var(--text-dim); font-family: monospace; font-size: 0.75rem; }
+        .module-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-dim); }
+        .module-row:last-child { border-bottom: none; }
+        .module-info { flex: 1; }
+        .module-title { font-size: 0.88rem; display: flex; align-items: center; gap: 8px; }
+        .module-desc { color: var(--text-faint); font-size: 0.78rem; line-height: 1.5; margin-top: 4px; }
+        .module-badge { font-family: monospace; font-size: 0.68rem; text-transform: uppercase; border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--text-dim); }
+        .module-badge.hw { border-color: var(--amber); color: var(--amber); }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 22px; transition: 0.15s; }
+        .slider::before { content: ""; position: absolute; height: 14px; width: 14px; left: 3px; top: 3px; background: var(--text-faint); border-radius: 50%; transition: 0.15s; }
+        .switch input:checked + .slider { border-color: var(--accent); }
+        .switch input:checked + .slider::before { transform: translateX(18px); background: var(--accent); }
+        .switch input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -52,6 +66,22 @@
             <h2>Live Service Diagnostics</h2>
             <div id="diagList"></div>
             <div class="note">These checks run the same reachability probes as the cockpit health strip. This page does not yet support editing networking or integrations — that's not wired up, shown here honestly rather than with disabled-looking controls that imply it almost works.</div>
+        </div>
+
+        <div class="panel">
+            <h2>Modules</h2>
+            <div class="note" style="margin-bottom:14px;">Turn off anything you don't need — a lighter install uses less RAM/CPU. A hardware-tagged module needs the real device it names (RTL-SDR, webcam, etc.) to actually do anything even when enabled. Applying a change restarts the dashboard for a few seconds while it picks up the new selection — that's expected, not an error.</div>
+            <div id="moduleList">Loading...</div>
+            <button class="row-btn" id="applyModulesBtn" onclick="applyModules()" style="margin-top:14px;">Save &amp; Apply</button>
+            <div id="modulesStatus" class="note"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Install Module</h2>
+            <div class="note" style="margin-bottom:14px;">Add a module from a <code>.zip</code> (a folder with <code>manifest.json</code> + <code>compose.fragment.yml</code>, optionally <code>nginx.fragment.conf</code>). Installs disabled by default — enable it above once it shows up in the list.</div>
+            <input type="file" id="installModuleInput" accept=".zip" style="margin-bottom:10px; display:block; color: var(--text-dim);">
+            <button class="row-btn" onclick="installModule()">Install From This File</button>
+            <div id="installModuleStatus" class="note"></div>
         </div>
 
         <div class="panel">
@@ -124,6 +154,92 @@
         }
 
         runDiagnostics();
+
+        // ---- Modules ----
+        async function loadModules() {
+            const box = document.getElementById('moduleList');
+            try {
+                const res = await fetch('/api/modules', { cache: 'no-store' });
+                const modules = await res.json();
+                box.innerHTML = modules.map(m => `
+                    <div class="module-row">
+                        <div class="module-info">
+                            <div class="module-title">
+                                <span>${m.icon || ''} ${m.title}</span>
+                                ${m.requires_hardware ? '<span class="module-badge hw">Needs hardware</span>' : ''}
+                            </div>
+                            <div class="module-desc">${m.description}</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" data-profile="${m.profile}" ${m.enabled ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `).join('');
+            } catch (e) {
+                box.innerHTML = '<div class="note" style="color:var(--red);">Could not load module list.</div>';
+                console.error(e);
+            }
+        }
+
+        async function applyModules() {
+            const btn = document.getElementById('applyModulesBtn');
+            const status = document.getElementById('modulesStatus');
+            const profiles = Array.from(document.querySelectorAll('#moduleList input[type=checkbox]:checked'))
+                .map(el => el.dataset.profile);
+            btn.disabled = true;
+            status.textContent = 'Saving...';
+            try {
+                const res = await fetch('/api/modules/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profiles }),
+                });
+                const data = await res.json();
+                status.textContent = data.detail || 'Done.';
+                // Applying restarts the dashboard's own container (cockpit
+                // re-reads COMPOSE_PROFILES at startup), which briefly drops
+                // any connection through it -- including this page's own
+                // fetches -- so the real result is checked a few seconds
+                // later instead of trusted immediately.
+                setTimeout(loadModules, 6000);
+            } catch (e) {
+                // A network-level failure here is often just that same
+                // expected cockpit blip, not a real failure -- so this
+                // re-checks the actual state rather than showing an error.
+                status.textContent = 'Connection dropped (cockpit is likely restarting to apply the change) -- rechecking...';
+                setTimeout(loadModules, 6000);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        loadModules();
+
+        // ---- Install Module ----
+        async function installModule() {
+            const input = document.getElementById('installModuleInput');
+            const status = document.getElementById('installModuleStatus');
+            if (!input.files.length) { alert('Choose a module .zip file first.'); return; }
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            status.textContent = 'Installing...';
+            try {
+                const res = await fetch('/api/modules/install', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    status.innerHTML = `<span style="color:var(--green);">${data.detail}</span>`;
+                } else if (data.status === 'partial') {
+                    status.innerHTML = `<span style="color:var(--amber);">${data.detail}</span>`;
+                } else {
+                    status.innerHTML = `<span style="color:var(--red);">${data.detail || 'Failed.'}</span>`;
+                }
+                loadModules();
+            } catch (e) {
+                status.innerHTML = '<span style="color:var(--red);">Request failed — see console.</span>';
+                console.error(e);
+            }
+        }
 
         // ---- Backups ----
         function formatBytes(bytes) {

@@ -1,0 +1,11 @@
+{
+    "name": "recipes",
+    "profile": "recipes",
+    "title": "Recipes & Meal Planner",
+    "icon": "🍲",
+    "description": "Import recipes by URL or hand-enter them, build a weekly meal plan, generate a shopping list, and check a recipe's ingredients against your Food Inventory and Freezer Foods ledgers.",
+    "engine": "Mealie",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "Ships a public default admin login (changeme@example.com / MyPassword) -- change it immediately after first login, User Settings > Manage Your Account. The pantry-check bridge (vault-api's /api/pantry-check) needs MEALIE_API_TOKEN set in .env after generating one from Mealie's own User Settings > API Tokens page."
+}

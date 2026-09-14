@@ -1,17 +1,16 @@
 # Real Dockerfile (build-time image), not the runtime-pip-install pattern
-# Citadel's other lightweight Python services use (vault-api, vigil-*) --
-# those only ever need Flask+requests, a few seconds to install. Cloud9
-# needs llama-cpp-python, which compiles native code from source and
-# would otherwise redo that same multi-minute compile on every container
-# restart. Debian slim, not Alpine, to avoid musl-related build friction
-# with llama-cpp-python/numpy wheels -- same "pick what the job actually
-# needs" reasoning as the whisper service's ubuntu:26.04 choice elsewhere
-# in this compose file.
+# Citadel's other lightweight Python services use (vault-api, vigil-*).
+# Used to also need build-essential+cmake here to compile
+# llama-cpp-python from source (Cloud9 bundled its own private AI model)
+# -- removed 2026-09-14 now that ai.py calls Citadel's shared Ollama
+# over HTTP instead, so there's no native code to build anymore. Stayed
+# on Debian slim rather than switching to the Alpine pattern other
+# lightweight services use, since that's a bigger change than this
+# session's actual goal (removing the duplicate AI stack) and yt-dlp/
+# nltk's own dependency footprint on Alpine hasn't been verified.
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 

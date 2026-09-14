@@ -1,0 +1,6 @@
+# Pinned to whatever was actually installed and running in the live
+# citadel-vault-brain container at the time this was written (2026-09-14),
+# captured via `pip show flask requests` -- not a guess at compatible
+# versions, the exact ones already proven working.
+Flask==3.1.3
+requests==2.34.2

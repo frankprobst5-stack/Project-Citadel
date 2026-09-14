@@ -1,0 +1,15 @@
+services:
+  # Layer 5: The Portable Flat Notes Logging Engine
+  flatnotes:
+    image: dullage/flatnotes:latest
+    container_name: citadel-flatnotes
+    profiles: ["notes"]
+    ports:
+      - 8098:8080
+    environment:
+      - FLATNOTES_AUTH_TYPE=none
+    volumes:
+      - ../../appdata/flatnotes:/data
+    networks:
+      - citadel-net
+    restart: unless-stopped

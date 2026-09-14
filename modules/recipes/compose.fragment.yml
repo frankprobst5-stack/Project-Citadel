@@ -1,0 +1,36 @@
+services:
+  # Layer 11: Mealie -- a real, mature self-hosted recipe manager and
+  # meal planner (github.com/mealie-recipes/mealie), not a bespoke clone.
+  # Decided 2026-09-12 after comparing it against Tandoor Recipes: both
+  # cover the full recipe/meal-plan/shopping-list wishlist, but Mealie
+  # runs on SQLite with no separate Postgres container (Tandoor requires
+  # one in every documented compose setup), matching the one-container-
+  # per-service shape every other appdata/ entry in this file already
+  # follows. Pinned to v3.25.1 (current release at decision time) rather
+  # than :latest, consistent with Mealie's own docs example, so an
+  # upstream release doesn't silently change this homestead's recipe
+  # data model out from under it. ALLOW_SIGNUP is false since this is a
+  # single-household LAN tool -- the first admin account is created
+  # through Mealie's own first-run setup screen, same as visiting it
+  # fresh would require regardless. The pantry-check bridge in vault-api
+  # (/api/pantry-check) is the one genuinely custom piece: it calls this
+  # container's API over citadel-net using MEALIE_API_TOKEN (set in
+  # .env, generated from Mealie's own User Settings > API Tokens page
+  # after first login) to cross-check a recipe's ingredients against the
+  # Food Inventory / Freezer Foods ledgers vault-api already tracks --
+  # data no recipe app could know about on its own.
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.25.1
+    container_name: citadel-mealie
+    profiles: ["recipes"]
+    ports:
+      - "${MEALIE_PORT}:9000"
+    volumes:
+      - ../../appdata/mealie/data:/app/data
+    environment:
+      ALLOW_SIGNUP: "false"
+      PUID: 1000
+      PGID: 1000
+    networks:
+      - citadel-net
+    restart: unless-stopped

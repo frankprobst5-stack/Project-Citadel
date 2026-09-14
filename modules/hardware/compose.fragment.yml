@@ -1,0 +1,116 @@
+services:
+  # Layer 6: Trunked-radio scanner decode (P25/op25), decided 2026-09-05.
+  # Real, mature open-source decoder (robotastic/trunk-recorder) -- not a
+  # stub image. Under the "hardware" profile (not listed in
+  # COMPOSE_PROFILES' default set in .env, unlike every module profile
+  # above -- this one genuinely must stay opt-in), so a normal `docker
+  # compose up` never tries to start this: it needs an actual RTL-SDR (or similar)
+  # dongle passed through via `devices:` below, plus a real config.json +
+  # talkgroups.csv for your own county's trunked system (get these from
+  # your own SDR setup or radioreference.com -- never invented/generic
+  # values, since a wrong control-channel frequency just fails silently).
+  # Start it explicitly once both exist: `docker compose --profile
+  # hardware up -d scanner`. Writes call audio into the same
+  # appdata/media-vault/scanner/ directory vault-api's /api/scanner reads
+  # from -- the bridge that turns trunk-recorder's own statusServer API
+  # into scanner_state.json is real remaining work, intentionally not
+  # written speculatively with no running daemon to test it against (see
+  # ROADMAP.md).
+  scanner:
+    image: robotastic/trunk-recorder:latest
+    container_name: citadel-scanner
+    profiles: ["hardware"]
+    devices:
+      - /dev/bus/usb
+    volumes:
+      - ../../appdata/media-vault/scanner:/app
+    working_dir: /app
+    command: trunk-recorder --config=/app/config.json
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # The bridge that turns trunk-recorder's real statusServer websocket
+  # messages into scanner_state.json, decided 2026-09-06 (scanner_bridge.py
+  # -- see that file's own module docstring for the real message-shape
+  # verification and connection-direction correction that went into it).
+  # trunk-recorder is the websocket *client* here, dialing out to this
+  # service per its own config.json's "statusServer" field
+  # (scanner_config.py's STATUS_SERVER_URL) -- this service just has to be
+  # listening. Same "hardware" profile as `scanner` above: no point
+  # running a status bridge for a decoder that isn't running either.
+  # Pure software otherwise -- no USB device needed by this container
+  # itself, only by `scanner`.
+  scanner-bridge:
+    # Real Dockerfile as of 2026-09-14 -- see appdata/media-vault/
+    # Dockerfile.scanner-bridge's own comment. Used to `pip install
+    # websockets` at every restart.
+    build:
+      context: ../../appdata/media-vault
+      dockerfile: Dockerfile.scanner-bridge
+    container_name: citadel-scanner-bridge
+    profiles: ["hardware"]
+    command: python3 scanner_bridge.py
+    environment:
+      - SCANNER_BRIDGE_HOST=0.0.0.0
+      - SCANNER_BRIDGE_PORT=3010
+      - SCANNER_STATE_PATH=/app/scanner-out/scanner_state.json
+    volumes:
+      - ../../appdata/media-vault/scanner_bridge.py:/app/scanner_bridge.py
+      - ../../appdata/media-vault/scanner:/app/scanner-out
+    working_dir: /app
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Project Intercept -- passive 433MHz ISM-band signal viewer (weather
+  # sensors, tire-pressure monitors, similar consumer devices), brought
+  # in from the standalone project-intercept repo 2026-09-13 (ROADMAP.md
+  # Phase E). Real, maintained multi-arch image (hertzg/rtl_433_docker,
+  # 225+ stars) wrapping the actual rtl_433 decoder -- not a stub. Same
+  # "hardware" profile and /dev/bus/usb passthrough as `scanner` above,
+  # because it needs the same kind of RTL-SDR dongle -- note this means
+  # `scanner` and `intercept` cannot both run against a single dongle at
+  # once (a tuner can only be opened by one process); if you want both
+  # trunked-radio decode and 433MHz signal viewing simultaneously,
+  # you need two RTL-SDR dongles. Writes JSON-lines output to the same
+  # shared appdata/media-vault/intercept/ directory intercept-backend
+  # (below) reads from.
+  intercept:
+    image: hertzg/rtl_433:latest
+    container_name: citadel-intercept
+    profiles: ["hardware"]
+    devices:
+      - /dev/bus/usb
+    volumes:
+      - ../../appdata/media-vault/intercept:/output
+    # -F log alongside -F json: rtl_433 supports multiple simultaneous
+    # output formats -- without it, a missing/unsupported dongle fails
+    # silently (confirmed live: the container just restart-loops with no
+    # error in `docker logs` at all without this flag).
+    command: -F json:/output/airwaves_ledger.json -F log
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Real Python stdlib HTTP server (intercept_backend.py, unchanged in
+  # shape from the standalone repo except a real bug fix -- see that
+  # file's own comment) serving the last 25 lines of `intercept`'s
+  # output as JSON. Same "hardware" profile as `intercept` above -- no
+  # point running this without the decoder that feeds it.
+  intercept-backend:
+    image: python:3.10-alpine
+    container_name: citadel-intercept-backend
+    profiles: ["hardware"]
+    environment:
+      - LEDGER_FILE=/app/intercept-out/airwaves_ledger.json
+    volumes:
+      - ../../appdata/media-vault/intercept_backend.py:/app/intercept_backend.py
+      - ../../appdata/media-vault/intercept:/app/intercept-out
+    working_dir: /app
+    command: python3 intercept_backend.py
+    networks:
+      - citadel-net
+    restart: unless-stopped
+    depends_on:
+      - intercept

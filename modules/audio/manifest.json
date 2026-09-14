@@ -1,0 +1,11 @@
+{
+    "name": "audio",
+    "profile": "audio",
+    "title": "Whisper Audio Transcription",
+    "icon": "🎙️",
+    "description": "Offline audio transcription via a real whisper.cpp -- backs Mealie's Audio Provider (recipe-from-video import) and future scanner-call transcription.",
+    "engine": "whisper.cpp (ggml-base.en.bin)",
+    "cockpit_tile": false,
+    "requires_hardware": false,
+    "notes": "Pure CPU inference, no hardware passthrough needed. ~10x realtime on a 4c/8t CPU with no GPU (verified live) -- fine to run on modest hardware, not tested on a Pi specifically yet."
+}

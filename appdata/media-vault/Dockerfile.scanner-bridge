@@ -1,0 +1,17 @@
+# Real Dockerfile, added 2026-09-14 (see appdata/media-vault/Dockerfile's
+# own comment for the full "shine offline" reasoning -- this is one of
+# the 5 services that had the same runtime-pip-install problem).
+# Separate file from that Dockerfile since scanner-bridge shares this
+# same appdata/media-vault/ directory with vault-api but needs a
+# different dependency (websockets, not Flask) -- disambiguated via
+# Compose's `build.dockerfile` field in modules/hardware/compose.fragment.yml.
+#
+# scanner_bridge.py itself STAYS volume-mounted (see that fragment's own
+# `.../scanner_bridge.py:/app/scanner_bridge.py` mount) -- this only
+# removes the runtime dependency install.
+FROM python:3.10-alpine
+
+COPY requirements-docker-scanner-bridge.txt /tmp/requirements-docker-scanner-bridge.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-docker-scanner-bridge.txt
+
+WORKDIR /app

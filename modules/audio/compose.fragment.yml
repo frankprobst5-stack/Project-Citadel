@@ -1,0 +1,39 @@
+services:
+  # Offline audio transcription via a real whisper.cpp, decided
+  # 2026-09-07 -- the "offline audio transcription" Local AI backlog
+  # item, meant to eventually transcribe scanner call recordings (see
+  # transcription.py). Unlike `scanner`/`scanner-bridge`, this needs no
+  # hardware profile and no USB passthrough at all -- it's pure CPU
+  # inference on whatever audio file it's handed, so it runs in the
+  # default profile alongside Ollama/Kiwix. `ubuntu:26.04` specifically
+  # (not a smaller/older base) because the real `whisper.cpp` apt
+  # package (1.8.3+dfsg-2) only exists in that release's `universe`
+  # repo -- confirmed live by testing `ubuntu:24.04` first and finding
+  # apt-cache genuinely empty for it there, not guessed. The
+  # ggml-base.en.bin model (real, downloaded from ggerganov/whisper.cpp's
+  # own Hugging Face mirror, ~141MB) is fetched once into a persisted
+  # volume rather than re-downloaded on every container restart. Chose
+  # base.en over the larger small.en: verified live on this exact CPU
+  # (Citadel's real i7-4770, 4c/8t, no GPU) that a real 53-second sample
+  # clip transcribes in ~5s -- about 10x realtime, comfortably brief
+  # even sharing cores with an Ollama request, which small.en would not
+  # have been as reliably.
+  whisper:
+    # Real Dockerfile as of 2026-09-14 -- see appdata/whisper/Dockerfile's
+    # own comment. Used to `apt-get install` whisper.cpp+curl+ca-certificates
+    # at every restart; the one-time model download below is unchanged
+    # (legitimate first-run data provisioning, not a dependency install).
+    build: ../../appdata/whisper
+    container_name: citadel-whisper
+    profiles: ["audio"]
+    command: >
+      sh -c "mkdir -p /models &&
+             [ -f /models/ggml-base.en.bin ] || curl -L -o /models/ggml-base.en.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin &&
+             whisper-server -m /models/ggml-base.en.bin --host 0.0.0.0 --port 8082"
+    volumes:
+      - ../../appdata/whisper-models:/models
+    ports:
+      - 8096:8082
+    networks:
+      - citadel-net
+    restart: unless-stopped

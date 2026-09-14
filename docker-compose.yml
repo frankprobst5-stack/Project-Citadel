@@ -1,22 +1,40 @@
-# Module profiles, added 2026-09-12 (ROADMAP.md Phase B) -- each optional
-# service below is tagged with a `profiles:` entry matching its cockpit
-# card, so `docker compose --profile <name> up -d` can bring up just one
-# module (the actual mechanism a Pi-friendly "install only what you want"
-# system needs). `cockpit` and `vault-api` carry NO profile -- they're
-# shared core infrastructure (the dashboard router and the backend many
-# modules' API routes live on), not a single toggleable module.
+# Module system, ROADMAP.md Phase B. This file now holds only Citadel's
+# core, always-on infrastructure (cockpit + vault-api) plus the top-level
+# `include:` list that pulls in every optional module's own compose
+# fragment from modules/<name>/compose.fragment.yml -- one self-contained
+# folder per module (manifest.json + compose.fragment.yml +
+# nginx.fragment.conf), instead of one giant file every module used to be
+# hand-edited into directly. `include:` is a real Compose Specification
+# feature (Compose v2.20+, well below this project's baseline) that merges
+# every included file's services/networks into one model, exactly as if
+# they'd all been written in this one file -- profiles still control which
+# included services actually START (COMPOSE_PROFILES in .env, unchanged
+# from before this split), `include:` only controls which services Compose
+# even knows about.
 #
-# Critical: a bare `docker compose up -d` with NO --profile flag only
-# starts services that have no `profiles:` tag at all -- everything
-# tagged below would silently stop starting on a fresh boot, which would
-# be a real regression on a system already relied on daily. `.env`'s
-# COMPOSE_PROFILES variable is read automatically by the `docker compose`
-# CLI itself (a real Compose feature, not something wired up manually
-# here) and defaults to every module profile -- so today's exact
-# behavior (`docker compose up -d` starts everything except the
-# `hardware`-gated scanner) is unchanged unless COMPOSE_PROFILES is
-# deliberately overridden to a smaller list, e.g. for a lightweight Pi
-# install running only the vigil/notes/knowledge modules.
+# IMPORTANT if you add a new module: relative host paths inside a fragment
+# file resolve relative to THAT FILE's own directory (modules/<name>/), not
+# this file's -- confirmed empirically, not assumed, since Compose's docs
+# on this are easy to misread. modules/<name>/ is TWO levels under this
+# file's own directory (citadel/modules/<name>/), so every fragment's
+# volume paths start with `../../appdata/...`, not `./appdata/...` like
+# this file's own `vault-api`/`cockpit` volumes below, and not a single
+# `../` either -- that was a real live bug this session, caught by
+# actually reading `docker compose config`'s resolved output rather than
+# assuming the first fix was right.
+# --- MODULE INCLUDES: START (auto-generated, do not hand-edit) ---
+include:
+  - modules/ai/compose.fragment.yml
+  - modules/audio/compose.fragment.yml
+  - modules/camera/compose.fragment.yml
+  - modules/education/compose.fragment.yml
+  - modules/hardware/compose.fragment.yml
+  - modules/knowledge/compose.fragment.yml
+  - modules/notes/compose.fragment.yml
+  - modules/recipes/compose.fragment.yml
+  - modules/vigil/compose.fragment.yml
+# --- MODULE INCLUDES: END ---
+
 services:
   # Layer 1: Your Custom Tactical Dashboard Layout Router
   cockpit:
@@ -54,6 +72,13 @@ services:
       json=\"$$json]\";
       echo \"$$json\" > /usr/share/nginx/html/modules-enabled.json;
       printf '{\"callsign\":\"%s\",\"location\":\"%s\",\"grid\":\"%s\",\"lat\":%s,\"lon\":%s}' \"$$STATION_CALLSIGN\" \"$$STATION_LOCATION\" \"$$STATION_GRID\" \"$$STATION_LAT\" \"$$STATION_LON\" > /usr/share/nginx/html/station-config.json;
+      mkdir -p /etc/nginx/modules-enabled;
+      rm -f /etc/nginx/modules-enabled/*.conf;
+      for p in $$(echo \"$$COMPOSE_PROFILES\" | tr ',' ' '); do
+        if [ -f \"/citadel-modules/$$p/nginx.fragment.conf\" ]; then
+          cp \"/citadel-modules/$$p/nginx.fragment.conf\" \"/etc/nginx/modules-enabled/$$p.conf\";
+        fi;
+      done;
       exec nginx -g 'daemon off;'
       "
     ports:
@@ -62,79 +87,68 @@ services:
       - ./appdata/cockpit:/usr/share/nginx/html
       - ./appdata/cockpit/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./appdata/project-vigil:/usr/share/nginx/html/project-vigil
+      # Read-only: this container only ever reads each module's
+      # nginx.fragment.conf (see the startup script above) to assemble
+      # /etc/nginx/modules-enabled/ -- it never writes back into modules/.
+      - ./modules:/citadel-modules:ro
 
     networks:
       - citadel-net
     restart: unless-stopped
-
-  # Layer 1.2: Project VIGIL Unified Smart Home Controller Kernel.
-  # Replaces what used to be two separate containers here (vigil-hub
-  # running vigil_core.py, vigil-power running vigil_hub.py -- yes, those
-  # names really were swapped like that) with one, decided 2026-09-13
-  # (ROADMAP.md Phase D): vigil_kernel.py now carries the device
-  # registry, relay control, solar/security telemetry, real automation
-  # logic (load-shedding, tripline-triggered lighting), a real hardware-
-  # adapter registry (Tasmota/Shelly Gen1+Gen2/ESPHome/Zigbee2MQTT, each
-  # against that project's own documented API -- see vigil_kernel.py's
-  # own comments for exact doc links and the honest caveat that none of
-  # them have real hardware to verify against yet), and real mDNS local
-  # network discovery. zeroconf (mDNS) and paho-mqtt (Zigbee2MQTT) are
-  # real new dependencies this needs, installed the same runtime-pip
-  # pattern as every other lightweight Python service in this file.
-  vigil:
-    image: python:3.10-alpine
-    container_name: citadel-vigil
-    profiles: ["vigil"]
-    volumes:
-      - ./appdata/project-vigil:/app
-    working_dir: /app
-    ports:
-      - "8082:8085"
-    command: sh -c "pip install zeroconf paho-mqtt && python /app/vigil_kernel.py"
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 1.3: Project IBRIS webcam motion detector, adapted 2026-09-13
-  # (ROADMAP.md Phase D/E) from project-ibris's own ibris_core.py to run
-  # headless and report into Vigil's real tripline field instead of
-  # opening a local GUI window with nowhere to display on a server. Real
-  # webcam hardware required via /dev/video0 passthrough -- under its
-  # own "camera" profile (not the default set in .env's COMPOSE_PROFILES)
-  # since not everyone running Vigil has a camera to pass through, same
-  # reasoning as the RTL-SDR-dependent "hardware" profile for the
-  # scanner. python:3.10-slim (Debian), not -alpine, because
-  # opencv-python-headless's prebuilt wheels target glibc, not musl --
-  # same reasoning as Cloud9's own Dockerfile comment. Honest status: not
-  # verified against a real physical camera as of this writing (none
-  # attached to the development machine) -- see ibris_motion.py's own
-  # top-of-file note.
-  ibris-motion:
-    image: python:3.10-slim
-    container_name: citadel-ibris-motion
-    profiles: ["camera"]
-    devices:
-      - /dev/video0:/dev/video0
-    volumes:
-      - ./appdata/project-vigil:/app
-    working_dir: /app
-    environment:
-      - VIGIL_URL=http://citadel-vigil:8085
-    command: sh -c "pip install opencv-python-headless numpy && python /app/ibris_motion.py"
-    networks:
-      - citadel-net
-    restart: unless-stopped
-    depends_on:
-      - vigil
 
   # Layer 1.5: Your Native Python Vault Brain
   vault-api:
-    image: python:3.10-alpine
+    # Real Dockerfile as of 2026-09-14 (see its own comment) -- used to
+    # `pip install`/`apk add` at every restart, which needed live
+    # internet access just to come back up. Now a real built image with
+    # pinned deps; app.py still volume-mounted below, unchanged.
+    build: ./appdata/media-vault
     container_name: citadel-vault-brain
-    command: >
-      sh -c "pip install flask requests && FLASK_APP=/app/app.py flask run --host=0.0.0.0 --port=5000"
+    command: sh -c "FLASK_APP=/app/app.py flask run --host=0.0.0.0 --port=5000"
     volumes:
       - ./appdata/media-vault:/app
+      # Module system (Settings > Modules), added 2026-09-14 -- listing
+      # installed modules and installing a new one from an uploaded .zip
+      # (modules_manager.py) only need to read/write modules/ and rewrite
+      # docker-compose.yml's include: list, the SAME kind of privilege
+      # vault-api already has everywhere else in this file (read/write
+      # its own files). Deliberately separate from the docker.sock +
+      # host-path-mirror mounts below, which are ONLY needed for actually
+      # starting/stopping containers -- so listing and installing modules
+      # still works even for someone who hasn't (or won't) opt into that
+      # bigger privilege step.
+      - ./modules:/citadel-modules-rw
+      - ./docker-compose.yml:/citadel-compose-file
+      # Module system "one-click apply" (Settings > Modules), added
+      # 2026-09-14 -- lets vault-api actually run a real `docker compose
+      # up -d` when you toggle a module, instead of just editing .env and
+      # telling you to run it yourself. This is Docker-outside-of-Docker
+      # (DooD): mounting the HOST's own docker.sock lets a command run
+      # INSIDE this container control containers on the host, as if it
+      # were the host's own docker CLI. Real, meaningful privilege step
+      # up from everything else this container does (which only reads/
+      # writes files) -- a container that can reach this socket can
+      # start, stop, or otherwise control ANY container on the host, not
+      # just Citadel's own. Deliberate tradeoff, not an oversight: see
+      # ROADMAP.md's module-management entry for the alternative
+      # (manual `docker compose up -d`, no new privilege at all) that was
+      # considered and explicitly not chosen.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The SECOND, easy-to-miss half of DooD: the `docker compose`
+      # binary running inside THIS container still talks to the HOST's
+      # dockerd over that socket, so when it resolves docker-compose.yml's
+      # relative volume paths (./appdata/cockpit etc.), those paths need
+      # to already BE valid on the HOST, at the exact same absolute path
+      # this container sees them at -- otherwise it would send the host
+      # dockerd bind-mount requests for paths that only exist inside THIS
+      # container, which the host doesn't have. Mounting the whole project
+      # directory at an IDENTICAL path on both sides is what makes that
+      # line up. CITADEL_HOST_PATH is written into .env by install.sh at
+      # install time (the real absolute path Citadel was installed to on
+      # THIS machine) -- apply_compose() in modules_manager.py refuses to
+      # run at all if it's not set, rather than mount some placeholder
+      # path and fail confusingly later.
+      - ${CITADEL_HOST_PATH:-/citadel-host-path-unset}:${CITADEL_HOST_PATH:-/citadel-host-path-unset}
       - ./appdata/media-vault/videos:/app/videos
       - ./appdata/media-vault/mp3s:/app/mp3s
       - ./appdata/media-vault/pdfs:/app/pdfs
@@ -173,303 +187,25 @@ services:
       # directly.
       - MEALIE_BASE_URL=http://citadel-mealie:9000
       - MEALIE_API_TOKEN=${MEALIE_API_TOKEN}
+      - CITADEL_HOST_PATH=${CITADEL_HOST_PATH:-}
     networks:
       - citadel-net
     restart: unless-stopped
     depends_on:
       mealie:
         condition: service_started
-        # vault-api is always-on core infra, but mealie is gated behind
-        # the "recipes" profile -- `required: false` means "wait for it
-        # if the recipes profile is active, but don't force mealie to
-        # start (or error out) when it's excluded from a lighter
-        # install." Without this, a Pi install that skips `recipes`
-        # would either fail to start vault-api or be forced to also run
-        # mealie regardless of profile selection -- verified against
-        # real `docker compose config` output for both an all-profiles
-        # and a recipes-excluded profile list before relying on this.
+        # vault-api is always-on core infra, but mealie (now defined in
+        # modules/recipes/compose.fragment.yml) is gated behind the
+        # "recipes" profile -- `required: false` means "wait for it if
+        # the recipes profile is active, but don't force mealie to start
+        # (or error out) when it's excluded from a lighter install."
+        # `include:` merges mealie's service definition into this same
+        # model regardless of profile selection (profiles only gate what
+        # STARTS, not what Compose knows about), so this cross-file
+        # reference resolves exactly like it did before the module split
+        # -- verified with `docker compose config` after the split.
         required: false
-
-  # Layer 2: The Core Offline AI Engine
-  ollama:
-    image: ollama/ollama:latest
-    container_name: citadel-ollama
-    profiles: ["ai"]
-    ports:
-      - "${OLLAMA_PORT}:11434"
-    volumes:
-      - ./appdata/ollama:/root/.ollama
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 3: The Multi-User AI Web Interface
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: citadel-webui
-    profiles: ["ai"]
-    ports:
-      - 8090:8080
-    volumes:
-      - ./appdata/open-webui:/app/backend/data
-    environment:
-      - OLLAMA_BASE_URL=http://citadel-ollama:11434
-    networks:
-      - citadel-net
-    depends_on:
-      - ollama
-    restart: unless-stopped
-
-  # Layer 4: The Offline Knowledge Matrix
-  kiwix:
-    image: ghcr.io/kiwix/kiwix-serve:latest
-    container_name: citadel-kiwix
-    profiles: ["knowledge"]
-    ports:
-      - 8095:8080
-    volumes:
-      - ${KIWIX_STORAGE_PATH}:/data
-    command: --library library.xml
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 5: The Portable Flat Notes Logging Engine
-  flatnotes:
-    image: dullage/flatnotes:latest
-    container_name: citadel-flatnotes
-    profiles: ["notes"]
-    ports:
-      - 8098:8080
-    environment:
-      - FLATNOTES_AUTH_TYPE=none
-    volumes:
-      - ./appdata/flatnotes:/data
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 6: Trunked-radio scanner decode (P25/op25), decided 2026-09-05.
-  # Real, mature open-source decoder (robotastic/trunk-recorder) -- not a
-  # stub image. Under the "hardware" profile (not listed in
-  # COMPOSE_PROFILES' default set in .env, unlike every module profile
-  # above -- this one genuinely must stay opt-in), so a normal `docker
-  # compose up` never tries to start this: it needs an actual RTL-SDR (or similar)
-  # dongle passed through via `devices:` below, plus a real config.json +
-  # talkgroups.csv for your own county's trunked system (get these from
-  # your own SDR setup or radioreference.com -- never invented/generic
-  # values, since a wrong control-channel frequency just fails silently).
-  # Start it explicitly once both exist: `docker compose --profile
-  # hardware up -d scanner`. Writes call audio into the same
-  # appdata/media-vault/scanner/ directory vault-api's /api/scanner reads
-  # from -- the bridge that turns trunk-recorder's own statusServer API
-  # into scanner_state.json is real remaining work, intentionally not
-  # written speculatively with no running daemon to test it against (see
-  # ROADMAP.md).
-  scanner:
-    image: robotastic/trunk-recorder:latest
-    container_name: citadel-scanner
-    profiles: ["hardware"]
-    devices:
-      - /dev/bus/usb
-    volumes:
-      - ./appdata/media-vault/scanner:/app
-    working_dir: /app
-    command: trunk-recorder --config=/app/config.json
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # The bridge that turns trunk-recorder's real statusServer websocket
-  # messages into scanner_state.json, decided 2026-09-06 (scanner_bridge.py
-  # -- see that file's own module docstring for the real message-shape
-  # verification and connection-direction correction that went into it).
-  # trunk-recorder is the websocket *client* here, dialing out to this
-  # service per its own config.json's "statusServer" field
-  # (scanner_config.py's STATUS_SERVER_URL) -- this service just has to be
-  # listening. Same "hardware" profile as `scanner` above: no point
-  # running a status bridge for a decoder that isn't running either.
-  # Pure software otherwise -- no USB device needed by this container
-  # itself, only by `scanner`.
-  scanner-bridge:
-    image: python:3.10-alpine
-    container_name: citadel-scanner-bridge
-    profiles: ["hardware"]
-    command: sh -c "pip install websockets && python3 scanner_bridge.py"
-    environment:
-      - SCANNER_BRIDGE_HOST=0.0.0.0
-      - SCANNER_BRIDGE_PORT=3010
-      - SCANNER_STATE_PATH=/app/scanner-out/scanner_state.json
-    volumes:
-      - ./appdata/media-vault/scanner_bridge.py:/app/scanner_bridge.py
-      - ./appdata/media-vault/scanner:/app/scanner-out
-    working_dir: /app
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Project Intercept -- passive 433MHz ISM-band signal viewer (weather
-  # sensors, tire-pressure monitors, similar consumer devices), brought
-  # in from the standalone project-intercept repo 2026-09-13 (ROADMAP.md
-  # Phase E). Real, maintained multi-arch image (hertzg/rtl_433_docker,
-  # 225+ stars) wrapping the actual rtl_433 decoder -- not a stub. Same
-  # "hardware" profile and /dev/bus/usb passthrough as `scanner` above,
-  # because it needs the same kind of RTL-SDR dongle -- note this means
-  # `scanner` and `intercept` cannot both run against a single dongle at
-  # once (a tuner can only be opened by one process); if you want both
-  # trunked-radio decode and 433MHz signal viewing simultaneously,
-  # you need two RTL-SDR dongles. Writes JSON-lines output to the same
-  # shared appdata/media-vault/intercept/ directory intercept-backend
-  # (below) reads from.
-  intercept:
-    image: hertzg/rtl_433:latest
-    container_name: citadel-intercept
-    profiles: ["hardware"]
-    devices:
-      - /dev/bus/usb
-    volumes:
-      - ./appdata/media-vault/intercept:/output
-    # -F log alongside -F json: rtl_433 supports multiple simultaneous
-    # output formats -- without it, a missing/unsupported dongle fails
-    # silently (confirmed live: the container just restart-loops with no
-    # error in `docker logs` at all without this flag).
-    command: -F json:/output/airwaves_ledger.json -F log
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Real Python stdlib HTTP server (intercept_backend.py, unchanged in
-  # shape from the standalone repo except a real bug fix -- see that
-  # file's own comment) serving the last 25 lines of `intercept`'s
-  # output as JSON. Same "hardware" profile as `intercept` above -- no
-  # point running this without the decoder that feeds it.
-  intercept-backend:
-    image: python:3.10-alpine
-    container_name: citadel-intercept-backend
-    profiles: ["hardware"]
-    environment:
-      - LEDGER_FILE=/app/intercept-out/airwaves_ledger.json
-    volumes:
-      - ./appdata/media-vault/intercept_backend.py:/app/intercept_backend.py
-      - ./appdata/media-vault/intercept:/app/intercept-out
-    working_dir: /app
-    command: python3 intercept_backend.py
-    networks:
-      - citadel-net
-    restart: unless-stopped
-    depends_on:
-      - intercept
-
-  # Offline audio transcription via a real whisper.cpp, decided
-  # 2026-09-07 -- the "offline audio transcription" Local AI backlog
-  # item, meant to eventually transcribe scanner call recordings (see
-  # transcription.py). Unlike `scanner`/`scanner-bridge` above, this
-  # needs no hardware profile and no USB passthrough at all -- it's pure
-  # CPU inference on whatever audio file it's handed, so it runs in the
-  # default profile alongside Ollama/Kiwix. `ubuntu:26.04` specifically
-  # (not a smaller/older base) because the real `whisper.cpp` apt
-  # package (1.8.3+dfsg-2) only exists in that release's `universe`
-  # repo -- confirmed live by testing `ubuntu:24.04` first and finding
-  # apt-cache genuinely empty for it there, not guessed. The
-  # ggml-base.en.bin model (real, downloaded from ggerganov/whisper.cpp's
-  # own Hugging Face mirror, ~141MB) is fetched once into a persisted
-  # volume rather than re-downloaded on every container restart. Chose
-  # base.en over the larger small.en: verified live on this exact CPU
-  # (Citadel's real i7-4770, 4c/8t, no GPU) that a real 53-second sample
-  # clip transcribes in ~5s -- about 10x realtime, comfortably brief
-  # even sharing cores with an Ollama request, which small.en would not
-  # have been as reliably.
-  whisper:
-    image: ubuntu:26.04
-    container_name: citadel-whisper
-    profiles: ["audio"]
-    command: >
-      sh -c "apt-get update && apt-get install -y whisper.cpp curl ca-certificates &&
-             mkdir -p /models &&
-             [ -f /models/ggml-base.en.bin ] || curl -L -o /models/ggml-base.en.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin &&
-             whisper-server -m /models/ggml-base.en.bin --host 0.0.0.0 --port 8082"
-    volumes:
-      - ./appdata/whisper-models:/models
-    ports:
-      - 8096:8082
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 9.5: Cloud9 -- a real, already-built homeschool/kid dashboard
-  # (github.com/frankprobst5-stack/Cloud9), previously a Windows-only
-  # desktop app for one specific kid's laptop, now run here so it's
-  # reachable from any device on the LAN like everything else in Citadel.
-  # Needs a real Dockerfile (not the runtime-pip-install pattern the
-  # lightweight Python services above use) because llama-cpp-python
-  # compiles native code -- see appdata/cloud9/Dockerfile's own comment.
-  # data/ and models/ are volume-mounted real host data (the 1.1GB Qwen
-  # GGUF model, kid-generated journal/planner/scratchpad content) --
-  # never baked into the image, same reasoning as every other appdata/
-  # real-data volume in this file.
-  cloud9:
-    build: ./appdata/cloud9
-    container_name: citadel-cloud9
-    profiles: ["education"]
-    ports:
-      - "${CLOUD9_PORT}:5057"
-    volumes:
-      - ./appdata/cloud9/data:/app/data
-      - ./appdata/cloud9/models:/app/models
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 11: Mealie -- a real, mature self-hosted recipe manager and
-  # meal planner (github.com/mealie-recipes/mealie), not a bespoke clone.
-  # Decided 2026-09-12 after comparing it against Tandoor Recipes: both
-  # cover the full recipe/meal-plan/shopping-list wishlist, but Mealie
-  # runs on SQLite with no separate Postgres container (Tandoor requires
-  # one in every documented compose setup), matching the one-container-
-  # per-service shape every other appdata/ entry in this file already
-  # follows. Pinned to v3.25.1 (current release at decision time) rather
-  # than :latest, consistent with Mealie's own docs example, so an
-  # upstream release doesn't silently change this homestead's recipe
-  # data model out from under it. ALLOW_SIGNUP is false since this is a
-  # single-household LAN tool -- the first admin account is created
-  # through Mealie's own first-run setup screen, same as visiting it
-  # fresh would require regardless. The pantry-check bridge in vault-api
-  # (/api/pantry-check) is the one genuinely custom piece: it calls this
-  # container's API over citadel-net using MEALIE_API_TOKEN (set in
-  # .env, generated from Mealie's own User Settings > API Tokens page
-  # after first login) to cross-check a recipe's ingredients against the
-  # Food Inventory / Freezer Foods ledgers vault-api already tracks --
-  # data no recipe app could know about on its own.
-  mealie:
-    image: ghcr.io/mealie-recipes/mealie:v3.25.1
-    container_name: citadel-mealie
-    profiles: ["recipes"]
-    ports:
-      - "${MEALIE_PORT}:9000"
-    volumes:
-      - ./appdata/mealie/data:/app/data
-    environment:
-      ALLOW_SIGNUP: "false"
-      PUID: 1000
-      PGID: 1000
-    networks:
-      - citadel-net
-    restart: unless-stopped
-
-  # Layer 10: The Offline Home Schooling Matrix Hub
-  kolibri:
-    image: learningequality/kolibri:latest
-    container_name: citadel-kolibri
-    profiles: ["education"]
-    ports:
-      - "${KOLIBRI_PORT}:8080"
-    volumes:
-      - ${KOLIBRI_DATA_PATH}:/kolibri
-    networks:
-      - citadel-net
-    restart: unless-stopped
 
 networks:
   citadel-net:
     driver: bridge
-

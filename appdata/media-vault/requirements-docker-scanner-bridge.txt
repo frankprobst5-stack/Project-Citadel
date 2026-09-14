@@ -1,0 +1,6 @@
+# Pinned to a fresh resolve of this exact base image (python:3.10-alpine)
+# at the time this was written (2026-09-14) -- scanner-bridge wasn't
+# running on this machine to pip-freeze from directly (needs the
+# "hardware" profile + real RTL-SDR hardware), so this is what a plain
+# `pip install websockets` resolves to right now rather than a guess.
+websockets==16.1.1

@@ -2,8 +2,11 @@
 # Docker deployment: drops `pyinstaller`, which only exists there to
 # build the Windows desktop installer (see BUILD_INSTRUCTIONS.md) and
 # has no purpose running the Flask service itself in a container.
+# llama-cpp-python removed 2026-09-14 -- ai.py now calls Citadel's
+# shared Ollama over HTTP (via `requests`, already listed below) instead
+# of loading its own private model, so there's no native code to compile
+# here anymore either (see Dockerfile's own comment).
 Flask==3.0.3
-llama-cpp-python
 requests
 yt-dlp
 nltk

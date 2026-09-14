@@ -1,0 +1,40 @@
+services:
+  # Layer 2: The Core Offline AI Engine
+  ollama:
+    image: ollama/ollama:latest
+    container_name: citadel-ollama
+    # Tagged with BOTH profiles, not just "ai": Cloud9 (the "education"
+    # module) used to bundle its own private llama-cpp-python + model
+    # instead of sharing this one -- consolidated 2026-09-14 so the
+    # system never runs two inference engines at once. A service can
+    # legitimately belong to more than one Compose profile; it starts if
+    # ANY of its profiles is active. This means enabling "education"
+    # alone brings up ollama (so Cloud9's chat works) WITHOUT also
+    # starting open-webui below, which stays "ai"-only -- a household
+    # that just wants the kid dashboard doesn't get the general chat UI
+    # forced on them too.
+    profiles: ["ai", "education"]
+    ports:
+      - "${OLLAMA_PORT}:11434"
+    volumes:
+      - ../../appdata/ollama:/root/.ollama
+    networks:
+      - citadel-net
+    restart: unless-stopped
+
+  # Layer 3: The Multi-User AI Web Interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: citadel-webui
+    profiles: ["ai"]
+    ports:
+      - 8090:8080
+    volumes:
+      - ../../appdata/open-webui:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://citadel-ollama:11434
+    networks:
+      - citadel-net
+    depends_on:
+      - ollama
+    restart: unless-stopped

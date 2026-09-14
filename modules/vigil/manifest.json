@@ -1,0 +1,11 @@
+{
+    "name": "vigil",
+    "profile": "vigil",
+    "title": "Home Monitor Matrix",
+    "icon": "🏠",
+    "description": "Manage local camera feeds, control hardware relays, view real solar/security telemetry, and scan your LAN for Tasmota/Shelly/ESPHome devices to bring under control.",
+    "engine": "Vigil Kernel",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "Smart-home hardware (Tasmota/Shelly/ESPHome/Zigbee2MQTT devices) is optional -- Vigil runs and discovers devices over the LAN without any of it, but relay control obviously needs real devices to control."
+}

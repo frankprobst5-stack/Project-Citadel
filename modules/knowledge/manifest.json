@@ -1,0 +1,11 @@
+{
+    "name": "knowledge",
+    "profile": "knowledge",
+    "title": "Knowledge Base",
+    "icon": "📚",
+    "description": "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.",
+    "engine": "Wiki Core (Kiwix)",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "Drop .zim archives into KIWIX_STORAGE_PATH (default ./appdata/kiwix-library) -- none are bundled."
+}

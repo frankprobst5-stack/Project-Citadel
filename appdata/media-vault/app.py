@@ -3,6 +3,7 @@ import sqlite3
 import os
 import json
 import requests
+import threading
 
 from scanner_config import (
     build_conventional_config,
@@ -12,6 +13,7 @@ from scanner_config import (
 )
 from transcription import is_safe_filename, list_recordings, transcribe_file
 import backup as backup_module
+import modules_manager
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -670,6 +672,119 @@ def api_restore_backup():
     finally:
         if cleanup_path and os.path.exists(cleanup_path):
             os.remove(cleanup_path)
+
+
+# Module system (Settings > Modules), added 2026-09-14 -- see
+# modules_manager.py's own module docstring for the real design and the
+# Docker-outside-of-Docker mechanics apply_compose() depends on.
+CITADEL_MODULES_ROOT = "/citadel-modules-rw"
+CITADEL_COMPOSE_PATH = "/citadel-compose-file"
+CITADEL_HOST_PATH = os.environ.get("CITADEL_HOST_PATH", "")
+
+
+@app.route('/api/modules', methods=['GET'])
+def api_list_modules():
+    return jsonify(modules_manager.list_modules(CITADEL_MODULES_ROOT, CITADEL_ENV_PATH))
+
+
+@app.route('/api/modules/apply', methods=['POST'])
+def api_apply_modules():
+    """Body: {"profiles": ["vigil", "ai", ...]} -- the full list of
+    profiles that should be enabled after this call (not a delta), so
+    the caller (Settings' own checkbox list) always sends its complete
+    current selection. Writes .env synchronously (fast, safe), then
+    kicks off the real `docker compose up -d` in a background thread and
+    returns immediately -- found live 2026-09-14 that running it
+    synchronously doesn't work: ANY profile change also recreates
+    cockpit (it reads COMPOSE_PROFILES at its own startup), and cockpit
+    is the reverse proxy this very request came through, so the HTTP
+    response gets severed by cockpit's own restart before the browser
+    ever sees it -- confirmed live (curl got a bare connection reset,
+    even though the apply had fully succeeded). Returning right after
+    the .env write sidesteps that entirely: the browser gets a real,
+    deliverable response, and the Settings UI just needs to expect a
+    brief cockpit blip and re-poll GET /api/modules a few seconds later
+    to confirm the new state actually took. A background failure has no
+    request left to report to -- logged to stdout (`docker logs
+    citadel-vault-brain`) instead of swallowed."""
+    data = request.get_json(silent=True) or {}
+    profiles = data.get("profiles")
+    if not isinstance(profiles, list) or not all(isinstance(p, str) for p in profiles):
+        return jsonify({"status": "error", "detail": "expected {\"profiles\": [list of strings]}"}), 400
+
+    new_profiles = set(profiles)
+    old_profiles = modules_manager.get_enabled_profiles(CITADEL_ENV_PATH)
+    disabled_profiles = old_profiles - new_profiles
+    modules_manager.set_enabled_profiles(CITADEL_ENV_PATH, new_profiles)
+
+    def _apply_in_background():
+        try:
+            modules_manager.apply_compose(CITADEL_HOST_PATH, CITADEL_MODULES_ROOT, disabled_profiles)
+        except RuntimeError as e:
+            print(f"[modules] background apply_compose failed: {e}", flush=True)
+
+    threading.Thread(target=_apply_in_background, daemon=True).start()
+    return jsonify({
+        "status": "applying",
+        "detail": "Saved. Applying now in the background -- cockpit may blip "
+                  "for a few seconds while it restarts to pick up the change. "
+                  "Re-check the module list in a moment to confirm.",
+    })
+
+
+@app.route('/api/modules/install', methods=['POST'])
+def api_install_module():
+    """Multipart upload, field "file" -- a .zip of one modules/<name>/
+    folder (manifest.json + compose.fragment.yml, optionally
+    nginx.fragment.conf). Installs it disabled -- this only makes it
+    show up in Settings' module list; a separate /api/modules/apply call
+    (the same one the toggle UI already uses) actually enables and starts
+    it. Runs sync_compose_include() + apply_compose() right after
+    extracting specifically so a broken fragment (bad YAML, a real
+    startup error) surfaces immediately as an install-time error instead
+    of being deferred to whenever someone later tries to enable it."""
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "detail": "no file uploaded"}), 400
+    upload = request.files['file']
+    filename = upload.filename or ""
+    if not is_safe_filename(filename) or not filename.endswith('.zip'):
+        return jsonify({"status": "error", "detail": "expected a .zip file"}), 400
+
+    tmp_path = os.path.join(CITADEL_MODULES_ROOT, f"_upload_{filename}")
+    upload.save(tmp_path)
+    try:
+        module_name = modules_manager.install_module_zip(tmp_path, CITADEL_MODULES_ROOT)
+    except modules_manager.UnsafeModuleArchiveError as e:
+        return jsonify({"status": "error", "detail": str(e)}), 400
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    try:
+        modules_manager.sync_compose_include(CITADEL_COMPOSE_PATH, CITADEL_MODULES_ROOT)
+    except RuntimeError as e:
+        return jsonify({
+            "status": "partial",
+            "detail": f"Installed modules/{module_name}/, but couldn't update "
+                      f"docker-compose.yml's include list: {e}",
+        }), 500
+
+    try:
+        modules_manager.apply_compose(CITADEL_HOST_PATH, CITADEL_MODULES_ROOT)
+    except RuntimeError as e:
+        return jsonify({
+            "status": "partial",
+            "detail": f"Installed {module_name} and registered it, but applying "
+                      f"failed (it's installed but not yet enabled, so this is "
+                      f"safe to ignore until you're ready to enable it): {e}",
+        })
+
+    return jsonify({
+        "status": "success",
+        "detail": f"Installed {module_name}. It's disabled by default -- enable it "
+                  f"from the module list above, same as any other module.",
+        "name": module_name,
+    })
 
 
 if __name__ == '__main__':

@@ -1,0 +1,46 @@
+services:
+  # Layer 9.5: Cloud9 -- a real, already-built homeschool/kid dashboard
+  # (github.com/frankprobst5-stack/Cloud9), previously a Windows-only
+  # desktop app for one specific kid's laptop, now run here so it's
+  # reachable from any device on the LAN like everything else in Citadel.
+  # Needs a real Dockerfile (not the runtime-pip-install pattern the
+  # lightweight Python services above use) mainly for ffmpeg (yt-dlp's
+  # video handling) -- it used to also need build-essential+cmake to
+  # compile its own private llama-cpp-python + a 1.1GB Qwen model, but
+  # that's gone as of 2026-09-14: it now calls Citadel's shared `ollama`
+  # (see the `ai` module fragment -- that service carries the
+  # "education" profile too specifically so it starts alongside this
+  # one) over HTTP instead, so the system only ever runs one inference
+  # engine. data/ is volume-mounted real host data (kid-generated
+  # journal/planner/scratchpad content), never baked into the image,
+  # same reasoning as every other appdata/ real-data volume in this
+  # file -- models/ is gone along with the model it used to hold.
+  cloud9:
+    build: ../../appdata/cloud9
+    container_name: citadel-cloud9
+    profiles: ["education"]
+    ports:
+      - "${CLOUD9_PORT}:5057"
+    volumes:
+      - ../../appdata/cloud9/data:/app/data
+    environment:
+      - OLLAMA_BASE_URL=http://citadel-ollama:11434
+      - OLLAMA_MODEL=llama3.2:1b
+    networks:
+      - citadel-net
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  # Layer 10: The Offline Home Schooling Matrix Hub
+  kolibri:
+    image: learningequality/kolibri:latest
+    container_name: citadel-kolibri
+    profiles: ["education"]
+    ports:
+      - "${KOLIBRI_PORT}:8080"
+    volumes:
+      - ${KOLIBRI_DATA_PATH}:/kolibri
+    networks:
+      - citadel-net
+    restart: unless-stopped

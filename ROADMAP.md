@@ -23,6 +23,15 @@ working hardware auto-discovery instead of hand-typed device IPs.
 
 Check items off in order — later phases assume earlier ones are done.
 
+**Status as of 2026-09-14: Phases A–G are done.** The one item left
+unchecked (`project-ibris`'s LAN scanner, Phase E) is a deliberate,
+documented deferral, not a gap that was missed — see its own entry for
+why. Phase 3 below (every service that needed live internet just to
+restart) has also since been closed out as part of the same public-
+release push. What's left after this point (Phases 1, 4, 5) is real but
+explicitly post-release: Raspberry Pi hardware tiering, the Vigil
+embedded-copy-vs-submodule decision, and small cosmetic cleanup.
+
 ### Phase A — Retire dead weight
 
 - [x] **Drop Project-Nexus entirely.** Never progressed past test data,
@@ -39,9 +48,126 @@ Check items off in order — later phases assume earlier ones are done.
 - [x] Replace `index.html`'s hardcoded `coreModules` array with a fetch
   against a generated `modules-enabled.json`, so the cockpit shows
   exactly what's installed.
-- [ ] Split real modules into `modules/<name>/` folders (manifest +
-  compose fragment + nginx fragment each), build the actual installer
-  script, once ready to hand this to other people.
+- [x] Split real modules into `modules/<name>/` folders (manifest +
+  compose fragment + nginx fragment each), 2026-09-14. Nine modules
+  (vigil, camera, ai, knowledge, notes, hardware, audio, education,
+  recipes), each self-contained: `manifest.json` (title/icon/description
+  matching its cockpit tile, `requires_hardware` flag), a real
+  `compose.fragment.yml` (the exact service definitions that used to be
+  hand-edited directly into one giant `docker-compose.yml`), and a
+  `nginx.fragment.conf` for modules that need a proxy route (vigil, ai,
+  hardware, audio -- knowledge/notes/education/recipes are reached by
+  direct port instead, so they have none). The root `docker-compose.yml`
+  now holds only core infra (cockpit, vault-api) plus a top-level
+  `include:` list pulling in every fragment -- a real Compose
+  Specification feature (v2.20+), verified this project's Compose
+  (2.40.3) supports it. `nginx.conf` shrank the same way: core routes
+  plus `include /etc/nginx/modules-enabled/*.conf`, populated at every
+  cockpit container start from whichever profiles are active in
+  `COMPOSE_PROFILES` (same mechanism `modules-enabled.json` already used).
+  `install.sh`/`install.bat` now actually ask which modules you want,
+  one at a time (skipped in a non-interactive shell, which gets every
+  module enabled -- matches pre-picker behavior). Real gotcha found and
+  fixed live, not guessed: relative host paths inside an `include`-d
+  fragment resolve relative to THAT file's own directory, confirmed
+  with `docker compose config`'s actual resolved output -- `modules/<name>/`
+  is two levels under the repo root, so fragment volumes need `../../appdata/...`,
+  not `../appdata/...` (a real bug this session's first attempt shipped
+  and caught before it reached anyone). Verified end-to-end against the
+  real running fleet, not just `docker compose config`: only `cockpit`
+  needed recreating (its own startup script + nginx.conf changed), every
+  other already-running container was untouched by the split, proxied
+  routes for enabled modules still return real data, and the cockpit UI
+  correctly hides a disabled module's tile (Project Intercept, `hardware`
+  profile) while showing every enabled one.
+- [x] Settings > Modules: real enable/disable + one-click apply +
+  install-from-.zip, 2026-09-14. Deliberately NOT a public module
+  marketplace -- Frank stays the sole module author; this only exists so
+  (a) a resource-constrained laptop can turn off something heavy (the
+  actual ask: "if their laptop cant handle somthing they can turn it
+  off"), and (b) a module built later has an easy path to an end user's
+  install without them touching a terminal. `modules_manager.py`
+  (vault-api): `list_modules()` (manifest + live `enabled` from `.env`),
+  `set_enabled_profiles()` (surgical `.env` rewrite), `sync_compose_include()`
+  (already existed, Phase B), `install_module_zip()` (zip-slip-safe
+  extraction, refuses to overwrite an existing module), and
+  `apply_compose()` -- the one-click part: vault-api mounts the host's
+  `docker.sock` plus the whole project directory at an identical path
+  (`CITADEL_HOST_PATH`, written by `install.sh`/`install.bat` every run)
+  so it can run a real `docker compose up -d` on ITSELF as a DooD
+  (Docker-outside-of-Docker) client. New routes: `GET /api/modules`,
+  `POST /api/modules/apply`, `POST /api/modules/install`.
+
+  Three real, live-triggered incidents while building this, each fixed
+  and verified, not just patched over:
+  1. `apply_compose()`'s first version ran a plain, unrestricted
+     `docker compose up -d` from inside vault-api's own container. The
+     very first real run recreated vault-api itself (its own compose
+     entry had just gained new mounts this session), which killed the
+     process mid-command, left most of the fleet stuck in "Created"
+     (never started), and crash-looped cockpit's nginx (hardcodes
+     `citadel-vault-brain`'s hostname, fine for infra assumed to never
+     restart itself -- stopped being true here). Fixed by excluding
+     `vault-api` from the service list passed to `up`, always by name,
+     never a bare project-wide command.
+  2. Turning a profile OFF and running plain `up -d` doesn't stop its
+     containers -- confirmed live (disabling `education` left `cloud9`/
+     `kolibri` running). `docker compose up` is additive-only by design.
+  3. The "obvious" fix for #2 -- `docker compose --profile <name> stop`
+     with no service names -- was tried and was ALSO live-tested as
+     dangerous: a bare `stop` with no service list stops everything in
+     scope for that invocation, and un-profiled core services (cockpit,
+     vault-api) are unconditionally in scope for every `--profile`
+     invocation. This took cockpit and vault-api down a second time in
+     the same session. Real fix: resolve the disabled profile's actual
+     service names from its own module folder (`compose.fragment.yml`)
+     and pass those explicit names to `docker compose stop`, never a
+     scoped subcommand with no service list.
+  Also found live: applying a change that touches `cockpit` (any real
+  profile toggle does, since cockpit reads `COMPOSE_PROFILES` at its own
+  startup) severs the very HTTP connection carrying the apply request,
+  since cockpit is the reverse proxy the browser is talking through --
+  confirmed live as a bare connection reset even on full success. Fixed
+  by writing `.env` synchronously but running the actual `docker compose
+  up -d`/`stop` in a background thread, returning a real, deliverable
+  "applying" response immediately instead of blocking on cockpit's own
+  restart.
+  Verified end-to-end against the real running fleet after every fix:
+  disabling `education` stops exactly `cloud9`+`kolibri` and nothing
+  else, re-enabling starts them back up, `vault-api`'s restart count
+  stays at zero throughout, and `GET /api/modules` reflects true live
+  state every time. `settings.html` now has the real UI too (module
+  list + toggles + Save & Apply + Install Module upload) -- this
+  feature is complete end to end.
+- [x] Consolidate Cloud9's AI onto Citadel's shared Ollama, 2026-09-14.
+  Found while investigating a memory-pressure freeze (see below): Cloud9
+  (the `education` module) was bundling its own private llama-cpp-python
+  + a 1.1GB Qwen model, completely separate from the `ai` module's own
+  Ollama+Open WebUI -- two independent inference engines that could both
+  be loaded at once. Also found live: the bundled model was never
+  actually provisioned on this install (`appdata/cloud9/models/` was
+  empty), so Cloud9's AI helper had silently never worked at all. Fixed
+  by rewriting `appdata/cloud9/server/ai.py` to call Citadel's own
+  `citadel-ollama:11434` over HTTP (same external contract --
+  `is_model_ready()` / `chat_stream()` -- so `app.py` needed no changes)
+  using `llama3.2:1b`, already pulled for the `ai` module and the same
+  size class as the model Cloud9 used to bundle, so no new download.
+  Dropped `llama-cpp-python` from `requirements-docker.txt` and
+  `build-essential`/`cmake` from the Dockerfile (no more native compile)
+  -- image shrank from 1.62GB to 925MB. The real design question this
+  raised: `ollama` and `cloud9` are in different profiles (`ai` vs
+  `education`), so a household running education without the general ai
+  module wouldn't have had Ollama available at all. Fixed by tagging
+  `ollama` with BOTH profiles (`profiles: ["ai", "education"]` -- a
+  service can belong to more than one and starts if any is active) --
+  confirmed via `COMPOSE_PROFILES=education docker compose config
+  --services` that enabling just `education` resolves `ollama` into the
+  service set without pulling in `open-webui` (stays `ai`-only), so a
+  kid-dashboard-only household doesn't get the general chat UI forced on
+  them. Verified end-to-end live: image rebuilt, `citadel-cloud9`
+  recreated, `is_model_ready()` returns true, and a real `/api/chat`
+  request streamed back a real response in the kid-safe system prompt's
+  voice -- with zero restarts to `cockpit`, `vault-api`, or `ollama`.
 
 ### Phase C — Citadel's own outstanding bugs (found in the pre-refactor audit)
 
@@ -112,11 +238,13 @@ the whole project's philosophy:
   motion-detection algorithm against synthetic frames. Honest status:
   not verified against a real physical webcam (none owned as of this
   writing) -- built for a real tester with a camera to confirm.
-- [ ] Once the adapters above are real, rewrite the "recommended
-  hardware" buying list in `manual.html` against exactly what's
-  supported — the current list (Sonoff/Shelly/ESP32/Zigbee dongle) is
-  already close to right, it just needs to describe finished
-  integrations instead of a wishlist.
+- [x] Rewrite the "recommended hardware" buying list in `manual.html`
+  against exactly what's supported — checked 2026-09-14 while scoping
+  the public-release push: already done. The page's hardware guide
+  already lists exactly the four real ecosystems (Tasmota, Shelly
+  Gen1+Gen2/Plus/Pro, ESPHome, Zigbee2MQTT) with real buying guidance
+  for each, and explicitly states "Not supported, and never will be:
+  Blink and SimpliSafe" in two places. This checkbox was just stale.
 
 ### Phase E — Bring in what's real from the other sibling repos
 
@@ -138,7 +266,10 @@ the whole project's philosophy:
   needed, and it's partly redundant with Vigil's new real mDNS discovery
   (Phase D above), which already covers the main "find my smart-home
   gear" use case. Worth doing if broader host-network visibility is
-  wanted for its own sake, not blocking anything else.
+  wanted for its own sake, not blocking anything else. **Deliberately
+  out of scope for the public testing release** (confirmed 2026-09-14
+  while scoping that release) -- a documented deferral, not a gap that
+  was missed.
 - Leave the `project-ibris` radar dashboard out entirely, or bring it in
   clearly labeled demo/simulated, until it has real sensor data behind
   it — its own README already admits it's hardcoded fake targets today.
@@ -348,18 +479,72 @@ gaps"), but they're real, worthwhile features to actually build:
   nothing here guesses at that. Display is WayStation's job, same as
   the scanner above.
 
-## Phase 3 — Make `vault-api` a real container
+## Phase 3 — Make every runtime-pip-install service a real container ✅ done 2026-09-14
 
-Right now `vault-api` has no `Dockerfile` — `docker-compose.yml` installs
-Flask and requests via `pip install` on every single container start,
-with no version pinning. That means every restart depends on PyPI being
-reachable, which is a strange dependency for a tool whose whole pitch is
-"offline-friendly." A real `Dockerfile` with pinned dependencies (or at
-minimum a `requirements.txt` baked into a custom image) makes startup
-faster, removes the network dependency, and makes builds reproducible.
-While in there: Flask's built-in dev server (`app.run()`) is fine for a
-home-LAN appliance, but worth a one-line note in the Dockerfile/README
-that this isn't meant to be exposed past your own network as-is.
+Started as "just fix vault-api" but auditing the whole compose tree against
+the "shine offline" release requirement (not just re-reading this phase's own
+undersold scope) found **5 services** doing this, not 1: `vault-api`, `vigil`,
+`ibris-motion` (camera), `scanner-bridge` (hardware), and `whisper` (audio) —
+every one of them ran `pip install`/`apt-get install`/`apk add` inside its
+`command:` at every container start, meaning none of them could even restart
+without live internet access to PyPI/apt/apk mirrors. A direct contradiction
+for a system whose whole pitch is working when the grid and the internet are
+both down.
+
+Fixed the same way for all 5, mirroring the pattern already proven earlier
+this session for Cloud9's own Dockerfile: a real Dockerfile per service with
+dependencies pinned and baked in at build time, application code left
+volume-mounted exactly as before (no change to the edit-without-rebuild
+workflow). Versions pinned to whatever was actually running live where a
+container was already up (`pip show`/`apk info` against the real container);
+where one wasn't running (`ibris-motion` needs a real webcam, `scanner-bridge`
+needs the `hardware` profile — neither active on this dev machine), pinned to
+a fresh resolve of the same base image instead of guessing. `vigil` and
+`ibris-motion` share `appdata/project-vigil/` as their source, and
+`scanner-bridge` shares `appdata/media-vault/` with `vault-api` — handled with
+per-service `Dockerfile.<name>` files and Compose's `build.dockerfile` field
+rather than restructuring the directories.
+
+Real near-miss caught before it caused damage: a plain grep for top-level
+`import zeroconf`/`import paho` across `vigil_kernel.py` found nothing,
+suggesting those two runtime-installed packages were unused dead weight —
+turned out both are genuinely used, just via **deferred (in-function)
+imports**: `zeroconf` inside `discover_devices()` (the manual's real "Scan
+Now" mDNS feature) and `paho.mqtt.publish` inside the Zigbee2MQTT adapter.
+Verified directly by reading the actual call sites before trusting the grep,
+and both packages stayed in `vigil`'s pinned requirements. Dropping them on a
+naive "unused" reading would have silently broken both features for anyone
+who enabled Zigbee2MQTT or ran the LAN device scan.
+
+`whisper`'s Dockerfile deliberately does NOT bake in its ~141MB
+`ggml-base.en.bin` model — the one-time `curl -L -o ... || true`-style
+download check stays in `command:` unchanged, since that's legitimate
+first-run data provisioning into a persisted volume, not a dependency
+install, matching this project's own established convention of never baking
+real/large data into an image.
+
+Verified end-to-end against the real running fleet, one service at a time
+(never a full-fleet reconciliation loop, learned from this session's earlier
+memory-pressure incident): each image built and deployed individually, with
+a real functional check per service (`vault-api`: `GET /api/modules` +
+`docker --version` inside the container for the one-click-apply path;
+`vigil`: `GET /api/grid` + a live `import zeroconf; import paho.mqtt.publish`
+inside the container; `ibris-motion`: image starts and imports `cv2`/`numpy`
+cleanly, no real camera to test end-to-end against, same honest caveat
+already in this file; `scanner-bridge`: image starts and imports
+`websockets` cleanly; `whisper`: real transcription server boots, model file
+correctly reused from the persisted volume instead of re-downloading).
+Restart count stayed at 0 across the entire rest of the fleet through all 5
+conversions. Final proof: grepping `docker-compose.yml` and
+`modules/*/compose.fragment.yml` for `pip install`/`apt-get install`/`apk
+add` now returns zero live matches (only historical comments explaining what
+each service used to do).
+
+Also checked while auditing "shine offline": cockpit's own static pages
+(`index.html`, `map.html`, `settings.html`, etc.) have zero hidden online
+dependencies — no CDN scripts, no Google Fonts, nothing — everything is
+already vendored locally (e.g. MapLibre under `appdata/cockpit/vendor/`).
+Nothing to fix there.
 
 ## Phase 4 — Resolve the Project Vigil version-drift question
 

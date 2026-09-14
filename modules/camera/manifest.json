@@ -1,0 +1,12 @@
+{
+    "name": "camera",
+    "profile": "camera",
+    "title": "Webcam Motion Detection (Project IBRIS)",
+    "icon": "📷",
+    "description": "Headless webcam motion detection that reports directly into Vigil's tripline field. Not a standalone cockpit tile -- it's an add-on to the Home Monitor Matrix (vigil module), which must also be enabled.",
+    "engine": "Project IBRIS (ibris_motion.py)",
+    "cockpit_tile": false,
+    "requires_hardware": true,
+    "requires_modules": ["vigil"],
+    "notes": "Needs a real webcam passed through via /dev/video0. Honest status as of this writing: not verified against real camera hardware, only synthetic-frame unit tests."
+}

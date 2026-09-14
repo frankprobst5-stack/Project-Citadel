@@ -1,0 +1,11 @@
+{
+    "name": "notes",
+    "profile": "notes",
+    "title": "Note Storage Vault",
+    "icon": "💾",
+    "description": "Access your offline secure markdown notepad, edit storage entries, catalog asset inventories, and view local media files safely.",
+    "engine": "Vault Brain Core (Flatnotes)",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "FLATNOTES_AUTH_TYPE=none -- fine for one trusted household on its own LAN, not for exposing past it."
+}
