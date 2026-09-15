@@ -173,6 +173,37 @@ forgotten:
   schema/retention (how much history to keep before it's just noise), and
   the UI split between "cached syndicated news" and "local log entries"
   on what's otherwise one card.
+  **Major update, same day: this is bigger than plain RSS reading.** Frank
+  already built real, well-tested infrastructure for close to exactly
+  this, in a now-retired personal project (Masthead, PHP — never launched
+  publicly, only ever used by Frank himself, now free to reuse however).
+  Checked the actual code, not just the pitch: `FeedParser.php` wraps
+  SimplePie (mature, established RSS/Atom library) and has real, working
+  **CAP (Common Alerting Protocol) parsing** — the actual standard format
+  NOAA/NWS/FEMA use for real emergency alerts — confirmed live against
+  `api.weather.gov`'s real NWS alert feed, with a genuine caught-in-
+  production bug fixed and documented (a BBC feed's double-entity-encoded
+  URLs). Beyond plain feeds, it has a real adapter pattern
+  (`HazardSeverityAdapter`) with working, source-specific normalizers for
+  **USGS earthquakes, NHC hurricanes, NOAA/SWPC space weather, InciWeb
+  wildfires, tsunami, and drought** — e.g. the USGS adapter knows
+  earthquake feeds use Atom+GeoRSS with no native severity field, so it
+  derives severity from magnitude parsed out of the feed's own
+  `M <magnitude> - <location>` title format, confirmed against real USGS
+  output. **This is real, proven emergency-alert aggregation
+  infrastructure, not a feed reader with extra steps** — arguably more
+  valuable to Citadel's actual mission than the plain RSS-archive idea
+  that started this entry. Real practical question, not yet resolved:
+  Citadel's own backend (`vault-api`) is Python/Flask, not PHP — porting
+  the actual PHP code in means either running a second language runtime
+  just for this, or reimplementing the same proven design (CAP parsing,
+  the adapter-per-source pattern, the specific severity-normalization
+  logic already fought out against each real API's quirks) fresh in
+  Python, which is the architecturally consistent path but real,
+  not-yet-scoped work either way. The core lesson worth keeping
+  regardless of which path is chosen, straight from Masthead's own
+  roadmap: **fetch each unique feed URL exactly once on a schedule, cache
+  it, every reader reads from the cache — never fetch on page load.**
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
