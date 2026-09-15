@@ -6,6 +6,10 @@ Everything runs locally on your own machine. When the internet goes down, your e
 
 Free forever, licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later) — see [LICENSE](LICENSE) for the full text. (This covers Citadel's own code — the cockpit dashboard, the media-vault app, install scripts. The bundled services — Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes — are pulled as pre-built container images and keep their own upstream licenses.)
 
+<p align="center">
+  <img src="screenshots/cockpit-dashboard.png" alt="Citadel's main cockpit dashboard, showing all enabled module tiles" width="800">
+</p>
+
 ---
 
 ## What You Get
@@ -71,6 +75,68 @@ Example hardware registration:
 ```
 
 See `appdata/project-vigil/manual.html` for full integration docs.
+
+---
+
+## Screenshots
+
+Real screenshots of the actual running dashboard — every one of these is a real, working feature, not a mockup.
+
+<table>
+<tr>
+<td width="50%">
+
+**Homestead Logistics** — real inventory ledgers across food, fuel, PPE, orchard, livestock, and more
+<img src="screenshots/homestead-logistics.png" alt="Homestead Logistics Matrix">
+</td>
+<td width="50%">
+
+**Home Monitor Matrix (Project Vigil)** — power/security telemetry and real local device discovery
+<img src="screenshots/home-monitor-matrix.png" alt="Project Vigil dashboard">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**First Aid & Medical Support** — offline triage tools, medical reference library, AI assistant
+<img src="screenshots/first-aid-overview.png" alt="First Aid and Medical Support overview">
+</td>
+<td width="50%">
+
+**Medical Supply Tracking** — a real supply ledger, part of the same First Aid module
+<img src="screenshots/first-aid-supplies.png" alt="Medical supply inventory tracking">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Home Education Hub (Cloud9)** — AI homework helper, planner, dictionary, and more for kids
+<img src="screenshots/home-education-hub.png" alt="Cloud9 home education hub">
+</td>
+<td width="50%">
+
+**Knowledge Base** — offline wiki/encyclopedia access via Kiwix
+<img src="screenshots/knowledge-base.png" alt="Offline Knowledge Base">
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Crypto Vault** — client-side AES-256-GCM encryption and Shamir's Secret Sharing, entirely in-browser
+<img src="screenshots/crypto-vault.png" alt="Crypto Vault encryption tools">
+</td>
+<td width="50%">
+
+**Media Vault** — self-hosted video, audio, and PDF library
+<img src="screenshots/media-vault.png" alt="Media Vault control hub">
+</td>
+</tr>
+</table>
+
+**Settings** — real live service diagnostics, per-module enable/disable, and backup/restore
+<p align="center">
+  <img src="screenshots/settings.png" alt="Citadel System Settings" width="700">
+</p>
 
 ---
 
