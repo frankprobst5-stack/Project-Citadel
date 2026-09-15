@@ -91,6 +91,36 @@ forgotten:
   broadcast distribution stays in WayStation — see its own ROADMAP.md
   entry for that half. `[DISCOVERY]`: real, wanted, not yet scoped into
   buildable steps.
+- **Offload Whisper to an idle integrated GPU** `[DISCOVERY]`, 2026-09-15
+  — idea from Keith B. Phillips (see Credits above), who built this for
+  his own machine: keep a discrete GPU free for Ollama, run Whisper on
+  the onboard/integrated GPU that would otherwise sit idle. Real, viable
+  path for Citadel specifically, not hypothetical — `whisper.cpp` (already
+  the real engine behind `citadel-whisper`) has genuine GPU backends
+  (Vulkan is the relevant one for an integrated GPU; CUDA needs a discrete
+  NVIDIA card), and today's `whisper` service runs CPU-only (confirmed
+  when it was built, verified live on a plain i7 with no GPU involved at
+  all). Ollama and Whisper already compete for the same host's resources
+  as two separate containers — this would let a machine with both a
+  discrete and an integrated GPU actually put both to work instead of
+  leaving one idle. Not yet scoped: real work needed on GPU device
+  passthrough into the `whisper` container (`/dev/dri` for an Intel/AMD
+  iGPU) and confirming the specific whisper.cpp build Citadel uses
+  actually has Vulkan support compiled in.
+- **Dictation/hotkey accessibility feature** `[DISCOVERY]`, 2026-09-15 —
+  also from the Keith B. Phillips conversation, but the more important
+  half of it: he built his GPU-offload trick specifically for
+  accessibility, after 40 years of IT work left his hands unable to type
+  comfortably. Citadel has zero dictation anywhere in the UI today, even
+  though the exact engine to power it (`citadel-whisper`) already exists
+  and already does real transcription work. A hotkey-triggered "dictate
+  into any text field" feature (notes, inventory entries, anywhere) would
+  be a genuine accessibility win for an audience that includes plenty of
+  people who aren't young and unhurt — not a small niche request. Not yet
+  scoped: needs real design work on how a browser-based dashboard
+  captures a global hotkey and streams audio to Whisper, which is a
+  meaningfully different problem than the file-upload transcription flow
+  `transcription.py` already handles.
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
