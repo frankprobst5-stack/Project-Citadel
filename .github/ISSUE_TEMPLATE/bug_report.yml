@@ -1,0 +1,83 @@
+name: Bug report
+description: Something in Citadel is broken or not working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing Citadel — the more detail here, the faster this can get fixed.
+        This is an early public test release, so real bugs are expected; you're not
+        wasting anyone's time by reporting one.
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Enable the ___ module
+        2. Open ___
+        3. Click ___
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How did you install Citadel?
+      options:
+        - One-line installer (curl/irm)
+        - Manual install.sh / install.bat
+        - Built or modified from source
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: modules
+    attributes:
+      label: Which modules do you have enabled?
+      description: Check Settings → Modules in the dashboard, or your .env's COMPOSE_PROFILES line.
+      placeholder: "e.g. vigil,ai,knowledge,notes,audio,education,recipes"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: |
+        From the citadel folder, run and paste the output:
+          docker compose ps
+          docker compose logs --tail 50 <affected-service>
+        (Find the affected service's name in the first output's SERVICE column.)
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, browser console errors, anything that might help.
