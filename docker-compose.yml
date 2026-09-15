@@ -91,7 +91,15 @@ services:
       # nginx.fragment.conf (see the startup script above) to assemble
       # /etc/nginx/modules-enabled/ -- it never writes back into modules/.
       - ./modules:/citadel-modules:ro
-
+    # Real memory cap, added 2026-09-14 after a live freeze this session
+    # traced to unbounded container memory use (see ROADMAP.md) --
+    # cockpit is just nginx serving static files + one proxy layer,
+    # measured under 20MB in real use; 128m leaves generous headroom
+    # without letting a misbehaving reverse-proxy request pile-up take
+    # down the host. Verified this is actually enforced by plain `docker
+    # compose up -d` on this project's Compose version (2.40.3) -- no
+    # Swarm/`deploy:` needed, confirmed via `docker inspect`.
+    mem_limit: 128m
     networks:
       - citadel-net
     restart: unless-stopped
@@ -188,6 +196,11 @@ services:
       - MEALIE_BASE_URL=http://citadel-mealie:9000
       - MEALIE_API_TOKEN=${MEALIE_API_TOKEN}
       - CITADEL_HOST_PATH=${CITADEL_HOST_PATH:-}
+    # Real memory cap, added 2026-09-14 -- see cockpit's own comment
+    # above for why. Measured under 30MB in real use (Flask + the
+    # docker CLI it shells out to for one-click module apply); 256m
+    # covers that plus a real docker-compose reconcile running inside it.
+    mem_limit: 256m
     networks:
       - citadel-net
     restart: unless-stopped

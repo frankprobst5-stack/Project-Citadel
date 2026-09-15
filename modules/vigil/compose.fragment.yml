@@ -28,6 +28,7 @@ services:
     ports:
       - "8082:8085"
     command: python /app/vigil_kernel.py
+    mem_limit: 128m
     networks:
       - citadel-net
     restart: unless-stopped

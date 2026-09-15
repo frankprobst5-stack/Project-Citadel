@@ -9,6 +9,12 @@ services:
     volumes:
       - ${KIWIX_STORAGE_PATH}:/data
     command: --library library.xml
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). kiwix-serve mmaps .zim
+    # archives rather than loading them fully into RAM, so this doesn't
+    # scale with your library size the way a normal cache would; 512m
+    # covers real serving overhead for typical concurrent LAN use.
+    mem_limit: 512m
     networks:
       - citadel-net
     restart: unless-stopped

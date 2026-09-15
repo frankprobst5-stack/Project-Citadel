@@ -26,6 +26,11 @@ services:
     environment:
       - OLLAMA_BASE_URL=http://citadel-ollama:11434
       - OLLAMA_MODEL=llama3.2:1b
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Measured ~50MB in real use
+    # (the AI inference itself now runs in the shared ollama container,
+    # not here) -- 256m is generous headroom.
+    mem_limit: 256m
     networks:
       - citadel-net
     depends_on:
@@ -41,6 +46,11 @@ services:
       - "${KOLIBRI_PORT}:8080"
     volumes:
       - ${KOLIBRI_DATA_PATH}:/kolibri
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). A full learning-platform
+    # stack (its own web server + database), heavier than the other
+    # lightweight services in this file -- 1024m covers real use.
+    mem_limit: 1024m
     networks:
       - citadel-net
     restart: unless-stopped

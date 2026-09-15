@@ -10,6 +10,10 @@ services:
       - FLATNOTES_AUTH_TYPE=none
     volumes:
       - ../../appdata/flatnotes:/data
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). A flat-file markdown notes
+    # app -- measured under 10MB in real use; 128m is generous headroom.
+    mem_limit: 128m
     networks:
       - citadel-net
     restart: unless-stopped

@@ -18,6 +18,15 @@ services:
       - "${OLLAMA_PORT}:11434"
     volumes:
       - ../../appdata/ollama:/root/.ollama
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). This is the one service in
+    # the whole fleet that genuinely needs a lot of room: idle it's
+    # ~15MB, but loading even the small default model (llama3.2:1b) for
+    # a real answer measured ~1.5GB live. 4096m gives headroom for a
+    # meaningfully larger model than the default without being
+    # unbounded -- if you deliberately pull something bigger than that,
+    # raise this number to match.
+    mem_limit: 4096m
     networks:
       - citadel-net
     restart: unless-stopped
@@ -33,6 +42,10 @@ services:
       - ../../appdata/open-webui:/app/backend/data
     environment:
       - OLLAMA_BASE_URL=http://citadel-ollama:11434
+    # Real memory cap, added 2026-09-14 -- measured ~50-700MB in real
+    # use (it grows with chat history/session count); 512m covers normal
+    # household use without being unbounded.
+    mem_limit: 512m
     networks:
       - citadel-net
     depends_on:

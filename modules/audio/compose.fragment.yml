@@ -34,6 +34,11 @@ services:
       - ../../appdata/whisper-models:/models
     ports:
       - 8096:8082
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Measured ~185MB idle with the
+    # base.en model loaded; 768m covers real inference overhead during
+    # an active transcription without being unbounded.
+    mem_limit: 768m
     networks:
       - citadel-net
     restart: unless-stopped

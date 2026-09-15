@@ -567,6 +567,48 @@ default:
 Whichever is chosen, the immediate fix either way is bringing this copy
 back in sync with what the standalone repo actually has.
 
+## Phase 6 — Real per-container memory limits ✅ done 2026-09-14
+
+Identified while auditing whether Citadel was "doing too much" for a
+single-host off-grid box: every service had unbounded memory, so one heavy
+container (Ollama, under real load) could starve everything else on the same
+host, including the core services an emergency-use system actually needs to
+stay up. Added `mem_limit:` to every service in `docker-compose.yml` and
+every `modules/*/compose.fragment.yml`, sized from real measured usage this
+session rather than guessed:
+
+- Lightweight core (cockpit, vigil, flatnotes, scanner-bridge,
+  intercept-backend): 128m each -- all measured under 30MB in real use.
+- Moderate (vault-api, intercept, cloud9): 256m.
+- Heavier real services (open-webui, kiwix, mealie): 512m.
+- Real inference/processing load (whisper, ibris-motion): 768m/512m.
+- Full sub-platforms (kolibri, the trunked-radio scanner): 1024m each.
+- **Ollama: 4096m** -- the one service that genuinely needs the room.
+  Measured live: ~15MB idle, ~1.5GB the moment it actually answers a
+  question with the default `llama3.2:1b` model. 4GB leaves real headroom
+  for a bigger model without being unbounded.
+
+Verified `mem_limit:` is actually enforced by plain `docker compose up -d`
+on this project's Compose version (2.40.3) -- no Swarm/`deploy:` key
+needed, confirmed directly via `docker inspect --format
+'{{.HostConfig.Memory}}'` on every recreated container, not assumed from
+the Compose Specification docs alone. Applied fleet-wide, then verified:
+every container recreated cleanly, a real Ollama request still succeeded
+and stayed well inside its cap (1.47GB used, 4GB limit), and restart counts
+stayed at 0 across the whole fleet through the whole rollout.
+
+Real, separate incident hit while testing this on `vigil` alone (not caused
+by the `mem_limit` change itself): two containers -- one of them a stale
+`citadel-vigil` container from earlier this session's own testing -- were
+stuck in a corrupted "Dead" state that `docker inspect`/`rm -f` couldn't
+even see ("no such object"), the same on-disk container metadata corruption
+already documented once earlier this session. Same fix: `sudo systemctl
+stop docker docker.socket`, remove the two corrupted directories under
+`/var/lib/docker/containers/<full-id>/`, `sudo systemctl start docker`,
+then `docker compose up -d` to reconcile the whole fleet cleanly. Worth
+noting if it recurs again -- this is now a second occurrence on this same
+machine.
+
 ## Phase 5 — Smaller cleanup
 
 - Two empty, unreferenced directories (`appdata/cockpit/media/`,

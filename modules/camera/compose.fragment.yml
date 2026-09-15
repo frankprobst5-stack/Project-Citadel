@@ -30,6 +30,11 @@ services:
     environment:
       - VIGIL_URL=http://citadel-vigil:8085
     command: python /app/ibris_motion.py
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). opencv frame buffers for a
+    # single webcam stream are modest; 512m gives real headroom over
+    # typical usage without being unbounded.
+    mem_limit: 512m
     networks:
       - citadel-net
     restart: unless-stopped

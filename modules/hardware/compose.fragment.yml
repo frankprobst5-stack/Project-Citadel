@@ -26,6 +26,12 @@ services:
       - ../../appdata/media-vault/scanner:/app
     working_dir: /app
     command: trunk-recorder --config=/app/config.json
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Real-time SDR signal
+    # processing plus recorded call audio buffering can use meaningfully
+    # more than the lightweight Python services elsewhere in this file --
+    # 1024m covers real multi-channel trunked decode.
+    mem_limit: 1024m
     networks:
       - citadel-net
     restart: unless-stopped
@@ -59,6 +65,10 @@ services:
       - ../../appdata/media-vault/scanner_bridge.py:/app/scanner_bridge.py
       - ../../appdata/media-vault/scanner:/app/scanner-out
     working_dir: /app
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Pure websocket bridge, no
+    # real buffering -- 128m is generous headroom.
+    mem_limit: 128m
     networks:
       - citadel-net
     restart: unless-stopped
@@ -89,6 +99,10 @@ services:
     # silently (confirmed live: the container just restart-loops with no
     # error in `docker logs` at all without this flag).
     command: -F json:/output/airwaves_ledger.json -F log
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Streaming JSON-lines decode,
+    # no large buffering -- 256m is generous headroom.
+    mem_limit: 256m
     networks:
       - citadel-net
     restart: unless-stopped
@@ -109,6 +123,10 @@ services:
       - ../../appdata/media-vault/intercept:/app/intercept-out
     working_dir: /app
     command: python3 intercept_backend.py
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). stdlib HTTP server serving
+    # the last 25 lines of a JSON file -- 128m is generous headroom.
+    mem_limit: 128m
     networks:
       - citadel-net
     restart: unless-stopped

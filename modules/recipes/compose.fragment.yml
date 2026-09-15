@@ -31,6 +31,10 @@ services:
       ALLOW_SIGNUP: "false"
       PUID: 1000
       PGID: 1000
+    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
+    # cockpit comment for the full "why"). Measured ~168MB in real use;
+    # 512m gives real headroom for recipe imports/image processing.
+    mem_limit: 512m
     networks:
       - citadel-net
     restart: unless-stopped
