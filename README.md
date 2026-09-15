@@ -360,6 +360,12 @@ All changes are hot-reloaded or require a simple `docker compose restart <servic
 
 ---
 
+## Credits
+
+- **[Keith B. Phillips](https://github.com/keithbphillips)** — built [qrcoder](https://github.com/keithbphillips/qrcoder) (MIT), an offline QR bookmark card creator/reader with real erasure coding (any 3 of 4 panels recover the text). Generously offered for reuse toward WayStation's planned QR-code message transport (see [WayStation's own ROADMAP.md](https://github.com/frankprobst5-stack/WayStation/blob/main/ROADMAP.md) for that work) — verified directly against a real test message before being added to the backlog, not taken on faith.
+
+---
+
 ## License
 
 GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
