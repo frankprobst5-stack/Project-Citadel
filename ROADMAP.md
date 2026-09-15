@@ -92,35 +92,64 @@ forgotten:
   entry for that half. `[DISCOVERY]`: real, wanted, not yet scoped into
   buildable steps.
 - **Offload Whisper to an idle integrated GPU** `[DISCOVERY]`, 2026-09-15
-  — idea from Keith B. Phillips (see Credits above), who built this for
-  his own machine: keep a discrete GPU free for Ollama, run Whisper on
-  the onboard/integrated GPU that would otherwise sit idle. Real, viable
-  path for Citadel specifically, not hypothetical — `whisper.cpp` (already
-  the real engine behind `citadel-whisper`) has genuine GPU backends
-  (Vulkan is the relevant one for an integrated GPU; CUDA needs a discrete
-  NVIDIA card), and today's `whisper` service runs CPU-only (confirmed
-  when it was built, verified live on a plain i7 with no GPU involved at
-  all). Ollama and Whisper already compete for the same host's resources
-  as two separate containers — this would let a machine with both a
-  discrete and an integrated GPU actually put both to work instead of
-  leaving one idle. Not yet scoped: real work needed on GPU device
-  passthrough into the `whisper` container (`/dev/dri` for an Intel/AMD
-  iGPU) and confirming the specific whisper.cpp build Citadel uses
-  actually has Vulkan support compiled in.
+  — idea from Keith B. Phillips (see Credits above), who published his own
+  real, working setup spec (compiled 2026-09-14 from his live system —
+  `vulkaninfo`, `lspci`, `CMakeCache.txt`, the real systemd unit — not
+  reconstructed from memory), shared directly rather than left to guess
+  at. His exact mechanism: `whisper.cpp` built with
+  `-DGGML_VULKAN=ON -DWHISPER_SDL2=ON`, pinned to his Ryzen 9 7950X's
+  onboard AMD Radeon iGPU via `GGML_VK_VISIBLE_DEVICES=1` (Vulkan device
+  index), keeping his RTX 4090 free for Ollama entirely — confirms the
+  earlier "Vulkan is the relevant backend" guess was correct, now with a
+  real reference implementation instead of a guess. His **measured, real
+  performance** (66-second test clip): `small.en` on the iGPU ran at
+  **6.6× realtime**, `large-v3-turbo` (q5_0 quantized) at **2.5×**, with
+  the iGPU near 100% busy but whisper itself using only ~24% of one CPU
+  core — confirming the actual resource-isolation goal (discrete GPU and
+  CPU both stay free) really holds in practice, not just in theory. Real
+  gotcha worth carrying into Citadel's own build: whisper.cpp always
+  encodes a fixed 30-second window (`audio_ctx` 1500) regardless of clip
+  length — shrinking it to match a short clip produces confident, wrong
+  output ("Hello." decoded as "to" / "U. N." / "and I know." depending on
+  the value) rather than failing loudly, so speed has to come from model
+  size, not window size. Real, viable path for Citadel specifically since
+  the same `whisper.cpp` engine already backs `citadel-whisper` (currently
+  CPU-only, confirmed when it was built). Not yet scoped for Citadel's own
+  Docker-based deployment: GPU device passthrough into the `whisper`
+  container (`/dev/dri` for the host's iGPU, AMD or Intel depending on the
+  actual host — Keith's reference used AMD's open-source RADV Vulkan
+  driver specifically), and rebuilding Citadel's `whisper.cpp` with
+  `GGML_VULKAN=ON` (confirmed via his notes that a missing `spirv-headers`
+  apt package is a known, avoidable build snag — install it properly
+  rather than hand-building SPIR-V headers the way his own first attempt
+  needed to).
 - **Dictation/hotkey accessibility feature** `[DISCOVERY]`, 2026-09-15 —
-  also from the Keith B. Phillips conversation, but the more important
-  half of it: he built his GPU-offload trick specifically for
-  accessibility, after 40 years of IT work left his hands unable to type
-  comfortably. Citadel has zero dictation anywhere in the UI today, even
-  though the exact engine to power it (`citadel-whisper`) already exists
-  and already does real transcription work. A hotkey-triggered "dictate
-  into any text field" feature (notes, inventory entries, anywhere) would
-  be a genuine accessibility win for an audience that includes plenty of
-  people who aren't young and unhurt — not a small niche request. Not yet
-  scoped: needs real design work on how a browser-based dashboard
-  captures a global hotkey and streams audio to Whisper, which is a
-  meaningfully different problem than the file-upload transcription flow
-  `transcription.py` already handles.
+  the more important half of the same conversation: Keith built his
+  GPU-offload trick specifically for accessibility, after 40 years of IT
+  work left his hands unable to type comfortably. His own real, working
+  pipeline is worth understanding as a reference even though it doesn't
+  drop into Citadel unchanged (see the honest architectural gap below):
+  a GNOME global hotkey (`Super+Alt+Space`, toggle rather than
+  hold-to-talk — GNOME shortcuts have no key-release event) starts
+  `pw-record` capturing his mic at 16kHz, POSTs the WAV to his
+  `whisper-server`'s `/inference` endpoint on a second press, strips
+  hallucinated bracket/asterisk/parenthetical captions from the result,
+  and types the cleaned text into whatever window has focus via
+  `ydotool` (his notes confirm `wtype` simply doesn't work on GNOME
+  Wayland — a real, verified compatibility fact, not a guess). Measured
+  end-to-end dictation latency: 1.4-2s with `small.en`, dominated by the
+  fixed-window encode described above, not by how long you spoke.
+  **Honest gap Citadel would need to solve differently**: Keith's setup
+  is desktop-wide (any focused window, any app, via the OS's own input
+  system) — Citadel's UI is a web dashboard running in a browser, so
+  "dictate into a text field" here means a browser-side hotkey listener
+  capturing microphone audio via the browser's own mic API and POSTing it
+  to Citadel's `whisper-server`, not a system-wide `ydotool`-style typer.
+  Same backend engine and the same fixed-window/quantized-model lessons
+  apply directly; the input-capture and text-injection layer is a
+  genuinely different, browser-specific problem, not yet scoped. A
+  real accessibility win either way for an audience that includes plenty
+  of people who aren't young and unhurt — not a small niche request.
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
