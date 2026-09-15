@@ -32,6 +32,60 @@ release push. What's left after this point (Phases 1, 4, 5) is real but
 explicitly post-release: Raspberry Pi hardware tiering, the Vigil
 embedded-copy-vs-submodule decision, and small cosmetic cleanup.
 
+## v2 backlog (deferred until the public test release soaks a while)
+
+Same discipline WayStation's own roadmap already uses for its offline field
+test: Citadel is now public, both repos have real issue templates, and
+nothing found so far is urgent (fleet healthy, zero restarts, no exposed
+secrets, checked directly before writing this). Rather than keep adding
+surface area right after a public release, this is deliberately paused for
+a few days to see what real testers actually hit first — real bug reports
+should outrank all of this. Everything below is real and scoped, not
+forgotten:
+
+- **Document mDNS/`.local` addressing for IoT devices.** The actual
+  mechanism already works today with zero new code — confirmed live,
+  `avahi-daemon` is already active on a stock install and `<hostname>.local`
+  already resolves via mDNS. The only real gap is that nothing tells a
+  new install to point ESP32s/smart devices at `http://<hostname>.local:8085`
+  instead of a raw DHCP-assigned IP that can change on reboot. Add this to
+  the manual's hardware section, with a one-line fallback note for a
+  minimal/headless install that might not have `avahi-daemon` installed by
+  default the way a desktop install does (`sudo apt install avahi-daemon`).
+- **Scheduled + off-machine backups.** Real backup/restore already exists
+  (Settings → Backups, Phase G) but is manual-click-only and lands on the
+  same disk as everything else — a genuine single point of failure if that
+  disk dies. Two real pieces of work: (1) a scheduled nightly snapshot
+  (cron or a systemd timer calling the existing `/api/backup/create`), and
+  (2) an optional mirror step (rsync) to a second physical drive or NAS
+  path, configured in `.env`.
+- **Optional remote-Ollama-host support**, for a household whose dashboard
+  machine isn't the one with a real GPU. Not a one-line `.env` change the
+  way it might look at first — `OLLAMA_PORT` is just a host port number,
+  not a hostname. Would need a real new option (e.g. `OLLAMA_REMOTE_HOST`)
+  that, when set, skips starting the local `ollama` container entirely and
+  points `open-webui`/Cloud9 at the remote one instead.
+- **A periodic dead-container health check** (optional, low priority) —
+  a cron/systemd timer running `docker ps -a --filter status=dead` and
+  logging/alerting if it ever finds anything, so a repeat of this session's
+  two container-corruption incidents (both root-caused to a single
+  memory-pressure freeze, now less likely thanks to Phase 6's memory
+  limits) gets caught proactively instead of by accident during unrelated
+  work.
+
+**Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
+suggestion surfaced this session, but checked directly against the actual
+code first: Project Vigil doesn't touch `citadel.db` at all (it has its own
+separate `vigil_state.json`/`vigil_grid_ledger.json`), so the exact
+collision the suggestion described can't happen the way it was framed.
+Citadel is a single-household, single-Flask-process LAN appliance, not a
+multi-writer production service — exactly the profile SQLite handles fine —
+and nothing in this file's own (deliberately honest) incident log shows a
+real "database is locked" error ever happening. Adding Postgres would mean
+a new always-on service, its own memory footprint, and its own backup/
+migration story, to solve a problem that isn't actually occurring. Revisit
+only if a real lock error ever shows up.
+
 ### Phase A — Retire dead weight
 
 - [x] **Drop Project-Nexus entirely.** Never progressed past test data,
