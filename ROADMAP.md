@@ -150,6 +150,29 @@ forgotten:
   genuinely different, browser-specific problem, not yet scoped. A
   real accessibility win either way for an audience that includes plenty
   of people who aren't young and unhurt — not a small niche request.
+- **News Archive & Local Log** `[DISCOVERY]`, 2026-09-15 — real suggestion
+  from Facebook feedback on the public release, described as resonating
+  with real reactions ("seems popular"), not just one person's idea. A
+  new card: the operator enters their own RSS/Atom feed URLs (real,
+  simple, well-established formats — `feedparser` is the standard Python
+  library for this, no exotic parsing needed); while online, `vault-api`
+  periodically fetches and archives real articles (title, summary, link,
+  published date, source) into `citadel.db`, the same SQLite pattern
+  every other Citadel ledger already uses. **The actual point, and why
+  this is more than "yet another RSS reader"**: once the grid goes down,
+  the archive doesn't go blank — it becomes a real, browsable "last known
+  state of the world" reference exactly when that matters most, and the
+  same page becomes a manual **Local News Log** (hand-typed local
+  reports/updates, timestamped, stored the same way) for exactly the
+  window when no new syndicated news can arrive at all. **Direct synergy
+  with the XCAST community bulletin (above)**: this local log — plus a
+  short digest of the most recent cached headlines before the outage — is
+  real, ready-made content for XCAST's broadcast pipeline (WiFi captive
+  portal / Part 15 AM-FM / APRS bulletin), not a separate, disconnected
+  feature. Not yet scoped: feed-fetch scheduling, article storage
+  schema/retention (how much history to keep before it's just noise), and
+  the UI split between "cached syndicated news" and "local log entries"
+  on what's otherwise one card.
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
