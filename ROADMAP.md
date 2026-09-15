@@ -72,6 +72,25 @@ forgotten:
   memory-pressure freeze, now less likely thanks to Phase 6's memory
   limits) gets caught proactively instead of by accident during unrelated
   work.
+- **"XCAST" community bulletin — Citadel's half (authoring), 2026-09-15.**
+  Frank's idea, checked and confirmed to be genuinely new (not an existing
+  MKME/XTOC feature): a simple, public, no-login bulletin page for a relief
+  site or community hub during grid-down — today's meal times, which
+  charging stations are actually live, general announcements — so a
+  volunteer types it once instead of repeating the same five answers to
+  every new arrival all day. This is deliberately a *different* audience
+  than everything else Citadel/WayStation build for: not an operator
+  moving structured data, just a visitor who needs a plain answer, no app
+  or account. Citadel's half is authoring + display: a dead-simple page
+  (big readable text, no login) a volunteer edits, plus a public kiosk
+  view meant for a shared physical screen at the site. Charging-station
+  status is worth wiring to Project Vigil's existing power/solar
+  monitoring rather than hand-typed, if the timing lines up. WayStation
+  owns actually broadcasting this content out (captive-portal WiFi,
+  low-power AM/FM, APRS text bulletin) per the standing rule that comms/
+  broadcast distribution stays in WayStation — see its own ROADMAP.md
+  entry for that half. `[DISCOVERY]`: real, wanted, not yet scoped into
+  buildable steps.
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
