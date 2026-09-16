@@ -436,7 +436,11 @@ All changes are hot-reloaded or require a simple `docker compose restart <servic
 
 GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
 
-**Important:** This covers Citadel's own code (cockpit, media-vault, install scripts, Project Vigil integration). The bundled container services (Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes) are pulled from upstream repositories and retain their own licenses.
+**Important:** This covers Citadel's own original code only (cockpit, media-vault, install scripts, Project Vigil integration, the Muster bridge). It does not relicense anything else. Two other categories of third-party code are involved, both retaining their own original licenses:
+- **Bundled container services** (Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes, Mealie, trunk-recorder, rtl_433, and others) are pulled from their own upstream repositories at install/run time, not redistributed as part of this repo.
+- **Vendored frontend libraries** (MapLibre GL JS, PMTiles, protomaps-themes-base — all BSD-3-Clause) are copied directly into `appdata/cockpit/vendor/` so the offline map works with no build step, with each file's own license notice preserved as a header comment.
+
+See **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** for the full, real, verified list — copyright holders, exact licenses, and sources — rather than taking this paragraph's word for it.
 
 ---
 
