@@ -248,14 +248,18 @@
                 </tr>
                 <tr>
                     <td><span class="highlight">Backups</span></td>
-                    <td>External hard drive, kept offline/off-site when not actively backing up</td>
-                    <td>Citadel's data all lives in <code>appdata/</code> -- back this directory up regularly. No automated backup exists in Citadel itself yet.</td>
+                    <td>External hard drive or a mounted NAS share, kept offline/off-site when not actively backing up</td>
+                    <td>Citadel's data all lives in <code>appdata/</code>. The installer sets up a real nightly backup automatically (Settings &gt; Backups uses the same one) -- set <code>BACKUP_MIRROR_PATH</code> in <code>.env</code> to a drive like this to also get an off-machine copy of every scheduled backup, not just an on-disk one.</td>
                     <td>$60 - $90</td>
                 </tr>
             </tbody>
         </table>
 
         <p><span class="caveat">Explicitly not on this list, and never will be: Blink and SimpliSafe.</span> Both are closed cloud ecosystems with no supported local API -- Vigil cannot and will not control either, regardless of how they're registered.</p>
+
+        <h3>📡 Give Devices a Real Address, Not a DHCP Guess</h3>
+        <p>Every device above needs to know where Citadel is. Point it at <code>http://&lt;hostname&gt;.local:8085</code> (whatever your machine's real hostname is -- run <code>hostname</code> to check) instead of a raw IP address. This already works with zero extra setup on a normal desktop install: <code>avahi-daemon</code> is already running, and <code>.local</code> mDNS resolution just works. A raw DHCP-assigned IP can silently change after any router reboot or lease renewal, quietly breaking every device pointed at the old one -- the <code>.local</code> name doesn't have that problem.</p>
+        <p><span class="caveat">One real exception:</span> a minimal or headless install might not have <code>avahi-daemon</code> installed by default the way a desktop install does. If <code>&lt;hostname&gt;.local</code> doesn't resolve, install it directly: <code>sudo apt install avahi-daemon</code>, then try again.</p>
     </div>
 
     <div class="section">
