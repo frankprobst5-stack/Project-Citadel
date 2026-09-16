@@ -43,15 +43,15 @@ a few days to see what real testers actually hit first — real bug reports
 should outrank all of this. Everything below is real and scoped, not
 forgotten:
 
-- **Document mDNS/`.local` addressing for IoT devices.** The actual
-  mechanism already works today with zero new code — confirmed live,
-  `avahi-daemon` is already active on a stock install and `<hostname>.local`
-  already resolves via mDNS. The only real gap is that nothing tells a
-  new install to point ESP32s/smart devices at `http://<hostname>.local:8085`
-  instead of a raw DHCP-assigned IP that can change on reboot. Add this to
-  the manual's hardware section, with a one-line fallback note for a
-  minimal/headless install that might not have `avahi-daemon` installed by
-  default the way a desktop install does (`sudo apt install avahi-daemon`).
+- **Document mDNS/`.local` addressing for IoT devices — done, 2026-09-16.**
+  Added to `manual.html`'s Real Smart-Home Hardware Guide, right after the
+  buying-guide table it applies to: point every device at
+  `http://<hostname>.local:8085` instead of a raw DHCP-assigned IP, plus the
+  `avahi-daemon` fallback note for a minimal/headless install. Verified
+  live in a browser, not just in the source file. Found and fixed a real,
+  unrelated stale claim in the same table while editing it: the Backups
+  row still said no automated backup existed, which stopped being true
+  earlier the same day.
 - **Scheduled + off-machine backups — done, 2026-09-16.** Real backup/restore
   already existed (Settings → Backups, Phase G) but was manual-click-only
   and landed on the same disk as everything else — a genuine single point
