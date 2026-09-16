@@ -330,10 +330,18 @@
             { key: 'backup',  name: 'Backup', profile: null },
         ];
 
-        // Same-origin proxied endpoints: a normal fetch tells us reachable vs not.
+        // Same-origin proxied endpoints: only the status code is ever used
+        // below, so this is a HEAD request, not GET -- found live 2026-09-16
+        // after a real OOM crash loop traced back to this same function
+        // being called with a GET against /tiles/comms_base.pmtiles (1.9GB
+        // on disk). A GET here pulls the *entire* response body through the
+        // pipe even though res.ok is all that's ever read, and this runs
+        // automatically every 30s via pollHealth() -- no click required.
+        // HEAD returns the same status with zero body transferred; nginx
+        // and Flask/Werkzeug both support it on every route this hits.
         async function checkSameOrigin(url) {
             try {
-                const res = await fetch(url, { cache: 'no-store' });
+                const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
                 return res.ok;
             } catch {
                 return false;

@@ -822,11 +822,23 @@ tooling before being called done (not just reasoned about):
   `docker stats`, journalctl OOM grep) run while reproducing the freeze
   live, rather than only inspecting a post-crash snapshot — the earlier
   post-crash snapshots alone hadn't pointed at this container specifically.
-  **Not yet investigated**: *why* the pmtiles client requests such large
-  ranges instead of small per-tile chunks in the first place — the fix
-  above removes the crash risk, but the oversized-request behavior itself
-  is still real and worth a closer look at `map.html`'s PMTiles/MapLibre
-  setup.
+  **The actual trigger, found right after this was written**: Frank
+  correctly pushed back — he'd never opened the Tactical Map at all, just
+  left the dashboard sitting idle. The real source was
+  `runHealthChecks()`'s own `checkSameOrigin('tiles/comms_base.pmtiles')`
+  call, which runs automatically every 30 seconds via `pollHealth()` —
+  no click required. `checkSameOrigin` did a plain `fetch(url)` and only
+  ever read `res.ok`, but a GET still pulls the entire response body
+  through the pipe regardless of whether the caller reads it — against a
+  1.9GB file, every single automatic health-check cycle was downloading
+  the whole archive. **Real fix**: `checkSameOrigin` now issues a `HEAD`
+  request instead of `GET` (`index.html`) — same status code, zero body
+  transferred; verified live with `curl -I`, confirmed `0 bytes`
+  downloaded in under a millisecond against both the pmtiles file and the
+  Flask API routes that also went through this same function. This was
+  the real, complete root cause — not "the map was used heavily," but
+  "the dashboard's own background polling was silently re-downloading a
+  2GB file every 30 seconds the whole time it sat open."
 - [x] **Two unrelated background services found consuming host memory
   24/7 for nothing Citadel uses**: a real `mysqld` (MySQL Community
   Server) and a real Plex Media Server (`snap.plexmediaserver`), both
