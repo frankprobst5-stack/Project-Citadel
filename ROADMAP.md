@@ -150,6 +150,13 @@ forgotten:
   genuinely different, browser-specific problem, not yet scoped. A
   real accessibility win either way for an audience that includes plenty
   of people who aren't young and unhurt — not a small niche request.
+  **Second real consumer identified, 2026-09-15**: this same
+  `whisper-server`/iGPU-offload engine is also the natural answer to
+  Muster's XINTEL-equivalent need (automated radio-traffic transcription
+  — see Muster's own ROADMAP.md) — same backend capability, pointed at
+  radio audio instead of a dictation hotkey. Not a reason to prioritize
+  this differently, just worth knowing it now has two real motivations
+  instead of one.
 - **News Archive & Local Log** `[DISCOVERY]`, 2026-09-15 — real suggestion
   from Facebook feedback on the public release, described as resonating
   with real reactions ("seems popular"), not just one person's idea. A
@@ -204,6 +211,60 @@ forgotten:
   regardless of which path is chosen, straight from Masthead's own
   roadmap: **fetch each unique feed URL exactly once on a schedule, cache
   it, every reader reads from the cache — never fetch on page load.**
+  **How a feed actually gets added, 2026-09-15**: instead of only manual
+  copy-paste of a raw feed URL, add support for **feed autodiscovery** —
+  a real, standard convention (not proprietary to any one browser) where a
+  page's own `<head>` can include
+  `<link rel="alternate" type="application/rss+xml" href="...">`.
+  Firefox actually had this built in natively for years (an address-bar
+  icon that lit up when a page advertised a feed, removed along with "Live
+  Bookmarks" around Firefox 64) — reviving the idea, not inventing it. The
+  practical version for Citadel: a small companion browser extension (see
+  [[project_gated_browser]]'s roadmap for the native/eventual version, the
+  browser project formerly called "Drawbridge" — renamed 2026-09-15 after a
+  live trademark conflict was found under that name)
+  that scans the current page for that `<link>` tag and, when found, offers
+  to send the feed URL straight to this card's API instead of the user
+  hunting down and pasting the raw XML URL themselves. Deliberately scoped
+  as a standalone extension first, not dependent on that browser project
+  existing — regular Firefox (or Chrome) today is enough to ship this.
+- **Animal health/medication/vaccine log** `[DISCOVERY]`, 2026-09-15 — real
+  gap Frank flagged directly: Livestock & Animals currently tracks
+  populations, feeding, and production outputs, but not medical issues,
+  medications, or vaccines (including mandated ones). Checked the actual
+  code before proposing anything: Livestock isn't its own module, it's rows
+  in the shared generic `inventory` table (`media-vault/app.py`) that backs
+  all 9 Homestead Logistics ledgers, with columns repurposed per category —
+  for animals, `desc`=breed/group, `loc`=feed ration, `qty`=head count,
+  `exp`=production yield info. No health/medication/vaccine schema exists
+  anywhere (confirmed via direct grep, zero hits). That flat one-row-per-
+  group shape can't hold this: a vaccine/medication history is a **log of
+  events over time** (given on this date, next due on that date), not a
+  single field, so it needs its own table rather than another repurposed
+  column. **Proposed design**: a new `animal_health_log` table linked to
+  the existing animal inventory rows — `date`, `log_type` (medical issue /
+  medication / vaccine), `name` (free text), a `mandated` yes/no flag,
+  `next_due` (for vaccines/recurring meds), and `notes`. Surfaces as an
+  expandable log under each animal group row, with overdue/due-soon
+  vaccines feeding into the same "NEED ATTENTION" badge counter the tile
+  already shows for low-stock/expired items — reusing an existing UI
+  pattern rather than inventing a new one. Also considering a **medication
+  withdrawal-period field** (the date before which meat/milk/eggs shouldn't
+  be sold/consumed after a treatment) given production outputs are already
+  tracked here — leaning toward including it, not yet finalized.
+  Per-individual-vs-per-group tracking isn't a real decision to make here:
+  it already falls out of however granular the user's own inventory rows
+  are (one row per flock, or one row per individual animal), so the log
+  just attaches to whichever row is already in use. **Explicit scope
+  boundary, deliberate**: Citadel will never claim to know which vaccines
+  are legally mandated for which species/state — that varies by
+  jurisdiction and changes over time, and guessing wrong here risks real
+  harm, the same reasoning that kept the ham-radio band-plan/rig-control
+  manual sections as documented gaps instead of guessed-at content. The
+  `mandated` flag and log are infrastructure for the operator (or their
+  vet/extension office) to record what actually applies to their own
+  animals — Citadel tracks it, it doesn't advise on it. Not started —
+  Frank's own call to plan it now and build it later.
 
 **Explicitly not doing: migrating `citadel.db` to PostgreSQL.** A real
 suggestion surfaced this session, but checked directly against the actual
@@ -431,6 +492,24 @@ the whole project's philosophy:
   Gen1+Gen2/Plus/Pro, ESPHome, Zigbee2MQTT) with real buying guidance
   for each, and explicitly states "Not supported, and never will be:
   Blink and SimpliSafe" in two places. This checkbox was just stale.
+- [ ] **Real ESP32-CAM/network-camera ingestion** `[DISCOVERY]`, added
+  2026-09-15, surfaced by planning work on Muster (a new sibling
+  project — a lightweight browser/PWA ops-coordination tool built to
+  match and exceed a commercial competitor, XTOC, whose own ecosystem
+  includes a camera-feed peripheral called XCAM; see Muster's own
+  ROADMAP.md). Checked directly, not assumed: Vigil has **no** real
+  camera/RTSP ingestion today. The only "live feed" capability is a
+  hand-typed `stream_url` string (`vigil_kernel.py`/`index.html`)
+  dumped straight into an `<img>` tag — works for a direct MJPEG URL
+  only, no RTSP handling, no auto-discovery, configured per device by
+  hand. `ibris_motion.py` (the local-USB-webcam motion detector above)
+  is unrelated and outputs no video at all, just a tripped/secure flag.
+  `hardware_catalog.html` documents ESP32-CAM/RTSP/ONVIF hardware as
+  something to *buy*, not something implemented. Real, unstarted work:
+  actual RTSP/MJPEG client support and/or ESP32-CAM firmware
+  integration, following the same real-local-API-only philosophy
+  already used for the rest of Vigil's hardware adapters above — no
+  cloud, no account. Not yet scoped into buildable steps.
 
 ### Phase E — Bring in what's real from the other sibling repos
 
