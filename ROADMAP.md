@@ -316,16 +316,25 @@ forgotten:
     run actually does anything, so the frequent timer doesn't mean
     frequent fetching for every source.
   - **Dashboard alert indicator, per Frank's explicit request** ("a small
-    red light on the dashboard... click it and be taken to it"): a new
-    News & Alerts strip on `index.html`, styled and wired exactly like
-    the existing Supply Status pattern (`renderSupplyStatus()`/
-    `SUPPLY_CATEGORIES`) — red dot + live count when
+    red light on the dashboard... click it and be taken to it"), then
+    redesigned the same day after his own follow-up pushback: a
+    full-width News & Alerts panel (first cut, styled like Supply Status)
+    doesn't scale with the number of feed sources someone adds and adds
+    front-page bloat for no reason — the module itself now gets a real
+    card in the main grid (`coreModules`, links to `news.html`, same as
+    every other feature) and the alert light is folded small into the
+    *existing* System Status strip (`HEALTH_STRIP`) right next to Power/
+    Network/Backup, not a panel of its own. Red dot + live count when
     `/api/news/active-alerts` returns any active alert, green when clear,
-    clickable straight through to `news.html`, refreshed on the same
-    30-second `pollHealth()` cycle as the rest of the dashboard. Verified
-    live in a browser against this machine's real NWS data (correctly
-    showed "2 active alerts" with a red dot, and the click-through
-    landed on `news.html`), not just written.
+    gray "NO DATA" if the check itself fails, clickable straight through
+    to `news.html`, excluded from the readiness-percentage math (`
+    unmonitored: true`, same as Storage/Waystation) since it's a content
+    feed, not a reachability check. Refreshed on the same 30-second
+    `pollHealth()` cycle as the rest of the dashboard. Verified live in a
+    browser against this machine's real NWS data (showed a real "2
+    ACTIVE" red dot in the status strip, the module card renders in the
+    main grid, and the click-through from either one lands on
+    `news.html`), not just written.
   - New `news.html` cockpit page (Active Alerts, Local News Log entry
     form, Cached News, Manage Sources), a new `/api/news/` nginx proxy
     (direct `proxy_pass`, no lazy-DNS needed since `vault-api` is core/
