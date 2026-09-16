@@ -208,6 +208,54 @@ if ! docker compose up -d; then
     exit 1
 fi
 
+
+# Scheduled nightly backups -- ROADMAP.md v2 backlog: real backup/restore
+# already existed (Settings > Backups) but was manual-click-only. A
+# user-level systemd timer (not a system one) so this never needs root,
+# matching install.sh's existing no-sudo-required posture -- only `docker
+# compose up -d` itself needs the operator to already be in the `docker`
+# group, same as before this change. Best-effort throughout: a missing
+# systemd, a `loginctl enable-linger` failure (needs polkit permission on
+# some distros), or any of this failing outright still leaves Citadel
+# itself fully up -- backups just stay manual-only, same as before.
+if command -v systemctl >/dev/null 2>&1; then
+    UNIT_DIR="$HOME/.config/systemd/user"
+    mkdir -p "$UNIT_DIR"
+    SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/backup-scheduled.sh"
+    chmod +x "$SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-backup.service" <<EOF
+[Unit]
+Description=Citadel scheduled backup
+
+[Service]
+Type=oneshot
+ExecStart=${SCRIPT_PATH}
+EOF
+
+    cat > "$UNIT_DIR/citadel-backup.timer" <<'EOF'
+[Unit]
+Description=Run Citadel's scheduled backup nightly
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-backup.timer 2>/dev/null; then
+        loginctl enable-linger "$USER" 2>/dev/null || true
+        echo "-- Nightly backup timer installed (systemctl --user status citadel-backup.timer)."
+    else
+        echo "-- Couldn't install the user-level backup timer (systemd --user unavailable in this"
+        echo "   environment) -- backups still work manually via Settings > Backups, or run"
+        echo "   scripts/backup-scheduled.sh yourself on whatever schedule you'd like."
+    fi
+fi
+
 echo "============================================================"
 echo " Citadel is up. Open your dashboard at:"
 echo "   http://localhost:8085"

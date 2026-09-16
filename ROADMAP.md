@@ -52,13 +52,31 @@ forgotten:
   the manual's hardware section, with a one-line fallback note for a
   minimal/headless install that might not have `avahi-daemon` installed by
   default the way a desktop install does (`sudo apt install avahi-daemon`).
-- **Scheduled + off-machine backups.** Real backup/restore already exists
-  (Settings → Backups, Phase G) but is manual-click-only and lands on the
-  same disk as everything else — a genuine single point of failure if that
-  disk dies. Two real pieces of work: (1) a scheduled nightly snapshot
-  (cron or a systemd timer calling the existing `/api/backup/create`), and
-  (2) an optional mirror step (rsync) to a second physical drive or NAS
-  path, configured in `.env`.
+- **Scheduled + off-machine backups — done, 2026-09-16.** Real backup/restore
+  already existed (Settings → Backups, Phase G) but was manual-click-only
+  and landed on the same disk as everything else — a genuine single point
+  of failure if that disk dies. Both real gaps closed: **(1)** a new
+  `scripts/backup-scheduled.sh` triggers the existing, already-tested
+  `/api/backup/create` endpoint (reusing it, not a second implementation),
+  and `install.sh` now generates and enables a **user-level** systemd timer
+  (`citadel-backup.timer`, daily + a 30-minute randomized delay) — user-
+  level specifically so this never needs root, matching `install.sh`'s
+  existing no-sudo posture; `loginctl enable-linger` is attempted
+  best-effort so it keeps running even when nobody's logged in, but never
+  blocks the rest of the install if it fails (some distros gate that
+  behind polkit). **(2)** a new `BACKUP_MIRROR_PATH` in `.env` rsyncs every
+  scheduled backup to a second drive or NAS path if set; blank (the
+  default) means on-disk-only, same as before this existed. **Real
+  verification, not just written**: both generated unit files passed
+  `systemd-analyze verify` cleanly; the actual script was run against the
+  real, live running Citadel install on this machine — a real backup
+  really appeared via the real `/api/backup/create` endpoint, and the
+  mirror step really rsync'd every existing backup to a real test
+  directory, confirmed by listing it afterward, not assumed. Genuinely
+  untested: a real login-session cycle (reboot, log out/in) to confirm the
+  timer survives that in practice, versus just being installed and enabled
+  in the current session — the same category of gap as Undercroft's own
+  "a container test isn't a reboot" caveat.
 - **Optional remote-Ollama-host support**, for a household whose dashboard
   machine isn't the one with a real GPU. Not a one-line `.env` change the
   way it might look at first — `OLLAMA_PORT` is just a host port number,
