@@ -4,3 +4,8 @@
 # versions, the exact ones already proven working.
 Flask==3.1.3
 requests==2.34.2
+# News Archive & Local Log, added 2026-09-16 -- real, current version
+# confirmed installing cleanly on this same python:3.10-alpine base
+# before pinning (pure Python, no C extensions, no Alpine build deps
+# needed).
+feedparser==6.0.14

@@ -14,6 +14,13 @@ from scanner_config import (
 from transcription import is_safe_filename, list_recordings, transcribe_file
 import backup as backup_module
 import modules_manager
+import uuid
+from datetime import datetime, timezone, timedelta
+import news_feed_parser
+import news_hazard_adapters
+import news_nws_alerts
+import news_location
+import news_matcher
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -69,6 +76,77 @@ def init_db():
             yield TEXT
         )
     ''')
+
+    # News Archive & Local Log (ROADMAP.md DISCOVERY item, real build
+    # 2026-09-16) -- schema translated from Masthead's own real, proven
+    # MySQL design (github.com/frankprobst5-stack/masthead, private,
+    # archived-but-reusable) into SQLite + this file's own conventions
+    # (TEXT PRIMARY KEY, matching inventory/garden above), not invented
+    # fresh. Summary-only by design -- this is a "last known state of the
+    # world" reference/archive, not a full-article reading app the way
+    # Masthead's own `body MEDIUMTEXT` column is, so rows stay small
+    # (see news_feed_parser.py: `body` holds a feed's own summary, never
+    # a scraped full article).
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS news_sources (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            feed_url TEXT NOT NULL UNIQUE,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            fetch_interval_minutes INTEGER NOT NULL DEFAULT 720,
+            last_fetched_at TEXT,
+            next_due_at TEXT,
+            last_error TEXT,
+            created_at TEXT NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS news_articles (
+            id TEXT PRIMARY KEY,
+            source_id TEXT NOT NULL,
+            dedupe_key TEXT NOT NULL,
+            title TEXT NOT NULL,
+            url TEXT NOT NULL,
+            body TEXT,
+            image_url TEXT,
+            published_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            cap_event TEXT,
+            cap_severity TEXT,
+            cap_urgency TEXT,
+            cap_certainty TEXT,
+            cap_area_desc TEXT,
+            cap_expires_at TEXT,
+            cap_geocodes TEXT,
+            latitude REAL,
+            longitude REAL,
+            UNIQUE(source_id, dedupe_key)
+        )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_news_articles_published ON news_articles (published_at)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_news_articles_cap ON news_articles (cap_event, cap_expires_at)')
+
+    # The manual "Local News Log" half -- hand-typed local reports for
+    # exactly the window when no new syndicated news can arrive at all.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS local_log_entries (
+            id TEXT PRIMARY KEY,
+            entry_text TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    ''')
+
+    # Small key/value store -- today only holds the cached NWS zone/county
+    # codes (news_location.py), but a generic shape rather than a
+    # single-purpose table since this is exactly the kind of "one more
+    # small setting" need that comes up again.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -785,6 +863,287 @@ def api_install_module():
                   f"from the module list above, same as any other module.",
         "name": module_name,
     })
+
+
+# ---------------------------------------------------------------------
+# News Archive & Local Log (ROADMAP.md DISCOVERY item, real build
+# 2026-09-16). Real design decisions this section implements, worked
+# through with Frank one at a time before any of this was written:
+#   - Python port of Masthead's own proven logic, not PHP running
+#     alongside vault-api (see news_hazard_adapters.py's own docstring).
+#   - Location is fully automatic (STATION_LAT/STATION_LON, already set
+#     for the Tactical Map) -- no second location field anywhere.
+#   - Retention: regular articles kept 1 year, real hazard alerts
+#     (cap_event set) never auto-pruned -- see api_news_prune below.
+#   - Fetch schedule: per-source `fetch_interval_minutes` (720 = twice
+#     daily for general news; hazard sources get a short interval when
+#     seeded, see news-scheduled.sh) drives each source's own
+#     `next_due_at`, checked by /api/news/fetch-due.
+# ---------------------------------------------------------------------
+
+def _station_coords():
+    lat = os.environ.get("STATION_LAT", "")
+    lon = os.environ.get("STATION_LON", "")
+    try:
+        return float(lat), float(lon)
+    except ValueError:
+        return None, None
+
+
+def _get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@app.route('/api/news/sources', methods=['GET'])
+def api_list_news_sources():
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT id, name, feed_url, is_active, fetch_interval_minutes, "
+        "last_fetched_at, next_due_at, last_error FROM news_sources ORDER BY name"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/news/sources', methods=['POST'])
+def api_add_news_source():
+    """Body: {"name": "...", "feed_url": "...", "fetch_interval_minutes": 720}.
+    New sources are immediately due (next_due_at = now), same reasoning
+    as Masthead's own SourceService: a newly-added source shouldn't sit
+    waiting a full interval before its first real fetch."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    feed_url = (data.get("feed_url") or "").strip()
+    if not name or not feed_url:
+        return jsonify({"error": "name and feed_url are both required"}), 400
+
+    interval = data.get("fetch_interval_minutes")
+    if not isinstance(interval, int) or interval < 1:
+        interval = 720
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    conn = _get_db()
+    try:
+        conn.execute(
+            "INSERT INTO news_sources (id, name, feed_url, is_active, "
+            "fetch_interval_minutes, next_due_at, created_at) VALUES (?, ?, ?, 1, ?, ?, ?)",
+            (str(uuid.uuid4()), name, feed_url, interval, now, now),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "a source with this feed_url already exists"}), 409
+    finally:
+        conn.close()
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/news/sources/<source_id>', methods=['DELETE'])
+def api_delete_news_source(source_id):
+    conn = _get_db()
+    conn.execute("DELETE FROM news_sources WHERE id = ?", (source_id,))
+    conn.execute("DELETE FROM news_articles WHERE source_id = ?", (source_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/news/articles', methods=['GET'])
+def api_list_news_articles():
+    """?limit=50&offset=0 -- newest first. Location filtering happens
+    here (not at ingest time) so a later station-location change
+    re-scopes existing history instead of only affecting future
+    fetches."""
+    limit = min(int(request.args.get("limit", 50)), 200)
+    offset = int(request.args.get("offset", 0))
+
+    conn = _get_db()
+    lat, lon = _station_coords()
+    county_fips, nws_zone_ugc = news_location.get_cached_zone_codes(conn)
+
+    rows = conn.execute(
+        "SELECT * FROM news_articles ORDER BY published_at DESC LIMIT ? OFFSET ?",
+        (limit * 3 if (lat and lon) else limit, offset),
+    ).fetchall()
+    conn.close()
+
+    articles = [dict(r) for r in rows]
+    if lat and lon:
+        articles = [a for a in articles if news_matcher.is_relevant_to_station(
+            a, lat, lon, county_fips, nws_zone_ugc
+        )]
+    return jsonify(articles[:limit])
+
+
+@app.route('/api/news/active-alerts', methods=['GET'])
+def api_news_active_alerts():
+    """Real hazard alerts only (cap_event set) that haven't expired yet
+    and are relevant to this station's own location -- this is what the
+    dashboard's red-dot indicator (index.html) polls."""
+    conn = _get_db()
+    lat, lon = _station_coords()
+    county_fips, nws_zone_ugc = news_location.get_cached_zone_codes(conn)
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    rows = conn.execute(
+        "SELECT * FROM news_articles WHERE cap_event IS NOT NULL "
+        "AND (cap_expires_at IS NULL OR cap_expires_at > ?) "
+        "ORDER BY published_at DESC",
+        (now,),
+    ).fetchall()
+    conn.close()
+
+    alerts = [dict(r) for r in rows]
+    if lat and lon:
+        alerts = [a for a in alerts if news_matcher.is_relevant_to_station(
+            a, lat, lon, county_fips, nws_zone_ugc
+        )]
+    return jsonify({"count": len(alerts), "alerts": alerts})
+
+
+@app.route('/api/news/local-log', methods=['GET'])
+def api_list_local_log():
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT * FROM local_log_entries ORDER BY created_at DESC LIMIT 200"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/news/local-log', methods=['POST'])
+def api_add_local_log():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("entry_text") or "").strip()
+    if not text:
+        return jsonify({"error": "entry_text is required"}), 400
+
+    conn = _get_db()
+    conn.execute(
+        "INSERT INTO local_log_entries (id, entry_text, created_at) VALUES (?, ?, ?)",
+        (str(uuid.uuid4()), text, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+
+def _insert_articles(conn, source_id, items):
+    inserted = 0
+    for item in items:
+        try:
+            conn.execute(
+                "INSERT INTO news_articles (id, source_id, dedupe_key, title, url, body, "
+                "image_url, published_at, created_at, cap_event, cap_severity, cap_urgency, "
+                "cap_certainty, cap_area_desc, cap_expires_at, cap_geocodes, latitude, longitude) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    str(uuid.uuid4()), source_id, item["dedupe_key"], item["title"], item["url"],
+                    item.get("body"), item.get("image_url"), item["published_at"],
+                    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                    item.get("cap_event"), item.get("cap_severity"), item.get("cap_urgency"),
+                    item.get("cap_certainty"), item.get("cap_area_desc"), item.get("cap_expires_at"),
+                    item.get("cap_geocodes"), item.get("latitude"), item.get("longitude"),
+                ),
+            )
+            inserted += 1
+        except sqlite3.IntegrityError:
+            pass  # already have this one (source_id, dedupe_key) -- expected, not an error
+    return inserted
+
+
+@app.route('/api/news/fetch-due', methods=['POST'])
+def api_news_fetch_due():
+    """Real, periodic fetch -- called by scripts/news-scheduled.sh (a
+    systemd timer, same real pattern as backup-scheduled.sh and
+    health-check.sh). Only fetches sources whose own next_due_at has
+    passed; the timer itself just needs to run often enough to catch
+    the shortest real interval (hazard sources), not every source every
+    time. NWS is handled separately below (news_nws_alerts.py), not as
+    a regular RSS source -- see that module's own docstring for why."""
+    conn = _get_db()
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    due = conn.execute(
+        "SELECT * FROM news_sources WHERE is_active = 1 AND (next_due_at IS NULL OR next_due_at <= ?)",
+        (now,),
+    ).fetchall()
+
+    results = []
+    for source in due:
+        source = dict(source)
+        try:
+            items = news_feed_parser.fetch_feed(source["feed_url"])
+            adapter = news_hazard_adapters.adapter_for_feed_url(source["feed_url"])
+            if adapter:
+                items = [adapter(dict(item)) for item in items]
+            inserted = _insert_articles(conn, source["id"], items)
+            next_due = (now_dt + timedelta(
+                minutes=source["fetch_interval_minutes"]
+            )).strftime("%Y-%m-%d %H:%M:%S")
+            conn.execute(
+                "UPDATE news_sources SET last_fetched_at = ?, next_due_at = ?, last_error = NULL WHERE id = ?",
+                (now, next_due, source["id"]),
+            )
+            results.append({"source": source["name"], "fetched": len(items), "inserted": inserted})
+        except Exception as e:
+            conn.execute(
+                "UPDATE news_sources SET last_error = ? WHERE id = ?",
+                (str(e), source["id"]),
+            )
+            results.append({"source": source["name"], "error": str(e)})
+
+    # NWS alerts: fetched every run (not gated by next_due_at) since this
+    # is the one real life-safety-critical source, and the whole point of
+    # the 5-15 minute scheduler cadence (see ROADMAP.md) is that these
+    # need to be near-real-time, not on a per-source due schedule like
+    # general news.
+    lat, lon = _station_coords()
+    if lat and lon:
+        try:
+            alerts = news_nws_alerts.fetch_active_alerts(lat, lon)
+            inserted = _insert_articles(conn, "nws-direct", alerts)
+            results.append({"source": "NWS Alerts (direct)", "fetched": len(alerts), "inserted": inserted})
+        except Exception as e:
+            results.append({"source": "NWS Alerts (direct)", "error": str(e)})
+
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "results": results})
+
+
+@app.route('/api/news/refresh-location', methods=['POST'])
+def api_news_refresh_location():
+    """Re-resolves and caches the real NWS county/zone codes from the
+    current STATION_LAT/STATION_LON -- called by the scheduler
+    periodically (station location rarely changes, but re-resolving is
+    cheap and keeps this honest if it ever does)."""
+    lat, lon = _station_coords()
+    conn = _get_db()
+    county_fips, nws_zone_ugc = news_location.refresh_and_cache_zone_codes(conn, lat, lon)
+    conn.close()
+    return jsonify({"county_fips": county_fips, "nws_zone_ugc": nws_zone_ugc})
+
+
+@app.route('/api/news/prune', methods=['POST'])
+def api_news_prune():
+    """Real retention policy, worked through with Frank before any of
+    this was built: regular articles kept 1 year, real hazard alerts
+    (cap_event set) never auto-pruned -- these ARE the point of the
+    feature (a real local hazard history), and realistic volume is low
+    enough that keeping them all costs essentially nothing."""
+    conn = _get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d %H:%M:%S")
+    cur = conn.execute(
+        "DELETE FROM news_articles WHERE cap_event IS NULL AND published_at < ?",
+        (cutoff,),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "deleted": deleted})
 
 
 if __name__ == '__main__':

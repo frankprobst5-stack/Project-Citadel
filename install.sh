@@ -314,6 +314,43 @@ EOF
         echo "-- Couldn't install the user-level health-check timer -- run scripts/health-check.sh"
         echo "   yourself on whatever schedule you'd like instead."
     fi
+
+    # News Archive & Local Log -- ROADMAP.md DISCOVERY item, real build
+    # 2026-09-16. Every 5 minutes, matching the fetch-schedule decision
+    # made before any of this was built: hazard sources need near-real-
+    # time checking, general news sources don't -- the script itself
+    # (news-scheduled.sh) is what actually decides per-source whether
+    # this run does anything, via each source's own next_due_at.
+    NEWS_SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/news-scheduled.sh"
+    chmod +x "$NEWS_SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-news.service" <<EOF
+[Unit]
+Description=Citadel News Archive feed fetch
+
+[Service]
+Type=oneshot
+ExecStart=${NEWS_SCRIPT_PATH}
+EOF
+
+    cat > "$UNIT_DIR/citadel-news.timer" <<'EOF'
+[Unit]
+Description=Run Citadel's News Archive fetch-due check every 5 minutes
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=5m
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-news.timer 2>/dev/null; then
+        echo "-- News Archive fetch timer installed (systemctl --user status citadel-news.timer)."
+    else
+        echo "-- Couldn't install the user-level news-fetch timer -- run scripts/news-scheduled.sh"
+        echo "   yourself on whatever schedule you'd like instead."
+    fi
 fi
 
 echo "============================================================"

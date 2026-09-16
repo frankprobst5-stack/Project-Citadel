@@ -279,6 +279,64 @@ forgotten:
   hunting down and pasting the raw XML URL themselves. Deliberately scoped
   as a standalone extension first, not dependent on that browser project
   existing — regular Firefox (or Chrome) today is enough to ship this.
+  **Built end-to-end, 2026-09-16 — real, tested, live on this machine.**
+  Every open question above got worked through with Frank one at a time
+  before writing any code, then built for real:
+  - **Python, not PHP** — reimplemented Masthead's proven design fresh in
+    Python rather than running a second language runtime just for this,
+    per the architecturally-consistent path this entry already flagged.
+    New modules alongside `app.py`: `news_feed_parser.py` (generic
+    RSS/Atom via `feedparser`, with the real BBC double-entity-encoding
+    fix ported over), `news_hazard_adapters.py` (USGS earthquake/volcano,
+    NHC hurricane, InciWeb wildfire, tsunami adapters — InciWeb's
+    coordinate regex went through three real fixes against live current
+    data: signed longitude, decimal seconds, and a stray space before the
+    degree symbol), `news_nws_alerts.py` (direct NWS JSON client — no CAP-
+    XML parsing needed, NWS serves structured GeoJSON directly),
+    `news_location.py`, and `news_matcher.py` (3-tier relevance: geocode
+    containment, 200-mile radius, unfiltered fallback).
+  - **Location is fully automatic** — Frank asked directly whether users
+    would need to enter their area manually; answer is no. `STATION_LAT`/
+    `STATION_LON` (already set for the Tactical Map) resolve real NWS
+    county/zone codes once via `api.weather.gov/points/{lat},{lon}` and
+    cache them in a new `settings` table — nobody types a location twice.
+  - **Retention, resolved after Frank's own space concern**: a flat
+    1-year keep-everything policy would genuinely bloat over time, so
+    general articles are pruned after 1 year while real hazard
+    alerts (`cap_event` set) are never auto-pruned — realistic hazard
+    volume is low enough that keeping the actual local hazard history
+    forever costs essentially nothing, and that history is the actual
+    point of the feature.
+  - **Fetch schedule, per Frank's own morning/evening proposal**: general
+    sources default to `fetch_interval_minutes = 720` (twice daily — a
+    fresh look in the morning and before bed, exactly as proposed), while
+    the host-level `scripts/news-scheduled.sh` timer runs every 5 minutes
+    so hazard sources can use a much shorter interval without needing a
+    second timer — each source's own `next_due_at` gates whether a given
+    run actually does anything, so the frequent timer doesn't mean
+    frequent fetching for every source.
+  - **Dashboard alert indicator, per Frank's explicit request** ("a small
+    red light on the dashboard... click it and be taken to it"): a new
+    News & Alerts strip on `index.html`, styled and wired exactly like
+    the existing Supply Status pattern (`renderSupplyStatus()`/
+    `SUPPLY_CATEGORIES`) — red dot + live count when
+    `/api/news/active-alerts` returns any active alert, green when clear,
+    clickable straight through to `news.html`, refreshed on the same
+    30-second `pollHealth()` cycle as the rest of the dashboard. Verified
+    live in a browser against this machine's real NWS data (correctly
+    showed "2 active alerts" with a red dot, and the click-through
+    landed on `news.html`), not just written.
+  - New `news.html` cockpit page (Active Alerts, Local News Log entry
+    form, Cached News, Manage Sources), a new `/api/news/` nginx proxy
+    (direct `proxy_pass`, no lazy-DNS needed since `vault-api` is core/
+    always-on, unlike the profile-gated pattern this file's nginx.conf
+    otherwise requires), and `install.sh` now installs a user-level
+    `citadel-news.timer` alongside the existing backup/health-check
+    timers, same best-effort `loginctl enable-linger` posture.
+  - Genuinely untested: real-world behavior across many months of actual
+    accumulated articles/alerts — verified correctness of the code paths
+    (fetch, dedupe, matching, pruning, the dashboard indicator) against
+    real live data, not a long-run soak test.
 - **Animal health/medication/vaccine log** `[DISCOVERY]`, 2026-09-15 — real
   gap Frank flagged directly: Livestock & Animals currently tracks
   populations, feeding, and production outputs, but not medical issues,

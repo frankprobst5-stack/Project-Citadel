@@ -138,6 +138,12 @@
             <div class="supply-strip" id="supplyStrip"></div>
         </div>
 
+        <!-- NEWS & ALERTS -->
+        <div class="supply-panel">
+            <div class="supply-panel-head">📰 News &amp; Alerts</div>
+            <div class="supply-strip" id="newsAlertStrip"></div>
+        </div>
+
         <!-- STATUS BAR -->
         <div class="status-bar">
             <span>📡 HUB LINK STATUS: SECURED // OFF-GRID LOCAL NET ACTIVE</span>
@@ -448,6 +454,35 @@
             }).join('');
         }
 
+        // ---- News & Alerts indicator ----
+        // Same clickable red/green-dot strip pattern as renderSupplyStatus()
+        // above, but a single item instead of a category list -- per Frank's
+        // request, this is the "small red light on the dashboard" so nobody
+        // has to keep checking news.html by hand. Polls the same
+        // /api/news/active-alerts NWS-backed endpoint news.html itself uses.
+        async function renderNewsAlerts() {
+            const strip = document.getElementById('newsAlertStrip');
+            let dotClass = 'gray', countText = 'no data';
+            try {
+                const res = await fetch('/api/news/active-alerts', { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const count = (data.alerts || []).length;
+                    if (count > 0) { dotClass = 'red'; countText = `${count} active alert${count === 1 ? '' : 's'}`; }
+                    else { dotClass = 'green'; countText = 'no active alerts'; }
+                }
+            } catch {
+                // leave gray/no data
+            }
+            strip.innerHTML = `
+                <div class="supply-item" onclick="window.location.href='news.html'">
+                    <span class="dot dot-${dotClass}"></span>
+                    <span class="name">Active Alerts</span>
+                    <span class="count">${countText}</span>
+                </div>
+            `;
+        }
+
         function setDot(el, state) {
             // state: 'green' | 'red' | 'gray'
             const dot = el.querySelector('.dot');
@@ -531,6 +566,7 @@
             diffAndLog(lastResults, results);
             lastResults = results;
             renderSupplyStatus();
+            renderNewsAlerts();
         }
 
         // Mount
