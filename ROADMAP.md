@@ -83,13 +83,27 @@ forgotten:
   not a hostname. Would need a real new option (e.g. `OLLAMA_REMOTE_HOST`)
   that, when set, skips starting the local `ollama` container entirely and
   points `open-webui`/Cloud9 at the remote one instead.
-- **A periodic dead-container health check** (optional, low priority) —
-  a cron/systemd timer running `docker ps -a --filter status=dead` and
-  logging/alerting if it ever finds anything, so a repeat of this session's
-  two container-corruption incidents (both root-caused to a single
+- **A periodic dead-container health check — done, 2026-09-16.** New
+  `scripts/health-check.sh` runs `docker ps -a --filter status=dead`, logs
+  loudly to stderr (visible via `journalctl`/`systemctl status`, not buried
+  where nobody's watching) if it ever finds anything, and writes
+  `appdata/health-check-status.json` so a future dashboard integration can
+  surface it without needing to invent that today. `install.sh` installs a
+  user-level systemd timer (`citadel-health-check.timer`, every 15 minutes
+  — a dead container is worth knowing about the same hour, not the next
+  morning, unlike nightly backups) alongside the backup timer, same
+  best-effort posture (never blocks the rest of the install if systemd
+  --user isn't available). **Real verification, not just written**: both
+  generated units passed `systemd-analyze verify`; the script was run for
+  real against this machine's actual live containers (correctly reported
+  "OK — no dead containers found," matching real state) and, separately,
+  against a mocked `docker` command reporting a fake dead container (correctly
+  logged the ALERT and wrote the alert-state JSON) — covering both real
+  code paths without needing to actually corrupt a real container to prove
+  the detection logic works. Real motivation: this session's own two
+  container-corruption incidents, both root-caused to a single
   memory-pressure freeze, now less likely thanks to Phase 6's memory
-  limits) gets caught proactively instead of by accident during unrelated
-  work.
+  limits but not impossible.
 - **"XCAST" community bulletin — Citadel's half (authoring), 2026-09-15.**
   Frank's idea, checked and confirmed to be genuinely new (not an existing
   MKME/XTOC feature): a simple, public, no-login bulletin page for a relief

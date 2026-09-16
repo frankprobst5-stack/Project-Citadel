@@ -254,6 +254,44 @@ EOF
         echo "   environment) -- backups still work manually via Settings > Backups, or run"
         echo "   scripts/backup-scheduled.sh yourself on whatever schedule you'd like."
     fi
+
+    # Dead-container health check -- ROADMAP.md v2 backlog: this session had
+    # two real container-corruption incidents, both root-caused to a single
+    # memory-pressure freeze (less likely now thanks to Phase 6's real
+    # per-container memory limits, but not impossible) -- catches a repeat
+    # proactively rather than by accident during unrelated work. Every 15
+    # minutes, not daily like backups -- a dead container is worth knowing
+    # about the same hour it happens, not the next morning.
+    HEALTH_SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/health-check.sh"
+    chmod +x "$HEALTH_SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-health-check.service" <<EOF
+[Unit]
+Description=Citadel dead-container health check
+
+[Service]
+Type=oneshot
+ExecStart=${HEALTH_SCRIPT_PATH}
+EOF
+
+    cat > "$UNIT_DIR/citadel-health-check.timer" <<'EOF'
+[Unit]
+Description=Run Citadel's dead-container health check periodically
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=15m
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-health-check.timer 2>/dev/null; then
+        echo "-- Health check timer installed (systemctl --user status citadel-health-check.timer)."
+    else
+        echo "-- Couldn't install the user-level health-check timer -- run scripts/health-check.sh"
+        echo "   yourself on whatever schedule you'd like instead."
+    fi
 fi
 
 echo "============================================================"
