@@ -92,14 +92,23 @@ services:
       # /etc/nginx/modules-enabled/ -- it never writes back into modules/.
       - ./modules:/citadel-modules:ro
     # Real memory cap, added 2026-09-14 after a live freeze this session
-    # traced to unbounded container memory use (see ROADMAP.md) --
-    # cockpit is just nginx serving static files + one proxy layer,
-    # measured under 20MB in real use; 128m leaves generous headroom
-    # without letting a misbehaving reverse-proxy request pile-up take
-    # down the host. Verified this is actually enforced by plain `docker
-    # compose up -d` on this project's Compose version (2.40.3) -- no
-    # Swarm/`deploy:` needed, confirmed via `docker inspect`.
-    mem_limit: 128m
+    # traced to unbounded container memory use (see ROADMAP.md). Original
+    # 128m was measured under 20MB in real use -- that measurement never
+    # exercised the Tactical Map's /tiles/ route. Raised to 1024m on
+    # 2026-09-16 after a real live crash loop: `docker inspect` showed
+    # OOMKilled=true / restarts=2, and the kernel log had 20+ separate
+    # `Memory cgroup out of memory: Killed process ... (nginx)` entries in
+    # under an hour, traced directly to nginx's own access log showing
+    # single 100-630MB responses off comms_base.pmtiles (1.9GB on disk) --
+    # oversized Range requests, not a leak. Cgroup v2 counts page-cache
+    # pages from sendfile()'d reads against the serving container's own
+    # memory.current, so serving big spans of a large file genuinely
+    # spikes this container's accounted memory even with zero app-level
+    # buffering -- 128m was never going to survive that once the Tactical
+    # Map saw real use. Verified enforced by plain `docker compose up -d`
+    # on this project's Compose version (2.40.3) -- no Swarm/`deploy:`
+    # needed, confirmed via `docker inspect`.
+    mem_limit: 1024m
     networks:
       - citadel-net
     restart: unless-stopped
