@@ -45,6 +45,8 @@
         .health-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; }
         .health-item .name { color: var(--text-dim); }
         .health-item .val { font-family: monospace; }
+        .health-item-link { cursor: pointer; }
+        .health-item-link:hover .name, .health-item-link:hover .val { color: var(--amber); }
         .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
         .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
@@ -138,12 +140,6 @@
             <div class="supply-strip" id="supplyStrip"></div>
         </div>
 
-        <!-- NEWS & ALERTS -->
-        <div class="supply-panel">
-            <div class="supply-panel-head">📰 News &amp; Alerts</div>
-            <div class="supply-strip" id="newsAlertStrip"></div>
-        </div>
-
         <!-- STATUS BAR -->
         <div class="status-bar">
             <span>📡 HUB LINK STATUS: SECURED // OFF-GRID LOCAL NET ACTIVE</span>
@@ -226,6 +222,7 @@
             { key: 'static', title: "Master Operations Handbook", desc: "Access complete hardware manifests, radio channel frequencies, and launch directives to clone channel maps offline.", meta: "Engine: Operations Guide", icon: "📟", action: "manual.html", profile: null },
             { key: 'static', title: "System Settings", desc: "View live service diagnostics, station identity, and build info. Configuration editing is not wired up yet.", meta: "Engine: Citadel Core", icon: "⚙️", action: "settings.html", profile: null },
             { key: 'muster', title: "Muster (Mobile Ops)", desc: "Grid-down operations control, reachable on any phone or tablet with zero install. Real messages and map markers, pulled live from WayStation.", meta: "Engine: Muster Bridge", icon: "✡", action: "muster/index.html", profile: 'muster' },
+            { key: 'static', title: "News Archive & Local Log", desc: "Aggregated hazard alerts (NWS, USGS, NHC, InciWeb) and syndicated news, archived so it's still readable once the grid goes down -- plus a hand-typed local log for when nothing new can arrive at all. Add as many feed sources as you want here, not on the front page.", meta: "Engine: Hazard/CAP Feed Core", icon: "📰", action: "news.html", profile: null },
         ];
 
         // Populated by loadEnabledModules() before buildDashboardCockpit()
@@ -328,6 +325,7 @@
             { key: 'mealie',  name: 'Mealie', profile: 'recipes' },
             { key: 'ai',      name: 'AI', profile: 'ai' },
             { key: 'backup',  name: 'Backup', profile: null },
+            { key: 'newsAlerts', name: 'Alerts', special: 'alerts', unmonitored: true, profile: null },
         ];
 
         // Same-origin proxied endpoints: only the status code is ever used
@@ -463,32 +461,26 @@
         }
 
         // ---- News & Alerts indicator ----
-        // Same clickable red/green-dot strip pattern as renderSupplyStatus()
-        // above, but a single item instead of a category list -- per Frank's
-        // request, this is the "small red light on the dashboard" so nobody
-        // has to keep checking news.html by hand. Polls the same
-        // /api/news/active-alerts NWS-backed endpoint news.html itself uses.
-        async function renderNewsAlerts() {
-            const strip = document.getElementById('newsAlertStrip');
-            let dotClass = 'gray', countText = 'no data';
+        // Redesigned 2026-09-16 per Frank's own feedback: a full-width
+        // panel here doesn't scale -- adding feed sources has no effect on
+        // this (it's always exactly one aggregate count either way), but
+        // he correctly flagged that this style of strip is the wrong
+        // pattern to set a precedent with on the front page. Now just a
+        // small light in the existing System Status strip (HEALTH_STRIP
+        // below), same as Power/Network/Backup -- and the module itself
+        // gets a real card in the main grid (coreModules) instead.
+        // newsAlertCount is read by renderHealthStrip()'s special-cased
+        // 'alerts' item; null means "couldn't check", not "zero".
+        let newsAlertCount = null;
+        async function fetchNewsAlertCount() {
             try {
                 const res = await fetch('/api/news/active-alerts', { cache: 'no-store' });
-                if (res.ok) {
-                    const data = await res.json();
-                    const count = (data.alerts || []).length;
-                    if (count > 0) { dotClass = 'red'; countText = `${count} active alert${count === 1 ? '' : 's'}`; }
-                    else { dotClass = 'green'; countText = 'no active alerts'; }
-                }
+                if (!res.ok) { newsAlertCount = null; return; }
+                const data = await res.json();
+                newsAlertCount = (data.alerts || []).length;
             } catch {
-                // leave gray/no data
+                newsAlertCount = null;
             }
-            strip.innerHTML = `
-                <div class="supply-item" onclick="window.location.href='news.html'">
-                    <span class="dot dot-${dotClass}"></span>
-                    <span class="name">Active Alerts</span>
-                    <span class="count">${countText}</span>
-                </div>
-            `;
         }
 
         function setDot(el, state) {
@@ -505,6 +497,18 @@
             HEALTH_STRIP.filter(item => isModuleEnabled(item.profile)).forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'health-item';
+                if (item.special === 'alerts') {
+                    let dotClass = 'gray', text = 'NO DATA';
+                    if (newsAlertCount !== null) {
+                        dotClass = newsAlertCount > 0 ? 'red' : 'green';
+                        text = newsAlertCount > 0 ? `${newsAlertCount} ACTIVE` : 'CLEAR';
+                    }
+                    div.classList.add('health-item-link');
+                    div.addEventListener('click', () => window.location.href = 'news.html');
+                    div.innerHTML = `<span class="dot dot-${dotClass}"></span><span class="name">${item.name}</span><span class="val">${text}</span>`;
+                    strip.appendChild(div);
+                    return;
+                }
                 let dotClass = 'gray', text = 'N/A';
                 if (!item.unmonitored) {
                     const ok = results[item.key];
@@ -567,14 +571,13 @@
         }
 
         async function pollHealth() {
-            const results = await runHealthChecks();
+            const [results] = await Promise.all([runHealthChecks(), fetchNewsAlertCount()]);
             renderHealthStrip(results);
             renderReadiness(results);
             renderCardStatuses(results);
             diffAndLog(lastResults, results);
             lastResults = results;
             renderSupplyStatus();
-            renderNewsAlerts();
         }
 
         // Mount
