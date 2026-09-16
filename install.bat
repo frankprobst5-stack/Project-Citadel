@@ -127,6 +127,7 @@ if errorlevel 1 (
     call :ask audio "Whisper Audio Transcription" n
     call :ask education "Home Education Hub" n
     call :ask recipes "Recipes and Meal Planner" n
+    call :ask muster "Muster (Mobile Ops bridge to WayStation)" n
 
     >>.env echo COMPOSE_PROFILES=%PROFILES%
     echo.

@@ -1,0 +1,37 @@
+services:
+  # Layer: Muster bridge -- a real WSP/1 peer that pulls WayStation's
+  # messages/map markers over the real authenticated TCP protocol
+  # (net_sync.rs) and re-exposes them as plain JSON over HTTP, since
+  # browser JS (what Muster actually is) cannot speak raw TCP. See
+  # appdata/muster-bridge/bridge.py's own module comment for the full
+  # real wire-protocol detail and why this exists.
+  muster-bridge:
+    build:
+      context: ../../appdata/muster-bridge
+    container_name: citadel-muster-bridge
+    profiles: ["muster"]
+    environment:
+      # Real, required operator configuration -- there is no default
+      # WayStation address to guess, and no way to automate the trust
+      # setup on WayStation's own side (the operator has to register
+      # this exact callsign+secret pair in WayStation's Settings ->
+      # Peer Sync themselves; that's a deliberate trust decision, not
+      # something this module can do on their behalf). Unconfigured by
+      # default -- bridge.py fails honestly with a clear error rather
+      # than silently doing nothing if these are left blank.
+      - WAYSTATION_HOST=${WAYSTATION_HOST:-}
+      - WAYSTATION_PORT=${WAYSTATION_PORT:-51820}
+      - MUSTER_CALLSIGN=${MUSTER_CALLSIGN:-}
+      - MUSTER_SECRET=${MUSTER_SECRET:-}
+    command: python /app/bridge.py
+    volumes:
+      - ../../appdata/muster-bridge:/app
+    working_dir: /app
+    # Real memory cap, matching the rest of Citadel's lightweight
+    # Python services (see docker-compose.yml's cockpit comment for the
+    # full "why") -- one small HTTP server + one short-lived TCP client
+    # connection at a time, 128m is generous headroom.
+    mem_limit: 128m
+    networks:
+      - citadel-net
+    restart: unless-stopped

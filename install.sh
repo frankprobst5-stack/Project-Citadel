@@ -74,7 +74,7 @@ fi
 # pipe, a Dockerfile RUN step) so automated installs never hang waiting
 # on a prompt that can never be answered; those get every module enabled,
 # matching this project's behavior before the module picker existed.
-MODULE_NAMES=(vigil camera ai knowledge notes hardware audio education recipes)
+MODULE_NAMES=(vigil camera ai knowledge notes hardware audio education recipes muster)
 if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
     if [ -t 0 ]; then
         echo ""
@@ -120,7 +120,7 @@ if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
         echo "Non-interactive install detected -- enabling every module by"
         echo "default (edit COMPOSE_PROFILES in .env afterward for a lighter"
         echo "install, e.g. a Raspberry Pi)."
-        echo "COMPOSE_PROFILES=vigil,ai,knowledge,notes,audio,education,recipes" >> .env
+        echo "COMPOSE_PROFILES=vigil,ai,knowledge,notes,audio,education,recipes,muster" >> .env
     fi
 fi
 

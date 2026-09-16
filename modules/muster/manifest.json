@@ -1,0 +1,11 @@
+{
+    "name": "muster",
+    "profile": "muster",
+    "title": "Muster (Mobile Ops)",
+    "icon": "✡",
+    "description": "Grid-down operations control, reachable on any phone/tablet on the LAN with zero install. Pulls real messages and map markers from WayStation over its own WSP/1 protocol.",
+    "engine": "Muster Bridge",
+    "cockpit_tile": true,
+    "requires_hardware": false,
+    "notes": "Real setup required beyond enabling this module: WayStation must be running and reachable, and its operator must register this station as a trusted WSP/1 peer (WayStation's own Settings → Peer Sync) using the exact callsign/secret set in .env as MUSTER_CALLSIGN/MUSTER_SECRET, plus WAYSTATION_HOST pointing at the machine WayStation actually runs on. Without that, the module runs but honestly reports 'not connected' rather than showing fake data."
+}
