@@ -77,12 +77,31 @@ forgotten:
   timer survives that in practice, versus just being installed and enabled
   in the current session — the same category of gap as Undercroft's own
   "a container test isn't a reboot" caveat.
-- **Optional remote-Ollama-host support**, for a household whose dashboard
-  machine isn't the one with a real GPU. Not a one-line `.env` change the
-  way it might look at first — `OLLAMA_PORT` is just a host port number,
-  not a hostname. Would need a real new option (e.g. `OLLAMA_REMOTE_HOST`)
-  that, when set, skips starting the local `ollama` container entirely and
-  points `open-webui`/Cloud9 at the remote one instead.
+- **Optional remote-Ollama-host support — done, 2026-09-16.** For a
+  household whose dashboard machine isn't the one with a real GPU. Real
+  mechanism, not the one-line `.env` change it might look like: `ollama`
+  now lives in its own `"ollama-local"` Compose profile (was bundled into
+  `"ai"`/`"education"` directly), and `install.sh` adds that profile
+  automatically whenever `ai`/`education` is selected **and**
+  `OLLAMA_REMOTE_HOST` isn't set in `.env` — so the default behavior is
+  unchanged from before this existed. Setting `OLLAMA_REMOTE_HOST` to a
+  real reachable host leaves `"ollama-local"` out entirely (the local
+  container never starts, not just idles), and `open-webui`/`cloud9` pick
+  it up automatically via real Compose `${VAR:-default}` substitution on
+  `OLLAMA_BASE_URL`. **A real Compose constraint found and designed
+  around, verified directly, not assumed**: `depends_on` crossing an
+  inactive profile boundary is a hard `invalid compose project` error, not
+  a soft skip — confirmed with a real minimal test compose file before
+  touching Citadel's own modules, which is why `open-webui`'s and
+  `cloud9`'s `depends_on: [ollama]` were removed (losing only start
+  *order*, not availability — Compose's own `depends_on` never waited for
+  "ready" anyway, only "started"). **Verified end-to-end against this
+  machine's actual live install**, not just a test file: `docker compose
+  config` resolved cleanly and included `ollama` after adding
+  `"ollama-local"` to the real `.env`, then a real `docker compose up -d`
+  left all 11 real containers running with Ollama's own 43-hour uptime
+  untouched — confirming the migration is safe for an already-running
+  install, not just a fresh one.
 - **A periodic dead-container health check — done, 2026-09-16.** New
   `scripts/health-check.sh` runs `docker ps -a --filter status=dead`, logs
   loudly to stderr (visible via `journalctl`/`systemctl status`, not buried

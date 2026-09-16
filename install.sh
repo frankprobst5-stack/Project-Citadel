@@ -155,6 +155,28 @@ if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
             echo "COMPOSE_PROFILES=vigil,ai,knowledge,notes,audio,education,recipes,muster" >> .env
         fi
     fi
+
+    # Remote-Ollama-host support, ROADMAP.md v2 backlog -- ollama itself
+    # lives under its own "ollama-local" profile now (see
+    # modules/ai/compose.fragment.yml), not bundled into "ai"/"education"
+    # directly, specifically so it can be left out when a remote host is
+    # configured. This only runs as part of the fresh-install picker above
+    # (same guard, same "never silently touch an existing real install's
+    # module selection" principle) -- add/remove "ollama-local" from
+    # COMPOSE_PROFILES by hand afterward if this ever needs to change.
+    JUST_SET_PROFILES="$(grep '^COMPOSE_PROFILES=' .env | cut -d= -f2-)"
+    OLLAMA_REMOTE="$(grep '^OLLAMA_REMOTE_HOST=' .env 2>/dev/null | cut -d= -f2-)"
+    if [[ "$JUST_SET_PROFILES" =~ (^|,)(ai|education)(,|$) ]]; then
+        if [ -z "$OLLAMA_REMOTE" ]; then
+            sed -i "s/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=${JUST_SET_PROFILES},ollama-local/" .env
+            echo "-- Ollama/education modules selected, no remote host configured --"
+            echo "   running Ollama locally (added the 'ollama-local' profile)."
+        else
+            echo "-- OLLAMA_REMOTE_HOST is set ($OLLAMA_REMOTE) -- Citadel's own local"
+            echo "   Ollama container will NOT start; Off-Grid AI/Home Education will"
+            echo "   use the remote one instead."
+        fi
+    fi
 fi
 
 # Pre-create bind-mount folders so Docker doesn't create them as root, which

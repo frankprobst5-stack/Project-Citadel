@@ -3,17 +3,21 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: citadel-ollama
-    # Tagged with BOTH profiles, not just "ai": Cloud9 (the "education"
-    # module) used to bundle its own private llama-cpp-python + model
-    # instead of sharing this one -- consolidated 2026-09-14 so the
-    # system never runs two inference engines at once. A service can
-    # legitimately belong to more than one Compose profile; it starts if
-    # ANY of its profiles is active. This means enabling "education"
-    # alone brings up ollama (so Cloud9's chat works) WITHOUT also
-    # starting open-webui below, which stays "ai"-only -- a household
-    # that just wants the kid dashboard doesn't get the general chat UI
-    # forced on them too.
-    profiles: ["ai", "education"]
+    # Real own profile, "ollama-local" -- NOT "ai"/"education" directly,
+    # since 2026-09-16's remote-Ollama-host support (ROADMAP.md v2
+    # backlog). install.sh adds "ollama-local" to COMPOSE_PROFILES
+    # automatically whenever "ai" or "education" is selected AND
+    # OLLAMA_REMOTE_HOST isn't set in .env -- so the common case (no
+    # remote host configured) behaves identically to before this change.
+    # When a remote host IS configured, "ollama-local" is deliberately
+    # left out so this container never starts at all, not just idle --
+    # a household whose dashboard machine isn't the one with a real GPU
+    # points at a real Ollama running elsewhere instead. Real Compose
+    # constraint verified directly before this change: `depends_on`
+    # crossing an inactive profile boundary is a hard "invalid compose
+    # project" error, not a soft skip -- open-webui's depends_on below
+    # was removed for exactly that reason, not an oversight.
+    profiles: ["ollama-local"]
     ports:
       - "${OLLAMA_PORT}:11434"
     volumes:
@@ -41,13 +45,21 @@ services:
     volumes:
       - ../../appdata/open-webui:/app/backend/data
     environment:
-      - OLLAMA_BASE_URL=http://citadel-ollama:11434
+      # Real `${VAR:-default}` Compose substitution, added 2026-09-16 for
+      # remote-Ollama-host support -- defaults to the local container's
+      # own hostname exactly as before if OLLAMA_REMOTE_HOST isn't set.
+      - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
     # Real memory cap, added 2026-09-14 -- measured ~50-700MB in real
     # use (it grows with chat history/session count); 512m covers normal
     # household use without being unbounded.
     mem_limit: 512m
     networks:
       - citadel-net
-    depends_on:
-      - ollama
+    # depends_on: [ollama] removed 2026-09-16 -- ollama now lives in its
+    # own "ollama-local" profile (see its own comment above), and a
+    # depends_on crossing an inactive profile is a hard Compose error,
+    # not a soft skip (verified directly). Losing this only affects
+    # start ORDER, not availability -- Compose's own depends_on never
+    # waited for "ready" anyway, only "started", and open-webui already
+    # has to handle Ollama not answering yet regardless.
     restart: unless-stopped

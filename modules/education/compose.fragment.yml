@@ -24,7 +24,10 @@ services:
     volumes:
       - ../../appdata/cloud9/data:/app/data
     environment:
-      - OLLAMA_BASE_URL=http://citadel-ollama:11434
+      # Real `${VAR:-default}` Compose substitution, added 2026-09-16 for
+      # remote-Ollama-host support -- see modules/ai/compose.fragment.yml's
+      # own comment for the full reasoning (same pattern, same reason).
+      - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
       - OLLAMA_MODEL=llama3.2:1b
     # Real memory cap, added 2026-09-14 (see docker-compose.yml's
     # cockpit comment for the full "why"). Measured ~50MB in real use
@@ -33,8 +36,10 @@ services:
     mem_limit: 256m
     networks:
       - citadel-net
-    depends_on:
-      - ollama
+    # depends_on: [ollama] removed 2026-09-16 -- same real reason as
+    # open-webui's (modules/ai/compose.fragment.yml): ollama now lives in
+    # its own "ollama-local" profile, and a depends_on crossing an
+    # inactive profile is a hard Compose error, verified directly.
     restart: unless-stopped
 
   # Layer 10: The Offline Home Schooling Matrix Hub
