@@ -336,6 +336,38 @@ class VigilAPIHandler(http.server.BaseHTTPRequestHandler):
 
         self.send_error(404)
 
+    def do_HEAD(self):
+        # BaseHTTPRequestHandler has no default HEAD support -- any HEAD
+        # request here died with a real 501 "Unsupported method" until
+        # this existed, which is exactly what broke the cockpit
+        # dashboard's Power health check the moment checkSameOrigin()
+        # switched from GET to HEAD (2026-09-16, see index.html). Mirrors
+        # do_GET's routing for status-code purposes only: no body is ever
+        # sent for HEAD, and no side-effecting work (camera streaming,
+        # live mDNS discovery) runs just to answer a reachability check.
+        if self.path in ("/", "/index.html"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            return
+        if self.path.startswith("/api/grid") or self.path.startswith("/api/state"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            return
+        if self.path.startswith("/camera/") and self.path.endswith(".mjpg"):
+            self.send_response(200)
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+            self.end_headers()
+            return
+        if self.path.startswith("/api/discover"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            return
+        self.send_error(404)
+
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length)
