@@ -7,5 +7,6 @@
     "engine": "Offline LLM Core (Ollama + Open WebUI)",
     "cockpit_tile": true,
     "requires_hardware": false,
-    "notes": "Heavy: needs real RAM and ideally a GPU. A small quantized model is a stretch on a Raspberry Pi's shared memory -- see ROADMAP.md Phase 1. This same Ollama engine is also shared by the 'education' module's Cloud9 AI helper -- it runs whenever either module is enabled, not just this one."
+    "heavy_on_pi": true,
+    "notes": "Heavy: needs real RAM and ideally a GPU. A small quantized model is a stretch on a Raspberry Pi's shared memory -- see ROADMAP.md Phase 1. This same Ollama engine is also shared by the 'education' module's Cloud9 AI helper -- it runs whenever either module is enabled, not just this one. `heavy_on_pi` drives install.sh's real ARM/Pi detection, added the same day this field was: defaults to 'no' on detected Pi-class hardware rather than everywhere, since Ollama's 4096m reservation alone can exceed a 4GB Pi's total RAM."
 }

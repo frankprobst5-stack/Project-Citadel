@@ -722,28 +722,52 @@ stack has been designed, tested, or documented for a Pi. The services
 here have wildly different resource profiles, and treating them as one
 undifferentiated bundle is the wrong model for a Pi:
 
-- **Split services into tiers, explicitly.** Lightweight and genuinely
-  Pi-plausible: `cockpit` (nginx), `vault-api`, `vigil-hub`,
-  `vigil-power`, `flatnotes`. Heavy, desktop/laptop-class only: `ollama`
-  (running any real local LLM needs real RAM and ideally a GPU — even a
-  small quantized model is a stretch on a Pi's shared memory), `kolibri`
-  (a full learning-platform stack), `open-webui`. `kiwix-serve` is
-  probably fine on a Pi depending on archive size (it's built for
-  low-resource serving) but hasn't actually been tested there either.
-- **A `docker-compose.pi.yml` (or Compose profiles)** that boots only
-  the lightweight tier — the actual "always-on home command console"
-  use case — while the heavy AI/education tier stays something you run
-  on a desktop when you want it, not something a Pi tries to carry
-  full-time.
-- **Actually test on real Pi hardware** before claiming support — ARM64
-  images exist for all the bundled services, but "the image exists for
-  ARM" and "this runs acceptably on a Pi's actual RAM/storage/thermal
-  envelope" are different claims, and only the second one matters here.
-- **Document real numbers** once tested: RAM/storage footprint per tier,
-  and realistic performance expectations (especially for Ollama — being
-  honest that "AI assistant" on a Pi likely means a tiny model and slow
-  responses, not the same experience as on a desktop, is better than
-  finding that out during an actual emergency).
+- **Split services into tiers — done, 2026-09-16, via Compose profiles
+  (the parenthetical alternative below, not a second compose file).** A
+  separate `docker-compose.pi.yml` would have meant hand-duplicating every
+  heavy service's definition a second time just to gate it — real,
+  ongoing maintenance burden for no benefit the existing profile system
+  doesn't already give for free. Instead: `ai` (`ollama` 4096m +
+  `open-webui` 512m) and `education` (`kolibri` 1024m + `cloud9` 256m)
+  both gained a new `"heavy_on_pi": true` manifest field (`modules/ai/`,
+  `modules/education/`), and `install.sh` now runs a real `uname -m`
+  check — `aarch64`/`armv7l`/`armv6l` all count as ARM — and defaults
+  those two modules to "no" specifically on detected ARM hardware, in
+  both the interactive picker and the non-interactive fresh-install path.
+  This is a *default*, not a lockout: an operator on a beefy ARM board can
+  still say "y" and get them anyway, the same way `requires_hardware`
+  modules already worked before this change. Real numbers behind the
+  cutoff: `ollama` alone reserves 4096m, more than the total RAM on a 4GB
+  Pi before the OS or anything else; `ollama`+`kolibri` together reserve
+  over 5GB. **Live-tested, not just written**: real manifest files, a
+  faked `uname -m` returning `aarch64`, and a real pseudo-tty (so the
+  actual interactive per-module loop ran, not just the non-interactive
+  branch) confirmed both the ARM and non-ARM paths produce the right
+  `COMPOSE_PROFILES`, with `hardware`/`camera`'s pre-existing
+  `requires_hardware` gating unaffected — no regression to the common
+  x86 case.
+  - **Confirmed Pi-safe tier (all real `mem_limit`s, ARM64 image
+    availability checked live via `docker manifest inspect`, not
+    assumed)**: `cockpit` 128m, `vault-api` 256m, `vigil` 384m,
+    `flatnotes` 128m, `mealie` 512m, `kiwix` 512m — roughly **2.4GB total**
+    with everything non-hardware-gated enabled, comfortable headroom on a
+    4GB+ Pi. `kiwix`'s own real-Pi performance still genuinely depends on
+    archive size, same honest caveat as before — package/image
+    availability isn't the same claim as "runs well with an 80GB archive
+    attached."
+  - **`audio` (`whisper`, 768m) and `hardware`/`camera` (RTL-SDR/webcam)
+    deliberately left alone** — `audio`'s own manifest already recorded a
+    real measured "~10x realtime on 4c/8t, not tested on a Pi specifically
+    yet" from before this pass, not confident enough evidence either way
+    to flip a working default without new information; `hardware`/`camera`
+    were already correctly gated by `requires_hardware`, an orthogonal
+    "do you even have the device" question this pass didn't need to touch.
+- **Real Pi hardware testing still not done** — the change above is
+  real, tested logic (manifest parsing, ARM detection, the resulting
+  `COMPOSE_PROFILES`), verified without a physical Pi in this pass, not
+  a substitute for actually booting the lightweight tier on real
+  hardware and confirming the RAM/thermal picture holds up in practice.
+  That real-hardware step remains open.
 
 ## Phase 2 — Wire up what the UI already expects
 

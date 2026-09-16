@@ -7,5 +7,6 @@
     "engine": "Cloud9 + Kolibri",
     "cockpit_tile": true,
     "requires_hardware": false,
-    "notes": "Kolibri is a full learning-platform stack -- heavy, desktop/laptop-class hardware recommended, not a Pi target (see ROADMAP.md Phase 1). Cloud9's AI homework helper shares Citadel's own Ollama engine (the 'ai' module's) instead of bundling a private model -- enabling this module alone starts Ollama automatically, no need to also turn on 'ai'."
+    "heavy_on_pi": true,
+    "notes": "Kolibri is a full learning-platform stack -- heavy, desktop/laptop-class hardware recommended, not a Pi target (see ROADMAP.md Phase 1). Cloud9's AI homework helper shares Citadel's own Ollama engine (the 'ai' module's) instead of bundling a private model -- enabling this module alone starts Ollama automatically, no need to also turn on 'ai'. `heavy_on_pi` drives install.sh's real ARM/Pi detection: defaults to 'no' on detected Pi-class hardware, same reasoning as the 'ai' module (Kolibri's own 1024m plus Ollama's 4096m is real pressure on a Pi's shared memory)."
 }
