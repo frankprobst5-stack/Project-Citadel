@@ -28,7 +28,13 @@ services:
     ports:
       - "8082:8085"
     command: python /app/vigil_kernel.py
-    mem_limit: 128m
+    # Bumped from 128m 2026-09-16: vigil now spawns a real ffmpeg
+    # transcode process per actively-viewed RTSP camera
+    # (camera_bridge.py). A rough, not-yet-benchmarked-against-real-
+    # cameras estimate for a couple of simultaneous low-res feeds --
+    # revisit with real numbers once real camera hardware exists to
+    # measure against.
+    mem_limit: 384m
     networks:
       - citadel-net
     restart: unless-stopped

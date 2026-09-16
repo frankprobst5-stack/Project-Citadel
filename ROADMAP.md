@@ -492,24 +492,43 @@ the whole project's philosophy:
   Gen1+Gen2/Plus/Pro, ESPHome, Zigbee2MQTT) with real buying guidance
   for each, and explicitly states "Not supported, and never will be:
   Blink and SimpliSafe" in two places. This checkbox was just stale.
-- [ ] **Real ESP32-CAM/network-camera ingestion** `[DISCOVERY]`, added
-  2026-09-15, surfaced by planning work on Muster (a new sibling
-  project — a lightweight browser/PWA ops-coordination tool built to
-  match and exceed a commercial competitor, XTOC, whose own ecosystem
-  includes a camera-feed peripheral called XCAM; see Muster's own
-  ROADMAP.md). Checked directly, not assumed: Vigil has **no** real
-  camera/RTSP ingestion today. The only "live feed" capability is a
-  hand-typed `stream_url` string (`vigil_kernel.py`/`index.html`)
-  dumped straight into an `<img>` tag — works for a direct MJPEG URL
-  only, no RTSP handling, no auto-discovery, configured per device by
-  hand. `ibris_motion.py` (the local-USB-webcam motion detector above)
-  is unrelated and outputs no video at all, just a tripped/secure flag.
-  `hardware_catalog.html` documents ESP32-CAM/RTSP/ONVIF hardware as
-  something to *buy*, not something implemented. Real, unstarted work:
-  actual RTSP/MJPEG client support and/or ESP32-CAM firmware
-  integration, following the same real-local-API-only philosophy
-  already used for the rest of Vigil's hardware adapters above — no
-  cloud, no account. Not yet scoped into buildable steps.
+- [x] **Real ESP32-CAM/network-camera ingestion**, added 2026-09-15,
+  **built and verified 2026-09-16.** Originally surfaced by planning
+  work on Muster (a new sibling project — a lightweight browser/PWA
+  ops-coordination tool built to match and exceed a commercial
+  competitor, XTOC, whose own ecosystem includes a camera-feed
+  peripheral called XCAM; see Muster's own ROADMAP.md). Checked
+  directly before building anything: Vigil had **no** real camera/RTSP
+  ingestion — the only "live feed" capability was a hand-typed
+  `stream_url` string dumped into an `<img>` tag, MJPEG-only, no RTSP.
+  **What got built**: `camera_bridge.py` — a real RTSP-to-MJPEG bridge.
+  Real technical finding along the way, verified before writing the
+  implementation: ffmpeg's own built-in `-f mjpeg -listen` HTTP server
+  does *not* wrap frames in proper `multipart/x-mixed-replace` framing
+  (confirmed live with `curl` — just concatenated JPEGs under a generic
+  `application/octet-stream` header, unusable by a plain `<img>` tag),
+  so a real wrapping layer was necessary, not optional. `camera_bridge.py`
+  spawns one ffmpeg transcode process per actively-viewed camera
+  (lazy-started on first client request, not for every registered
+  device), reads raw MJPEG frames off its stdout, and re-serves them
+  with correct multipart framing at `/camera/<device_id>.mjpg` —
+  `index.html`'s existing `<img src="${stream_url}">` rendering needed
+  zero changes, since `stream_url` is auto-set to that path whenever a
+  device registers an `rtsp_url`. **Verified end-to-end against a real
+  RTSP server** (mediamtx, receiving a genuine pushed test stream) —
+  not a substituted local source: 60 real frames captured over ~6
+  seconds, 55 distinct byte-sizes (proving actual changing video, not
+  a repeated static frame), correct multipart boundaries, valid JPEG
+  SOI/EOI markers on every frame. **Honestly still unverified**: real
+  physical camera/ESP32-CAM hardware and its own RTSP-server/
+  authentication/codec quirks, which a generic test server can't
+  necessarily surface — same category of gap `ibris_motion.py` already
+  names for its own local-webcam code, narrowed from "the whole
+  mechanism is unverified" to "the mechanism is verified, only real
+  hardware's own idiosyncrasies remain untested." `Dockerfile.vigil`
+  gained `ffmpeg` (Alpine package); `vigil`'s `mem_limit` bumped
+  128m→384m for the new transcode workload, itself a rough estimate
+  pending real numbers from real camera hardware.
 
 ### Phase E — Bring in what's real from the other sibling repos
 

@@ -12,6 +12,12 @@
 # mount) -- this only removes the runtime dependency install.
 FROM python:3.10-alpine
 
+# ffmpeg, added 2026-09-16 for camera_bridge.py's real RTSP-to-MJPEG
+# camera ingestion (see that file's own comment for what it does and
+# why a bridge is needed at all). Alpine's own package, not a
+# pip-installed wheel -- ffmpeg is a real binary, not a Python library.
+RUN apk add --no-cache ffmpeg
+
 COPY requirements-docker-vigil.txt /tmp/requirements-docker-vigil.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-docker-vigil.txt
 

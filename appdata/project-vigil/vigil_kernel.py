@@ -36,6 +36,8 @@ import urllib.parse
 import urllib.request
 import http.server
 
+import camera_bridge
+
 STATE_FILE = "vigil_state.json"
 GRID_FILE = "vigil_grid_ledger.json"
 PORT = 8085
@@ -303,6 +305,22 @@ class VigilAPIHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json(dict(system_state))
             return
 
+        if self.path.startswith("/camera/") and self.path.endswith(".mjpg"):
+            dev_id = self.path[len("/camera/"):-len(".mjpg")]
+            with ledger_lock:
+                device = discovered_devices.get(dev_id)
+            rtsp_url = (device or {}).get("rtsp_url") or ""
+            if not device or not rtsp_url:
+                self.send_error(404, "no rtsp_url configured for this device")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+            self.send_header("Cache-Control", "no-cache, private")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            camera_bridge.stream_mjpeg(dev_id, rtsp_url, self.wfile, lambda: True)
+            return
+
         if self.path.startswith("/api/discover"):
             try:
                 results = discover_devices()
@@ -329,11 +347,29 @@ class VigilAPIHandler(http.server.BaseHTTPRequestHandler):
                 with ledger_lock:
                     if dev_id not in discovered_devices:
                         print(f"[CAPTURE SUCCESS] NODE DETECTED! ID: {dev_id} | IP: {device_packet['ip']}")
+
+                    # RTSP camera support, added 2026-09-16: an `rtsp_url`
+                    # (a real ESP32-CAM/IP-camera RTSP source, e.g.
+                    # rtsp://192.168.1.50:554/stream1) gets bridged
+                    # server-side to a plain browser-viewable MJPEG feed
+                    # at /camera/<device_id>.mjpg -- see camera_bridge.py
+                    # for why a bridge is needed at all (ffmpeg's own raw
+                    # HTTP output isn't multipart-framed, so a bare <img>
+                    # tag can't render it). `stream_url` is overwritten to
+                    # point there automatically whenever rtsp_url is set,
+                    # so index.html's existing <img src="${stream_url}">
+                    # rendering keeps working completely unchanged --
+                    # no frontend code needed to know RTSP is involved.
+                    rtsp_url = device_packet.get("rtsp_url", "")
+                    old_rtsp = discovered_devices.get(dev_id, {}).get("rtsp_url", "")
+                    stream_url = f"/camera/{dev_id}.mjpg" if rtsp_url else device_packet.get("stream_url", "")
+
                     discovered_devices[dev_id] = {
                         "ip": device_packet["ip"],
                         "type": device_packet["type"],
                         "state": device_packet.get("state", "ON"),
-                        "stream_url": device_packet.get("stream_url", ""),
+                        "stream_url": stream_url,
+                        "rtsp_url": rtsp_url,
                         # New, optional -- absent means "registry-only, no
                         # real hardware control wired up yet" (see
                         # send_hardware_command's honest-default above).
@@ -341,6 +377,10 @@ class VigilAPIHandler(http.server.BaseHTTPRequestHandler):
                         "adapter_args": device_packet.get("adapter_args", {}),
                         "last_seen": time.strftime("%H:%M:%S UTC"),
                     }
+
+                    if old_rtsp and old_rtsp != rtsp_url:
+                        camera_bridge.stop_bridge(dev_id)
+
                 save_grid_state()
                 self._send_json({"status": "CONTROL_SECURED"})
             except Exception:
