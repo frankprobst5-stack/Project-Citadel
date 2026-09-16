@@ -796,6 +796,48 @@ tooling before being called done (not just reasoned about):
   shows, correct instructions) and after dismissing (stays hidden across
   a reload, localStorage-backed).
 
+### Phase H2 — Real live crash loop, diagnosed and fixed 2026-09-16
+
+- [x] **`citadel-cockpit` was repeatedly OOM-killed under real map-tile
+  traffic — the actual cause of Frank's reported browser freeze/lockup.**
+  Not a hypothesis: `docker inspect` showed `OOMKilled=true`,
+  `restarts=2`, and the kernel log had 20+ separate `Memory cgroup out of
+  memory: Killed process ... (nginx)` entries inside an hour. Traced
+  through nginx's own access log to single **100-630MB responses** off
+  `/tiles/comms_base.pmtiles` (1.9GB on disk) served in rapid bursts —
+  oversized Range requests off the Tactical Map's tile archive, not a
+  memory leak anywhere in application code. Root mechanism: cgroup v2
+  charges page-cache pages from `sendfile()`-served reads against the
+  *serving* container's own `memory.current`, so a container that only
+  ever needs to serve a large file's actual byte ranges can still get
+  OOM-killed purely from page-cache accounting, with zero buffering in
+  nginx itself. The 128MB cap set in Phase 6 (2026-09-14) was measured
+  under real use that never exercised `/tiles/` — it was never going to
+  survive real Tactical Map traffic once the feature actually got used.
+  **Fixed by raising `citadel-cockpit`'s `mem_limit` to 1024m**
+  (`docker-compose.yml`) — verified live: `docker inspect` now shows
+  `OOMKilled=false`, `restarts=0`, real memory use back down to ~8MB at
+  rest, and the dashboard responds `200` again. Caught in real time using
+  a purpose-built background memory/process logger (`free`, `ps`,
+  `docker stats`, journalctl OOM grep) run while reproducing the freeze
+  live, rather than only inspecting a post-crash snapshot — the earlier
+  post-crash snapshots alone hadn't pointed at this container specifically.
+  **Not yet investigated**: *why* the pmtiles client requests such large
+  ranges instead of small per-tile chunks in the first place — the fix
+  above removes the crash risk, but the oversized-request behavior itself
+  is still real and worth a closer look at `map.html`'s PMTiles/MapLibre
+  setup.
+- [x] **Two unrelated background services found consuming host memory
+  24/7 for nothing Citadel uses**: a real `mysqld` (MySQL Community
+  Server) and a real Plex Media Server (`snap.plexmediaserver`), both
+  confirmed via `systemctl`/`ps` to be genuinely running, neither
+  referenced anywhere in Citadel's compose files, env, or scanned
+  connections. Stopped and disabled by Frank directly
+  (`systemctl disable --now`) after confirming nothing depends on them —
+  not the cause of the freeze (both were idle/swapped-out at the time,
+  not caught mid-spike), but permanent, real memory/CPU waste removed
+  regardless.
+
 ## Phase 0 — Fixes shipped this pass ✅
 
 - **Live production bug fixed:** the actual running deployment had its
