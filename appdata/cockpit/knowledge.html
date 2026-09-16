@@ -18,6 +18,14 @@
         
         .library-frame-container { flex-grow: 1; background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
         iframe { width: 100%; height: 100%; border: none; background: #ffffff; }
+        /* Real first-run guidance, added 2026-09-16 after an actual
+           tester (Mark, N2UGA) reported a fresh install shows an empty
+           library with no explanation of why, or what to do about it.
+           Dismissible so it doesn't nag forever once someone's already
+           added real content -- localStorage-backed, per-browser. */
+        .first-run-note { background: #1d3d2a; border: 1px solid #3a7a53; color: #cfe0c4; padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; line-height: 1.5; flex-shrink: 0; }
+        .first-run-note code { background: #11120e; padding: 1px 5px; border-radius: 3px; }
+        .first-run-note button { float: right; background: none; border: 1px solid #4b9e6c; color: #cfe0c4; border-radius: 4px; cursor: pointer; padding: 2px 8px; }
     </style>
 </head>
 <body>
@@ -27,7 +35,18 @@
             <h1>📚 PROJECT CITADEL // OFFLINE KNOWLEDGE MATRIX</h1>
             <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
         </div>
-        
+
+        <div id="firstRunNote" class="first-run-note" style="display:none;">
+            <button onclick="dismissFirstRunNote()">Dismiss</button>
+            <strong>New install? This library ships empty on purpose.</strong> Citadel doesn't bundle any
+            offline content itself — real Kiwix archives (Wikipedia, Wiktionary, medical/survival references,
+            etc.) are often several GB each, and choosing what's worth the space is your own call. Download
+            real <code>.zim</code> files from <code>library.kiwix.org</code>, drop them into
+            <code>appdata/kiwix-library/</code>, then restart the Kiwix container
+            (<code>docker compose restart kiwix</code>) or just re-open this page — new books show up
+            automatically, no re-install needed.
+        </div>
+
         <div class="status-bar">LIBRARY HUB // PROTOCOL: KIWIX_SERVE // ARCHIVE DATA LINK ACTIVE</div>
 
         <!-- EMBEDDED SEARCH VIEWPORT -->
@@ -38,5 +57,33 @@
             </script>
         </div>
     </div>
+    <script>
+        // Real emptiness check via Kiwix's own OPDS catalog API, added
+        // 2026-09-16 -- not a dumb "always show" banner. Checks
+        // <totalResults> in the real catalog feed
+        // (/catalog/v2/entries?count=-1) rather than guessing from the
+        // iframe's own rendered content, which this page can't safely
+        // read cross-origin anyway (Kiwix runs on its own port).
+        function dismissFirstRunNote() {
+            localStorage.setItem('citadel_kiwix_first_run_dismissed', '1');
+            document.getElementById('firstRunNote').style.display = 'none';
+        }
+
+        (async function checkLibraryEmpty() {
+            if (localStorage.getItem('citadel_kiwix_first_run_dismissed') === '1') return;
+            try {
+                const res = await fetch('http://' + window.location.hostname + ':8095/catalog/v2/entries?count=-1');
+                const text = await res.text();
+                const match = text.match(/<totalResults>(\d+)<\/totalResults>/);
+                if (match && parseInt(match[1], 10) === 0) {
+                    document.getElementById('firstRunNote').style.display = 'block';
+                }
+            } catch (e) {
+                // Kiwix unreachable (e.g. the module isn't running at all) --
+                // not this note's job to explain that, the cockpit's own
+                // health strip already covers a down service honestly.
+            }
+        })();
+    </script>
 </body>
 </html>

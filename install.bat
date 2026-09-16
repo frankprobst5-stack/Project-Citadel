@@ -49,13 +49,44 @@ REM CITADEL_HOST_PATH: same purpose as install.sh's (see that file's own
 REM comment) -- the real absolute path Citadel lives at, needed by
 REM vault-api's "one-click apply" module toggle in Settings. Always
 REM rewritten, not just on a fresh install, so a moved install folder
-REM never leaves a stale path behind. NOTE, untested (no Windows
-REM environment available while building this): Docker Desktop's own
-REM host<->container path translation for bind mounts may not treat a
-REM raw Windows path (C:\...) the same way this mechanism was verified
-REM to work on Linux -- if "Apply" fails on Windows with a docker.sock/
-REM path-mount error, that's the first thing to check.
+REM never leaves a stale path behind.
+REM
+REM Real bug, confirmed 2026-09-16 by an actual Windows tester's fresh
+REM install (Mark, N2UGA -- this exact risk was flagged as untested
+REM speculation right here before his report came in, now confirmed,
+REM not hypothetical): %CD% on Windows returns a backslash path with a
+REM drive letter, e.g. C:\Users\name\citadel. Used directly in
+REM docker-compose.yml's `${CITADEL_HOST_PATH}:${CITADEL_HOST_PATH}`
+REM bind mount, Compose splits that whole string on `:` expecting
+REM HOST:CONTAINER[:MODE] -- a raw backslash Windows path contains its
+REM own drive-letter colon AND backslashes Compose doesn't parse as
+REM path separators, so the split produces more pieces than expected:
+REM real error was "mount denied: the source path ... too many
+REM colons". Fix converts to Docker Desktop's real WSL2-style path
+REM (/c/Users/name/citadel, lowercase drive letter, no colon) --
+REM **this exact format is what Mark's own real fresh install
+REM confirmed working**, all 11 containers started, not just a format
+REM that looks plausible from documentation. (An alternative format,
+REM C:/Users/name/citadel with the colon kept, is sometimes cited too,
+REM but wasn't the one actually verified working here -- going with
+REM the tester-confirmed format over an untested one.)
 set "CITADEL_HOST_PATH=%CD%"
+if "!CITADEL_HOST_PATH:~1,1!"==":" (
+    set "drive=!CITADEL_HOST_PATH:~0,1!"
+    set "rest=!CITADEL_HOST_PATH:~2!"
+    set "rest=!rest:\=/!"
+    set "chars=ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    set "charslc=abcdefghijklmnopqrstuvwxyz"
+    for /l %%i in (0,1,25) do (
+        if "!drive!"=="!chars:~%%i,1!" set "drive=!charslc:~%%i,1!"
+    )
+    set "CITADEL_HOST_PATH=/!drive!!rest!"
+) else (
+    REM Not a plain drive-letter path (e.g. a UNC path) -- no established
+    REM real conversion for that case here, so just avoid backslashes
+    REM rather than leaving them entirely unhandled.
+    set "CITADEL_HOST_PATH=!CITADEL_HOST_PATH:\=/!"
+)
 findstr /b /c:"CITADEL_HOST_PATH=" .env >nul 2>nul
 if errorlevel 1 (
     >>.env echo CITADEL_HOST_PATH=%CITADEL_HOST_PATH%
@@ -141,9 +172,47 @@ if not exist appdata\cloud9\data mkdir appdata\cloud9\data
 if not exist appdata\cloud9\models mkdir appdata\cloud9\models
 if not exist backups mkdir backups
 
+REM Real bug, confirmed 2026-09-16 by an actual Windows tester's fresh
+REM install (Mark, N2UGA): kiwix-serve is told to load `library.xml`
+REM (see modules\knowledge\compose.fragment.yml's `--library
+REM library.xml`), and on a fresh install that file doesn't exist at
+REM all -- not empty of books, genuinely missing -- so kiwix-serve
+REM errors on startup and `restart: unless-stopped` crash-loops it
+REM forever. Citadel deliberately doesn't ship any .zim content itself
+REM (real offline archives are often multi-GB and choosing what to
+REM download is meant to be the operator's own call) -- but it should
+REM still start cleanly with zero books instead of crash-looping.
+REM Verified directly against the real kiwix-serve image before
+REM writing this: a minimal empty library.xml (this exact real schema,
+REM not guessed) loads fine -- "The library was successfully loaded,"
+REM real HTTP 200, no crash.
+if not exist appdata\kiwix-library\library.xml (
+    (
+        echo ^<?xml version="1.0" encoding="UTF-8" ?^>
+        echo ^<library version="20110515"^>
+        echo ^</library^>
+    ) > appdata\kiwix-library\library.xml
+)
+
 echo Starting Citadel - this pulls a handful of container images the first
 echo time, so it may take a few minutes...
+
+REM Real bug, confirmed 2026-09-16 by an actual Windows tester's fresh
+REM install (Mark, N2UGA): this used to print the "Citadel is up"
+REM success banner unconditionally -- on his machine the
+REM CITADEL_HOST_PATH mount error above meant containers were only
+REM *created*, never running, while the installer still claimed
+REM success and pointed him at a dashboard that wasn't actually up.
 docker compose up -d
+if errorlevel 1 (
+    echo ============================================================
+    echo  docker compose up -d failed -- Citadel is NOT running.
+    echo  Scroll up for the real error from Docker, fix it, then run
+    echo  this script again ^(or just "docker compose up -d" by hand^).
+    echo ============================================================
+    pause
+    exit /b 1
+)
 
 echo ============================================================
 echo  Citadel is up. Open your dashboard at:

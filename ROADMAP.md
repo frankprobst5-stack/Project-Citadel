@@ -631,6 +631,62 @@ not caught in review:
 rejection, and the exclude/extra_paths mechanics -- all against temp
 directories, never real data.
 
+### Phase H — Real bugs found by an actual beta tester ✅ done 2026-09-16
+
+First real bug report from the public beta, from Mark (N2UGA) — a fresh
+Windows 11 + Docker Desktop install, not a hypothetical. All four items
+below are his, fixed the same day, each verified directly against real
+tooling before being called done (not just reasoned about):
+
+- [x] **`CITADEL_HOST_PATH` backslash bug on Windows.** `install.bat`
+  set this straight from `%CD%` (a raw `C:\Users\name\citadel` path),
+  used directly in `docker-compose.yml`'s
+  `${CITADEL_HOST_PATH}:${CITADEL_HOST_PATH}` bind mount — Compose
+  splits that whole string on `:`, and a Windows path's own drive-letter
+  colon plus its backslashes broke the split ("mount denied: the source
+  path ... too many colons"). This exact risk had been flagged as
+  untested speculation in `install.bat`'s own comment before Mark's
+  report confirmed it for real. **Fixed using Mark's own confirmed-
+  working format** — `/c/Users/name/citadel` (lowercase drive letter,
+  no colon), verified against his real fix, not a different format
+  that merely looked plausible from documentation (an alternative,
+  `C:/Users/name/citadel` with the colon kept, is sometimes cited too,
+  but wasn't the one actually proven working here). **Honest limit on
+  "verified" here**: the target path format is tester-confirmed and
+  the equivalent Linux-side logic (`install.sh`'s own path handling)
+  was actually run and checked on this machine, but no Windows
+  environment exists in this environment to execute `install.bat`
+  itself — its batch logic was hand-traced carefully, not run. Real
+  confirmation of the batch script specifically still needs a Windows
+  tester (Mark, if he's willing, since he's already set up to check).
+- [x] **Installer claimed success even when `docker compose up -d`
+  failed.** True on both `install.sh` and `install.bat`, not just
+  Windows — neither ever checked the real exit status, so a failed
+  mount (like the bug above) still ended with "Citadel is up, open your
+  dashboard" while the containers were only created, never running.
+  Both scripts now check the real exit code and print an honest failure
+  message instead.
+- [x] **Kiwix crash-loop on a fresh install.** `kiwix-serve` is told to
+  load `library.xml` (`modules/knowledge/compose.fragment.yml`), and on
+  a fresh install that file doesn't exist at all — not empty of books,
+  genuinely missing — so it errors on startup and `restart:
+  unless-stopped` crash-loops it forever. Citadel deliberately doesn't
+  ship any `.zim` content itself (real archives are often multi-GB;
+  choosing what to download is the operator's own call) — verified
+  directly against the real `kiwix-serve` image that a minimal, real,
+  valid empty `library.xml` loads cleanly with zero books ("The library
+  was successfully loaded," real HTTP 200) instead of crash-looping.
+  Both installers now create that file on first run if it's missing.
+- [x] **No first-run guidance that the library ships empty.** Once the
+  crash-loop above is fixed, a fresh install still showed Kiwix's own
+  bare "no result" page with no explanation. `knowledge.html` now
+  checks Kiwix's real OPDS catalog API (`/catalog/v2/entries?count=-1`,
+  `<totalResults>`) and shows a real, dismissible banner explaining the
+  library ships empty on purpose and exactly how to add real content —
+  verified live in a real browser against both an empty library (banner
+  shows, correct instructions) and after dismissing (stays hidden across
+  a reload, localStorage-backed).
+
 ## Phase 0 — Fixes shipped this pass ✅
 
 - **Live production bug fixed:** the actual running deployment had its

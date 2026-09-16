@@ -132,11 +132,48 @@ fi
 mkdir -p appdata/kiwix-library appdata/kolibri_home appdata/ollama appdata/open-webui appdata/flatnotes
 mkdir -p appdata/media-vault/videos appdata/media-vault/mp3s appdata/media-vault/pdfs appdata/media-vault/notes-data
 mkdir -p appdata/mealie/data appdata/whisper-models appdata/cloud9/data appdata/cloud9/models
+
+# Real bug, confirmed 2026-09-16 by an actual tester's fresh install
+# (Mark, N2UGA): kiwix-serve is told to load `library.xml` (see
+# modules/knowledge/compose.fragment.yml's `--library library.xml`),
+# and on a fresh install that file doesn't exist at all -- not empty
+# of books, genuinely missing -- so kiwix-serve errors out on startup
+# and `restart: unless-stopped` just crash-loops it forever. Citadel
+# deliberately doesn't ship any .zim content itself (real offline
+# archives are often multi-GB and choosing what to download is meant
+# to be the operator's own call) -- but it should still start cleanly
+# with zero books instead of crash-looping. Verified directly against
+# the real kiwix-serve image before writing this: a minimal empty
+# library.xml (this exact real schema, not guessed) loads fine --
+# "The library was successfully loaded," real HTTP 200, no crash.
+if [ ! -f appdata/kiwix-library/library.xml ]; then
+    cat > appdata/kiwix-library/library.xml <<'XMLEOF'
+<?xml version="1.0" encoding="UTF-8" ?>
+<library version="20110515">
+</library>
+XMLEOF
+fi
 mkdir -p backups
 
 echo "Starting Citadel — this pulls a handful of container images the first"
 echo "time, so it may take a few minutes..."
-docker compose up -d
+
+# Real bug, confirmed 2026-09-16 by an actual tester's report (the
+# Windows installer's version of this same gap): this script used to
+# print the "Citadel is up" success banner unconditionally, regardless
+# of whether `docker compose up -d` actually succeeded -- on his
+# machine a mount error meant containers were only *created*, never
+# running, while the installer still claimed success. Checking the
+# real exit status here, on both platforms, closes that gap instead of
+# just on Windows.
+if ! docker compose up -d; then
+    echo "============================================================"
+    echo " docker compose up -d failed -- Citadel is NOT running."
+    echo " Scroll up for the real error from Docker, fix it, then run"
+    echo " this script again (or just 'docker compose up -d' by hand)."
+    echo "============================================================"
+    exit 1
+fi
 
 echo "============================================================"
 echo " Citadel is up. Open your dashboard at:"
