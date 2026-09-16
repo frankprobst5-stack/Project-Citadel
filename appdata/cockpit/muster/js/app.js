@@ -13,6 +13,7 @@
 const PANEL_REGISTRY = [
     { id: "messaging", label: "Messages", icon: "✉", module: "./panels/messaging.js" },
     { id: "map", label: "Map", icon: "◉", module: "./panels/map.js" },
+    { id: "home", label: "Home", icon: "⌂", module: "./panels/home.js" },
 ];
 
 let activePanelId = null;
