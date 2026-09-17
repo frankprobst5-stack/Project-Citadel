@@ -92,6 +92,28 @@
                 <div id="reconstructOutput" class="shard-output" style="display:none;"></div>
             </div>
         </div>
+
+        <!-- PASSWORD VAULT: SIMPLE, STRUCTURED, ADD/EDIT/REMOVE CREDENTIAL STORE -->
+        <div class="vault-panel" style="margin-bottom: 25px;">
+            <div class="panel-header">🗝️ PASSWORD VAULT — ADD, EDIT, OR REMOVE ENTRIES, THEN SAVE AS ONE ENCRYPTED FILE</div>
+
+            <div class="input-row">
+                <span class="label-crypto">🔑 VAULT MASTER KEY:</span>
+                <input type="password" id="vaultPassphrase" class="input-crypto" placeholder="Enter this vault's master password...">
+            </div>
+
+            <div id="vaultEntries"></div>
+
+            <button class="action-btn" style="margin-bottom: 15px;" onclick="addVaultEntry()">+ Add Entry</button>
+
+            <div style="display: flex; gap: 15px;">
+                <button class="action-btn" style="background: #1a423a;" onclick="saveVaultToFile()">💾 Save Vault to File</button>
+                <button class="action-btn" style="background: #2a3a4d; border-color: #3b5ca8; color: #b0d4ff;" onclick="document.getElementById('vaultFileInput').click()">📂 Load Vault from File</button>
+                <input type="file" id="vaultFileInput" accept=".vault,.json" style="display:none" onchange="loadVaultFromFile(event)">
+            </div>
+
+            <div id="vaultStatus" class="shard-output" style="display:none; margin-top: 15px;"></div>
+        </div>
     </div>
     <script>
         // ================= MILITARY-GRADE NATIVE AES-256-GCM CRYPTO MATRIX =================
@@ -284,6 +306,121 @@
                 alert("CRITICAL RECONSTRUCTION FAILURE: Incompatible shard polynomials or insufficient threshold block metrics.");
             }
         }
+
+        // ================= PASSWORD VAULT (structured, save/load as one file) =================
+        // Real request from William, an Idaho prepper (Facebook feedback, 2026-09-16): a
+        // simple password-protected file he can add entries to, edit, or remove from --
+        // he found the text encryptor and Shamir splitter above overkill for a family
+        // password list. This reuses the exact same getCryptoKey()/AES-256-GCM primitive
+        // defined above (same real crypto, same salt+iv+ciphertext packing) -- the entries
+        // are just a JSON array instead of freeform text, and get saved/loaded as one
+        // downloadable file instead of copy-pasted hex. Nothing here ever touches a
+        // network; the file lives wherever the operator saves it.
+        let vaultEntries = [];
+
+        function escapeAttr(s) {
+            return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
+        function renderVaultEntries() {
+            const box = document.getElementById('vaultEntries');
+            if (vaultEntries.length === 0) {
+                box.innerHTML = '<div style="color:#687259; font-family:monospace; font-size:0.85rem; margin-bottom:10px;">No entries yet — click "+ Add Entry" below.</div>';
+                return;
+            }
+            box.innerHTML = vaultEntries.map((e, i) => `
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; align-items:center;">
+                    <input class="input-crypto" style="flex:1.2;" placeholder="Site / Label" value="${escapeAttr(e.site)}" oninput="vaultEntries[${i}].site = this.value">
+                    <input class="input-crypto" style="flex:1;" placeholder="Username" value="${escapeAttr(e.username)}" oninput="vaultEntries[${i}].username = this.value">
+                    <input type="password" class="input-crypto vault-pw-${i}" style="flex:1;" placeholder="Password" value="${escapeAttr(e.password)}" oninput="vaultEntries[${i}].password = this.value">
+                    <button class="action-btn" style="padding:8px 10px;" onclick="toggleVaultPasswordVisibility(${i})" title="Show/hide password">👁</button>
+                    <input class="input-crypto" style="flex:1.4;" placeholder="Notes (optional)" value="${escapeAttr(e.notes)}" oninput="vaultEntries[${i}].notes = this.value">
+                    <button class="action-btn" style="background:#42251a; border-color:#a84332; color:#ff9999; padding:8px 12px;" onclick="deleteVaultEntry(${i})" title="Remove this entry">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function addVaultEntry() {
+            vaultEntries.push({ site: '', username: '', password: '', notes: '' });
+            renderVaultEntries();
+        }
+
+        function deleteVaultEntry(i) {
+            vaultEntries.splice(i, 1);
+            renderVaultEntries();
+        }
+
+        function toggleVaultPasswordVisibility(i) {
+            const el = document.querySelector(`.vault-pw-${i}`);
+            if (el) el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        function vaultStatus(msg, isError) {
+            const el = document.getElementById('vaultStatus');
+            el.style.display = 'block';
+            el.style.color = isError ? '#ff9999' : '#a4ffb0';
+            el.textContent = msg;
+        }
+
+        async function saveVaultToFile() {
+            const pass = document.getElementById('vaultPassphrase').value;
+            if (!pass) return alert("Enter this vault's master password first.");
+            if (vaultEntries.length === 0) return alert("Add at least one entry before saving.");
+            try {
+                const enc = new TextEncoder();
+                const json = JSON.stringify(vaultEntries);
+                const salt = window.crypto.getRandomValues(new Uint8Array(16));
+                const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                const key = await getCryptoKey(pass, salt);
+                const cipherBuffer = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(json));
+
+                const packed = new Uint8Array(salt.length + iv.length + cipherBuffer.byteLength);
+                packed.set(salt, 0);
+                packed.set(iv, salt.length);
+                packed.set(new Uint8Array(cipherBuffer), salt.length + iv.length);
+
+                const blob = new Blob([packed], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'citadel-password-vault.vault';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                vaultStatus(`Saved ${vaultEntries.length} entr${vaultEntries.length === 1 ? 'y' : 'ies'} to citadel-password-vault.vault — keep this file AND your master password safe. Losing either means the entries can't be recovered; there is no backdoor.`, false);
+            } catch (e) {
+                vaultStatus('Save failed: ' + e.message, true);
+            }
+        }
+
+        async function loadVaultFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const pass = document.getElementById('vaultPassphrase').value;
+            if (!pass) {
+                alert("Enter this vault file's master password first.");
+                event.target.value = '';
+                return;
+            }
+            try {
+                const buf = new Uint8Array(await file.arrayBuffer());
+                const salt = buf.slice(0, 16);
+                const iv = buf.slice(16, 28);
+                const ciphertext = buf.slice(28);
+                const key = await getCryptoKey(pass, salt);
+                const decryptedBuffer = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ciphertext);
+                vaultEntries = JSON.parse(new TextDecoder().decode(decryptedBuffer));
+                renderVaultEntries();
+                vaultStatus(`Loaded ${vaultEntries.length} entr${vaultEntries.length === 1 ? 'y' : 'ies'} from ${file.name}.`, false);
+            } catch (e) {
+                vaultStatus('Load failed: wrong master password, or this is not a valid vault file.', true);
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        renderVaultEntries();
     </script>
 </body>
 </html>

@@ -656,6 +656,34 @@ the whole project's philosophy:
   reconstructs the same secret from any distinct combination of shards
   at the threshold, while genuinely failing (not silently "succeeding"
   with garbage) below it.
+- [x] **Password Vault added to `crypto.html`, 2026-09-16** — real
+  request from William, an Idaho prepper (Facebook feedback), who found
+  the freeform text encryptor and the Shamir splitter overkill for a
+  simple family password list: he wanted something he could add entries
+  to, edit, or remove, saved as one password-protected file. Deliberately
+  **not** a third, different (or weaker) encryption scheme — it reuses
+  the exact same `getCryptoKey()`/AES-256-GCM primitive and salt+IV+
+  ciphertext packing the text encryptor already had, just wrapped around
+  a structured, editable entry list (site/username/password/notes)
+  instead of one-shot freeform text, saved/loaded as a real downloadable
+  `.vault` file instead of copy-pasted hex. Still entirely client-side —
+  nothing added touches a network or Citadel's backend. Verified live in
+  a real browser, not just written: add/edit/delete all confirmed against
+  the live DOM and the underlying array, the show/hide password toggle
+  works, and a full save→load round trip was verified byte-perfect
+  (encrypt with one password, decrypt with the same key derivation,
+  recovered entries matched the originals exactly) — a wrong password
+  was separately confirmed to fail cleanly via AES-GCM's own
+  authentication tag (`OperationError`, not silently-wrong output),
+  surfaced as an honest "wrong master password or not a valid vault
+  file" message rather than a crash. Caught and fixed one real bug
+  before shipping: an early draft had two `class` attributes on the same
+  password `<input>` (invalid HTML — the second silently wins in
+  browsers), which would have broken the per-row show/hide toggle
+  selector; merged into one `class="input-crypto vault-pw-N"` before
+  this ever reached a browser. Added `flex-wrap` to each entry row after
+  testing at a genuinely narrow viewport width showed it would otherwise
+  force horizontal scrolling instead of wrapping.
 - [x] `project-ibris` webcam motion detector — brought in 2026-09-13,
   see Phase D above (wired straight into Vigil's tripline, that's the
   more useful home than a standalone module).
