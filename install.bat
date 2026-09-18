@@ -129,6 +129,32 @@ if errorlevel 1 (
     call :ask recipes "Recipes and Meal Planner" n
     call :ask muster "Muster (Mobile Ops bridge to WayStation)" n
 
+    REM Remote-Ollama-host support, ROADMAP.md v2 backlog -- Ollama lives
+    REM under its own "ollama-local" profile (see
+    REM modules\ai\compose.fragment.yml), not bundled into "ai"/
+    REM "education" directly, so it can be left out when a remote host is
+    REM configured. Real bug, confirmed 2026-09-18 by a real Windows
+    REM tester (Mark, N2UGA): this script never had this logic at all --
+    REM install.sh's Linux/macOS side has always auto-added
+    REM "ollama-local" here, but it was never ported to this file, so
+    REM every Windows install with AI/Education enabled and no remote
+    REM host configured got a dashboard reporting AI offline until the
+    REM profile was added to .env by hand.
+    set "OLLAMA_REMOTE="
+    for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"OLLAMA_REMOTE_HOST=" .env 2^>nul') do set "OLLAMA_REMOTE=%%b"
+    echo ,%PROFILES%,|findstr /c:",ai," /c:",education," >nul
+    if not errorlevel 1 (
+        if "%OLLAMA_REMOTE%"=="" (
+            set "PROFILES=%PROFILES%,ollama-local"
+            echo -- AI/Education modules selected, no remote host configured --
+            echo    running Ollama locally ^(added the 'ollama-local' profile^).
+        ) else (
+            echo -- OLLAMA_REMOTE_HOST is set ^(%OLLAMA_REMOTE%^) -- Citadel's own
+            echo    local Ollama container will NOT start; AI/Education will use
+            echo    the remote one instead.
+        )
+    )
+
     >>.env echo COMPOSE_PROFILES=%PROFILES%
     echo.
     echo Selected modules: %PROFILES%
@@ -204,7 +230,17 @@ REM success banner unconditionally -- on his machine the
 REM CITADEL_HOST_PATH mount error above meant containers were only
 REM *created*, never running, while the installer still claimed
 REM success and pointed him at a dashboard that wasn't actually up.
-docker compose up -d
+REM
+REM --build added 2026-09-18, also from a real reinstall Mark hit:
+REM vault-api has a `build:` directive (see docker-compose.yml), and
+REM plain `docker compose up -d` reuses whatever image was already
+REM built locally from a previous install even if requirements-docker.txt
+REM changed since -- his reinstall crash-looped on a real
+REM ModuleNotFoundError for a dependency that IS in the current
+REM requirements file, purely because the stale image was never
+REM rebuilt. `--build` forces a real rebuild against current source
+REM every run, not just on first install.
+docker compose up -d --build
 if errorlevel 1 (
     echo ============================================================
     echo  docker compose up -d failed -- Citadel is NOT running.

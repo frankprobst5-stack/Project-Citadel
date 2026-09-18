@@ -221,7 +221,17 @@ echo "time, so it may take a few minutes..."
 # running, while the installer still claimed success. Checking the
 # real exit status here, on both platforms, closes that gap instead of
 # just on Windows.
-if ! docker compose up -d; then
+#
+# --build added 2026-09-18, also from a real reinstall (Mark, N2UGA):
+# vault-api has a `build:` directive (see docker-compose.yml), and plain
+# `docker compose up -d` reuses whatever image was already built locally
+# from a previous install even if requirements-docker.txt changed since
+# -- his reinstall crash-looped on a real ModuleNotFoundError for a
+# dependency that IS in the current requirements file, purely because
+# the stale image was never rebuilt. `--build` forces a real rebuild
+# against current source every run, not just on first install. Affects
+# both platforms equally -- fixed here too, not just in install.bat.
+if ! docker compose up -d --build; then
     echo "============================================================"
     echo " docker compose up -d failed -- Citadel is NOT running."
     echo " Scroll up for the real error from Docker, fix it, then run"

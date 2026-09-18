@@ -887,6 +887,43 @@ tooling before being called done (not just reasoned about):
   not caught mid-spike), but permanent, real memory/CPU waste removed
   regardless.
 
+### Phase H3 — Second round of real bugs from Mark's beta testing 2026-09-18
+
+Mark (N2UGA) went through a fresh Windows install/reinstall module by module rather
+than just clicking around, and confirmed all three of Phase H's original fixes hold
+(`CITADEL_HOST_PATH`, the false-success banner, and the Kiwix crash-loop all behaved
+correctly on this pass). Two new real bugs found and fixed the same way — root-caused
+against his actual report, then verified directly against the real files involved:
+
+- [x] **Ollama never started on Windows when AI/Education were enabled.** Real gap,
+  not a regression: `install.sh` has always auto-added the `ollama-local` profile to
+  `COMPOSE_PROFILES` when AI or Education is selected and `OLLAMA_REMOTE_HOST` is
+  blank (see `modules/ai/compose.fragment.yml`'s own comment), but this logic was
+  simply never ported to `install.bat` — confirmed by grepping it for
+  `ollama-local`/`OLLAMA_REMOTE_HOST` and finding neither. Mark's own workaround
+  (manually adding `ollama-local` to `.env`, then `docker compose up -d ollama`)
+  confirmed the diagnosis before any fix was written. `install.bat` now carries the
+  same profile-selection logic as `install.sh`, in the same guarded fresh-install-only
+  block. **Honest limit on "verified" here, same caveat as Phase H's**: no Windows
+  environment exists in this environment to actually run `install.bat` — the batch
+  logic was hand-traced carefully against `install.sh`'s real, working behavior, not
+  executed. Needs a real Windows re-test to close out completely.
+- [x] **`vault-api` silently ran a stale, locally-cached image after reinstall/update,
+  crash-looping on `ModuleNotFoundError: No module named 'feedparser'` even though
+  `requirements-docker.txt` already listed it.** Real Docker Compose behavior, not a
+  packaging bug: `vault-api` has a `build:` directive in `docker-compose.yml`, and
+  plain `docker compose up -d` (what both installers ran) never rebuilds an
+  already-built local image unless told to. Mark's own fix
+  (`docker compose build --no-cache vault-api`) confirmed the diagnosis. Both
+  `install.sh` and `install.bat` now run `docker compose up -d --build` instead —
+  affects every reinstall/update on both platforms, not just Windows, so fixed in
+  both scripts together rather than just the one Mark happened to hit it on.
+
+Worth asking Mark to specifically re-test these two on his next install, since
+neither fix could be executed end-to-end in this environment (no Windows box, and
+`vault-api`'s stale-image behavior only shows up on a real reinstall against a
+machine with an existing cached image).
+
 ## Phase 0 — Fixes shipped this pass ✅
 
 - **Live production bug fixed:** the actual running deployment had its
