@@ -5,26 +5,33 @@
     <title>CITADEL // PROJECT VIGIL COMMAND</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { background: #080a06; color: #a4b28d; font-family: monospace; padding: 25px; margin: 0; box-sizing: border-box; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { background: var(--bg); color: var(--text-dim); font-family: monospace; padding: 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1600px; margin: 0 auto; }
         
         /* Unified Header Routing Bar Layout */
-        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #38402f; padding-bottom: 15px; margin-bottom: 25px; }
-        h1 { color: #d1d5cb; margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 25px; }
+        h1 { color: var(--text); margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
         
-        .back-btn { background: #151c12; color: #a4b28d; text-decoration: none; padding: 8px 16px; border-radius: 4px; border: 1px solid #38402f; font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
-        .back-btn:hover { background: #222e1d; border-color: #00ff66; color: #00ff66; }
+        .back-btn { background: var(--panel); color: var(--text-dim); text-decoration: none; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border); font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
+        .back-btn:hover { background: var(--panel-alt); border-color: var(--green); color: var(--green); }
 
         /* Dynamic Nodes Grid Workspace Matrix */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-        .card { background: #10140e; border: 1px solid #38402f; padding: 20px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        h2 { color: #ffb000; margin-top: 0; font-size: 16px; letter-spacing: 0.5px; }
+        /* Double-line card frame -- standard treatment, see PALETTE.md */
+        .card { background: var(--panel); padding: 20px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 12px rgba(0,0,0,0.5); }
+        h2 { color: var(--amber); margin-top: 0; font-size: 16px; letter-spacing: 0.5px; }
         
-        .btn { background: #151c12; border: 1px solid #455239; color: #a4b28d; padding: 10px; width: 100%; cursor: pointer; font-family: monospace; font-weight: bold; margin-top: 15px; text-transform: uppercase; border-radius: 3px; }
-        .btn:hover { color: #00ff66; border-color: #00ff66; background: #1a2416; }
+        .btn { background: var(--panel); border: 1px solid var(--border-dim); color: var(--text-dim); padding: 10px; width: 100%; cursor: pointer; font-family: monospace; font-weight: bold; margin-top: 15px; text-transform: uppercase; border-radius: 3px; }
+        .btn:hover { color: var(--green); border-color: var(--green); background: var(--panel-alt); }
         
-        .cam-feed { width: 100%; height: 180px; background: #000; border: 1px solid #38402f; margin-top: 12px; border-radius: 2px; object-fit: cover; }
-        .scanning-text { font-family: monospace; font-size: 0.9rem; color: #455239; padding: 20px; border: 1px dashed #38402f; border-radius: 4px; text-align: center; width: 100%; grid-column: 1 / -1; }
+        .cam-feed { width: 100%; height: 180px; background: var(--bg); border: 1px solid var(--border); margin-top: 12px; border-radius: 2px; object-fit: cover; }
+        .scanning-text { font-family: monospace; font-size: 0.9rem; color: var(--text-faint); padding: 20px; border: 1px dashed var(--border); border-radius: 4px; text-align: center; width: 100%; grid-column: 1 / -1; }
     </style>
 </head>
 <body>
@@ -36,7 +43,7 @@
         </div>
         
         <!-- TELEMETRY STATUS BAR -->
-        <div id="status" style="color:#00ff66; font-weight:bold; font-family:monospace; margin-bottom:25px; text-transform:uppercase; letter-spacing:0.5px;">INITIALIZING TELEMETRY CONSOLE...</div>
+        <div id="status" style="color:var(--green); font-weight:bold; font-family:monospace; margin-bottom:25px; text-transform:uppercase; letter-spacing:0.5px;">INITIALIZING TELEMETRY CONSOLE...</div>
         
         <!-- HARDWARE CAPTURE DRAWERS GRID -->
         <div class="grid" id="container">
@@ -59,16 +66,16 @@
                     
                     // CAMERA DETECTION MODULE: Render live viewport box if data feed exists
                     if (dev.stream_url && dev.stream_url.trim() !== "") {
-                        cameraElement = `<img class="cam-feed" src="${dev.stream_url}" alt="LIVE CAMERA INTERCEPT" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\' width=\'100\' height=\'50\' viewBox=\'0 0 100 50\'><rect width=\'100\' height=\'50\' fill=\'%23050704\'/><text x=\'50\' y=\'28\' font-family=\'monospace\' font-size=\'6\' fill=\'%23ff3333\' text-anchor=\'middle\'>[ CAMERA FEED OFFLINE ]</text></svg>'">`;
+                        cameraElement = `<img class="cam-feed" src="${dev.stream_url}" alt="LIVE CAMERA INTERCEPT" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\' width=\'100\' height=\'50\' viewBox=\'0 0 100 50\'><rect width=\'100\' height=\'50\' fill=\'%2305090d\'/><text x=\'50\' y=\'28\' font-family=\'monospace\' font-size=\'6\' fill=\'%23e05252\' text-anchor=\'middle\'>[ CAMERA FEED OFFLINE ]</text></svg>'">`;
                     }
                     
                     h += `
                     <div class="card">
                         <div>
                             <h2>🎯 NODE: ${id.toUpperCase()}</h2>
-                            <div style="margin-bottom:4px;">PROFILE: <span style="color:#ffb000;">${dev.type.toUpperCase()}</span></div>
-                            <div style="margin-bottom:4px;">IP ROUTE: <span style="font-family:monospace; color:#87986a;">${dev.ip}</span></div>
-                            <div style="margin-bottom:4px;">STATUS: <span style="color:${dev.state === 'ON' ? '#00ff66' : '#ff3333'}; font-weight:bold;">${dev.state}</span></div>
+                            <div style="margin-bottom:4px;">PROFILE: <span style="color:var(--amber);">${dev.type.toUpperCase()}</span></div>
+                            <div style="margin-bottom:4px;">IP ROUTE: <span style="font-family:monospace; color:var(--text-dim);">${dev.ip}</span></div>
+                            <div style="margin-bottom:4px;">STATUS: <span style="color:${dev.state === 'ON' ? 'var(--green)' : 'var(--red)'}; font-weight:bold;">${dev.state}</span></div>
                             ${cameraElement}
                         </div>
                         <button class="btn" onclick="toggleRelay('${id}')">TOGGLE OVERRIDE RELAY</button>
@@ -77,10 +84,10 @@
                 
                 document.getElementById("container").innerHTML = h || `<div class="scanning-text">SCANNING AIRWAVES... NO OPEN AUTOMATION HARDWARE CAPTURED YET...</div>`;
                 document.getElementById("status").innerText = "Sovereign Base Controller Online // Monitoring Local Infrastructure";
-                document.getElementById("status").style.color = "#00ff66";
+                document.getElementById("status").style.color = "var(--green)";
             } catch (e) {
                 document.getElementById("status").innerText = "METRIC DROP (Project VIGIL Network Engine Interrupted)";
-                document.getElementById("status").style.color = "#ff3333";
+                document.getElementById("status").style.color = "var(--red)";
             }
         }
 

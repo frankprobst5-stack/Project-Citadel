@@ -7,36 +7,47 @@
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
     <style>
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see
+               index.html. Map-drawing colors (hillshade shadow/highlight,
+               measure-line, profile-line stroke, default pin prompt) are
+               deliberately left as their own literal values below -- those
+               are functional cartographic data-viz colors on the map
+               canvas itself, not UI chrome. */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
         html, body { height: 100%; margin: 0; }
-        body { font-family: 'Ubuntu', sans-serif; background: #070806; color: #e6e8e3; box-sizing: border-box; display: flex; flex-direction: column; }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); box-sizing: border-box; display: flex; flex-direction: column; }
 
-        .header-block { display: flex; align-items: center; justify-content: space-between; padding: 12px 25px; border-bottom: 2px solid #2a4dad; flex-wrap: wrap; gap: 10px; }
-        h1 { color: #528eff; margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(82, 142, 255, 0.3); }
-        .action-btn { background: #131b2e; border: 1px solid #2a4dad; color: #e6e8e3; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
-        .action-btn:hover { background: #1c2a47; border-color: #528eff; }
-        .action-btn.active { background: #1c2a47; border-color: #528eff; color: #528eff; }
+        .header-block { display: flex; align-items: center; justify-content: space-between; padding: 12px 25px; border-bottom: 2px solid var(--border); flex-wrap: wrap; gap: 10px; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 141, 255, 0.3); }
+        .action-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: var(--panel-alt); border-color: var(--accent); }
+        .action-btn.active { background: var(--panel-alt); border-color: var(--accent); color: var(--accent); }
         .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .toolbar-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
         #map { flex: 1; min-height: 0; }
 
-        .status-line { padding: 6px 25px; font-family: monospace; font-size: 0.75rem; color: #687259; border-top: 1px solid #23291e; }
+        .status-line { padding: 6px 25px; font-family: monospace; font-size: 0.75rem; color: var(--text-faint); border-top: 1px solid var(--border-dim); }
 
-        .tool-panel { display: none; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 25px; font-family: monospace; font-size: 0.8rem; background: #0d0f0a; border-top: 1px solid #23291e; color: #b8c2b0; }
+        .tool-panel { display: none; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 25px; font-family: monospace; font-size: 0.8rem; background: var(--panel); border-top: 1px solid var(--border-dim); color: var(--text-dim); }
         .tool-panel.visible { display: flex; }
-        .tool-panel input[type="text"] { background: #11120e; border: 1px solid #3a4031; color: #ffb000; padding: 5px 8px; border-radius: 4px; font-family: monospace; }
-        .tool-panel input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid #3a4031; border-radius: 4px; background: none; cursor: pointer; }
+        .tool-panel input[type="text"] { background: var(--bg); border: 1px solid var(--border); color: var(--amber); padding: 5px 8px; border-radius: 4px; font-family: monospace; }
+        .tool-panel input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 4px; background: none; cursor: pointer; }
         .tool-panel .action-btn { padding: 5px 10px; }
-        .elevation-caution { padding: 6px 25px; font-family: monospace; font-size: 0.7rem; color: #687259; font-style: italic; background: #0d0f0a; }
+        .elevation-caution { padding: 6px 25px; font-family: monospace; font-size: 0.7rem; color: var(--text-faint); font-style: italic; background: var(--panel); }
 
         /* MapLibre's own attribution/controls should stay legible against
            the dark theme rather than fight it. */
-        .maplibregl-ctrl-attrib { background: rgba(7,8,6,0.75) !important; color: #b8c2b0 !important; }
-        .maplibregl-ctrl-attrib a { color: #87986a !important; }
-        .maplibregl-popup-content { background: #131611 !important; color: #e6e8e3 !important; font-family: monospace; font-size: 0.8rem; }
-        .maplibregl-popup-tip { border-top-color: #131611 !important; border-bottom-color: #131611 !important; }
-        .pin-popup-remove { margin-top: 6px; background: #2a1414; border: 1px solid #7a2d2d; color: #e6e8e3; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 0.72rem; }
-        .pin-popup-remove:hover { border-color: #ff3333; color: #ff5555; }
+        .maplibregl-ctrl-attrib { background: rgba(5,9,13,0.75) !important; color: var(--text-dim) !important; }
+        .maplibregl-ctrl-attrib a { color: var(--accent) !important; }
+        .maplibregl-popup-content { background: var(--panel) !important; color: var(--text) !important; font-family: monospace; font-size: 0.8rem; }
+        .maplibregl-popup-tip { border-top-color: var(--panel) !important; border-bottom-color: var(--panel) !important; }
+        .pin-popup-remove { margin-top: 6px; background: rgba(224,82,82,0.15); border: 1px solid var(--red); color: var(--red); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 0.72rem; }
+        .pin-popup-remove:hover { background: var(--red); color: var(--bg); }
     </style>
 </head>
 <body>
@@ -245,7 +256,7 @@
         map.addControl(new maplibregl.NavigationControl(), 'top-left');
         map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-        new maplibregl.Marker({ color: '#ffb000' })
+        new maplibregl.Marker({ color: '#008dff' })
             .setLngLat(HOME)
             .setPopup(new maplibregl.Popup().setText(`${stationCallsign} — ${stationGrid}`))
             .addTo(map);
@@ -260,7 +271,7 @@
             // blank map with no explanation -- matches this project's own
             // "never fail silently" convention elsewhere.
             statusLine.textContent = 'Map error: ' + (e.error?.message || 'see browser console');
-            statusLine.style.color = '#ff5555';
+            statusLine.style.color = 'var(--red)';
             console.error('MapLibre error:', e);
         });
 
@@ -525,13 +536,13 @@
             const wrap = document.createElement('div');
             wrap.id = 'elevation-chart';
             wrap.style.padding = '8px 25px';
-            wrap.style.background = '#0d0f0a';
-            wrap.style.borderTop = '1px solid #23291e';
+            wrap.style.background = 'var(--panel)';
+            wrap.style.borderTop = '1px solid var(--border-dim)';
             wrap.innerHTML = `
                 <svg width="${width}" height="${height + 20}" viewBox="0 0 ${width} ${height + 20}">
                     <path d="${pathD}" fill="none" stroke="#2fb8c4" stroke-width="2"/>
                 </svg>
-                <div style="font-family:monospace; font-size:0.72rem; color:#b8c2b0; display:flex; gap:16px;">
+                <div style="font-family:monospace; font-size:0.72rem; color:var(--text-dim); display:flex; gap:16px;">
                     <span>Min: ${Math.round(minElev * 3.28084)} ft</span>
                     <span>Max: ${Math.round(maxElev * 3.28084)} ft</span>
                     <span>Gain: ${Math.round(gainM * 3.28084)} ft</span>

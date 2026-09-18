@@ -7,9 +7,14 @@
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
         :root {
-            --bg: #0e0d0d; --panel: #1a1414; --panel-alt: #161212; --border: #4a2626; --border-dim: #2c1c1c;
-            --text: #e6e8e3; --text-dim: #b3a8a8; --text-faint: #7a6a6a;
-            --accent: #ff5555; --accent-dim: #cc3333; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #6b7169;
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see
+               index.html. This page used to run its own deliberate
+               red/maroon theme (medical = red); unified to the standard
+               palette per the same "one family DNA, not per-page
+               palettes" call already applied to crypto.html's teal theme. */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #5b7386;
         }
         * { box-sizing: border-box; }
         body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
@@ -20,7 +25,7 @@
         .nav-btn { display: block; width: 100%; text-align: left; background: transparent; border: none; border-left: 3px solid transparent; color: var(--text-dim); padding: 11px 18px; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
         .nav-btn:hover { background: rgba(255,255,255,0.03); color: var(--text); }
         .nav-btn.active { background: rgba(255,85,85,0.08); border-left-color: var(--accent); color: var(--accent); font-weight: bold; }
-        .em-btn { margin: 12px; background: var(--border-dim); border: 1px solid var(--accent-dim); color: var(--text); padding: 12px; border-radius: 6px; cursor: pointer; text-align: left; font-family: inherit; }
+        .em-btn { margin: 12px; background: var(--border-dim); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; cursor: pointer; text-align: left; font-family: inherit; }
         .em-btn .t1 { color: var(--accent); font-weight: bold; font-size: 0.85rem; }
         .em-btn .t2 { color: var(--text-faint); font-size: 0.72rem; }
 
@@ -43,7 +48,7 @@
         .header-title-block .sub2 { color: var(--accent); text-transform: uppercase; font-size: 1rem; font-weight: bold; }
         .header-title-block .tag { font-size: 0.72rem; color: var(--text-faint); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
         .header-quote { font-size: 0.8rem; color: var(--text-faint); font-style: italic; text-align: right; max-width: 220px; }
-        .dash-btn { background: var(--border-dim); border: 1px solid var(--accent-dim); color: var(--text); padding: 10px 16px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; text-transform: uppercase; white-space: nowrap; font-family: inherit; }
+        .dash-btn { background: var(--border-dim); border: 1px solid var(--border); color: var(--text); padding: 10px 16px; border-radius: 4px; cursor: pointer; font-size: 0.78rem; text-transform: uppercase; white-space: nowrap; font-family: inherit; }
         .dash-btn:hover { border-color: var(--accent); }
 
         /* Health strip */
@@ -72,15 +77,15 @@
         @media (max-width: 1200px) { .row-4 { grid-template-columns: repeat(2, 1fr); } .row-3 { grid-template-columns: 1fr; } }
         @media (max-width: 600px) { .row-4 { grid-template-columns: 1fr; } }
 
-        .trauma-card { background: #1c1414; border: 1px solid var(--border); border-radius: 6px; padding: 16px; cursor: pointer; transition: all 0.15s; }
-        .trauma-card:hover { background: #2d1a1a; border-color: var(--accent); transform: translateY(-2px); }
+        .trauma-card { background: var(--panel); border-radius: 6px; padding: 16px; cursor: pointer; transition: all 0.15s; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border); }
+        .trauma-card:hover { background: var(--panel-alt); border-color: var(--accent); transform: translateY(-2px); }
         .trauma-card h3 { margin: 0 0 6px 0; color: var(--accent); font-size: 1.05rem; }
         .trauma-card p { margin: 0; font-size: 0.78rem; color: var(--text-dim); }
         .trauma-card .arrow { color: var(--text-faint); float: right; }
 
-        .protocol-block { background: #161212; border: 1px solid #4a3a1a; border-radius: 6px; padding: 18px; margin-bottom: 16px; }
-        .protocol-block h3 { color: #d3b567; margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed #4a3a1a; padding-bottom: 5px; }
-        .protocol-block ol, .protocol-block ul { margin: 0; padding-left: 20px; line-height: 1.6; color: #d0d6c9; }
+        .protocol-block { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 18px; margin-bottom: 16px; }
+        .protocol-block h3 { color: var(--accent); margin-top: 0; text-transform: uppercase; border-bottom: 1px dashed var(--border); padding-bottom: 5px; }
+        .protocol-block ol, .protocol-block ul { margin: 0; padding-left: 20px; line-height: 1.6; color: var(--text-dim); }
 
         .link-list { list-style: none; margin: 0; padding: 0; }
         .link-list li { border-bottom: 1px solid var(--border-dim); }
@@ -95,8 +100,8 @@
         textarea { width: 100%; resize: vertical; }
         .field-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
         .field-row > * { flex: 1; min-width: 100px; }
-        .btn { background: #4b2f2f; border: 1px solid var(--accent-dim); color: var(--text); padding: 9px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.78rem; text-transform: uppercase; font-family: inherit; }
-        .btn:hover { background: #603c3c; }
+        .btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 9px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.78rem; text-transform: uppercase; font-family: inherit; }
+        .btn:hover { background: var(--panel); }
         .btn-ghost { background: var(--panel-alt); border: 1px solid var(--border); font-size: 0.75rem; padding: 7px 12px; }
         .btn-full { width: 100%; padding: 12px; font-size: 0.82rem; }
         .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.72rem; font-family: inherit; }
@@ -117,8 +122,8 @@
 
         .chat-stream { height: 170px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; }
         .msg { padding: 7px; border-radius: 4px; line-height: 1.4; }
-        .msg.user { background: #2a2121; border-left: 3px solid var(--accent-dim); align-self: flex-end; }
-        .msg.ai { background: #050604; border-left: 3px solid var(--amber); color: var(--amber); font-family: monospace; }
+        .msg.user { background: var(--panel-alt); border-left: 3px solid var(--border); align-self: flex-end; }
+        .msg.ai { background: var(--bg); border-left: 3px solid var(--amber); color: var(--amber); font-family: monospace; }
         .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
         .chip { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text-dim); padding: 5px 10px; border-radius: 12px; font-size: 0.7rem; cursor: pointer; }
         .chip:hover { border-color: var(--accent); color: var(--text); }
@@ -133,7 +138,7 @@
         .em-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .em-header h1 { color: var(--accent); font-size: 2rem; margin: 0; }
         .em-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-        .em-card { background: #1c1414; border: 2px solid var(--border); border-radius: 8px; padding: 18px; }
+        .em-card { background: var(--panel); border-radius: 8px; padding: 18px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 4px var(--border); }
         .em-card h3 { color: var(--accent); font-size: 1.3rem; margin: 0 0 10px 0; }
         .em-card ol { font-size: 1.05rem; line-height: 1.7; padding-left: 22px; }
         .exit-em-btn { background: var(--border-dim); border: 1px solid var(--accent); color: var(--text); padding: 12px 20px; border-radius: 4px; font-size: 1rem; cursor: pointer; font-family: inherit; }
@@ -477,7 +482,7 @@
                     <div class="chat-stream" id="medChat">
                         <div class="msg ai">CITADEL MEDICAL AI ONLINE. Use this for general questions after checking the structured guides.</div>
                     </div>
-                    <div style="background: #2a1414; padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="background: var(--panel-alt); padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         <span style="font-family: monospace; font-size: 0.85rem; color: var(--accent); font-weight: bold;">🫀 EMERGENCY CPR PACER (110 BPM)</span>
                         <button class="action-btn" id="cprBtn" onclick="toggleCPRMetronome()">START COMPRESSION PACER</button>
                     </div>
@@ -588,7 +593,7 @@
         ];
         function renderConditions() {
             document.getElementById('conditionsList').innerHTML = conditions.map(c => `
-                <div class="protocol-block"><h3>${c.title}</h3><p style="color:#d0d6c9; line-height:1.6; margin:0;">${c.body}</p></div>
+                <div class="protocol-block"><h3>${c.title}</h3><p style="color:var(--text-dim); line-height:1.6; margin:0;">${c.body}</p></div>
             `).join('');
         }
 
@@ -602,7 +607,7 @@
         ];
         function renderProcedures() {
             document.getElementById('proceduresList').innerHTML = procedures.map(p => `
-                <div class="protocol-block"><h3>${p.title}</h3><p style="color:#d0d6c9; line-height:1.6; margin:0;">${p.body}</p></div>
+                <div class="protocol-block"><h3>${p.title}</h3><p style="color:var(--text-dim); line-height:1.6; margin:0;">${p.body}</p></div>
             `).join('');
         }
 

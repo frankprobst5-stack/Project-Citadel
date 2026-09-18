@@ -6,28 +6,34 @@
     <title>CITADEL // PROJECT INTERCEPT</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #070906; color: #cbd5c0; padding: 25px; margin: 0; box-sizing: border-box; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1600px; margin: 0 auto; }
         
-        .header-box { border-bottom: 2px solid #556346; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { color: #87986a; margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
         
-        .action-btn { background: #1c2116; border: 1px solid #414d34; color: #cbd5c0; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
-        .action-btn:hover { background: #87986a; color: #070906; box-shadow: 0 0 10px rgba(135,152,106,0.3); }
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 10px rgba(0,141,255,0.3); }
         
-        .status-bar { font-family: monospace; font-size: 0.8rem; color: #00ff66; margin-top: -10px; margin-bottom: 20px; text-transform: uppercase; }
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: var(--green); margin-top: -10px; margin-bottom: 20px; text-transform: uppercase; }
         
-        .panel { background: #11140e; border: 1px solid #283021; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-height: 500px; }
-        h2 { color: #ffb000; margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed #283021; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel { background: var(--panel); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 12px rgba(0,0,0,0.5); min-height: 500px; }
+        h2 { color: var(--amber); margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed var(--border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .ledger-container { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
         
-        .signal-row { background: #050604; border: 1px solid #1c2116; border-radius: 4px; padding: 12px 18px; font-family: monospace; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #ffb000; }
-        .signal-row.weather { border-left-color: #528eff; }
-        .signal-row.security { border-left-color: #ff3333; }
+        .signal-row { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 12px 18px; font-family: monospace; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--amber); }
+        .signal-row.weather { border-left-color: var(--accent); }
+        .signal-row.security { border-left-color: var(--red); }
         
-        .sig-meta { color: #556346; font-size: 0.8rem; text-align: right; }
-        .scanning-text { font-family: monospace; color: #414d34; font-size: 1rem; text-align: center; padding: 60px 20px; }
+        .sig-meta { color: var(--text-faint); font-size: 0.8rem; text-align: right; }
+        .scanning-text { font-family: monospace; color: var(--text-faint); font-size: 1rem; text-align: center; padding: 60px 20px; }
     </style>
 </head>
 <body>
@@ -81,31 +87,31 @@
                     let dataString = "";
                     for (const key in sig) {
                         if (!["time", "model", "id", "mic", "snr", "mod"].includes(key)) {
-                            dataString += `<span style="color:#87986a;">${key.toUpperCase()}:</span> <span style="color:#ffb000; margin-right:12px;">${sig[key]}</span> `;
+                            dataString += `<span style="color:var(--accent);">${key.toUpperCase()}:</span> <span style="color:var(--accent-bright); margin-right:12px;">${sig[key]}</span> `;
                         }
                     }
                     
                     htmlContent += `
                     <div class="${rowClass}">
                         <div>
-                            <span style="color:#cbd5c0; font-weight:bold; font-size:1.05rem;">[${(sig.model || "UNKNOWN_RF_NODE").toUpperCase()}]</span> 
-                            <span style="color:#687259; margin: 0 10px;">•</span> 
-                            ID: <span style="color:#00ff66; font-weight:bold; margin-right:15px;">${sig.id || "GENERIC"}</span>
-                            <div style="margin-top: 6px; font-size:0.9rem;">${dataString || "<span style='color:#414d34;'>RAW TEXT SIGNAL BURST INTERCEPTED</span>"}</div>
+                            <span style="color:var(--text); font-weight:bold; font-size:1.05rem;">[${(sig.model || "UNKNOWN_RF_NODE").toUpperCase()}]</span> 
+                            <span style="color:var(--text-faint); margin: 0 10px;">•</span> 
+                            ID: <span style="color:var(--green); font-weight:bold; margin-right:15px;">${sig.id || "GENERIC"}</span>
+                            <div style="margin-top: 6px; font-size:0.9rem;">${dataString || "<span style='color:var(--text-faint);'>RAW TEXT SIGNAL BURST INTERCEPTED</span>"}</div>
                         </div>
                         <div class="sig-meta">
                             CAPTURED: ${sig.time ? sig.time.substring(11, 19) : "00:00:00"} UTC<br>
-                            <span style="font-size:0.75rem; color:#414d34;">FREQ MATCH // 433.92MHz</span>
+                            <span style="font-size:0.75rem; color:var(--text-faint);">FREQ MATCH // 433.92MHz</span>
                         </div>
                     </div>`;
                 });
                 
                 container.innerHTML = htmlContent;
                 document.getElementById('engineStatus').innerText = "📡 RADIO STREAM CORE: ONLINE // PASSIVELY SCANNING LOCAL FREQUENCIES (433.92 MHz)...";
-                document.getElementById('engineStatus').style.color = "#00ff66";
+                document.getElementById('engineStatus').style.color = "var(--green)";
             } catch (err) {
                 document.getElementById('engineStatus').innerText = "⚠️ INTERCEPT NETWORK LINK INTERRUPTED (CHECK BACKEND CONTAINER LOGS)";
-                document.getElementById('engineStatus').style.color = "#ff3333";
+                document.getElementById('engineStatus').style.color = "var(--red)";
             }
         }
 

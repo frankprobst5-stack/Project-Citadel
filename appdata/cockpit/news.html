@@ -6,45 +6,51 @@
     <title>CITADEL // NEWS ARCHIVE &amp; LOCAL LOG</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #070906; color: #cbd5c0; padding: 25px; margin: 0; box-sizing: border-box; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #5b7386;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1400px; margin: 0 auto; }
 
-        .header-box { border-bottom: 2px solid #556346; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { color: #87986a; margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
-        .action-btn { background: #1c2116; border: 1px solid #414d34; color: #cbd5c0; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
-        .action-btn:hover { background: #87986a; color: #070906; }
+        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); }
 
-        .panel { background: #11140e; border: 1px solid #283021; border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .panel.alerts { border-color: #ff3333; }
-        h2 { color: #ffb000; margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed #283021; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .panel.alerts h2 { color: #ff3333; }
+        .panel { background: var(--panel); border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 12px rgba(0,0,0,0.5); }
+        .panel.alerts { box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--red), 0 4px 12px rgba(0,0,0,0.5); }
+        h2 { color: var(--amber); margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed var(--border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .panel.alerts h2 { color: var(--red); }
 
-        .empty-state { font-family: monospace; color: #556346; padding: 20px; text-align: center; }
+        .empty-state { font-family: monospace; color: var(--text-faint); padding: 20px; text-align: center; }
 
-        .article-row { background: #050604; border: 1px solid #1c2116; border-radius: 4px; padding: 12px 16px; margin-bottom: 8px; border-left: 4px solid #414d34; }
-        .article-row.alert { border-left-color: #ff3333; }
-        .article-row .meta { font-size: 0.75rem; color: #556346; margin-bottom: 4px; }
+        .article-row { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 12px 16px; margin-bottom: 8px; border-left: 4px solid var(--border); }
+        .article-row.alert { border-left-color: var(--red); }
+        .article-row .meta { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 4px; }
         .article-row .title { font-weight: bold; margin-bottom: 4px; }
-        .article-row .title a { color: #cbd5c0; text-decoration: none; }
-        .article-row .title a:hover { color: #ffb000; }
-        .article-row .body { font-size: 0.85rem; color: #a8b39a; }
+        .article-row .title a { color: var(--text); text-decoration: none; }
+        .article-row .title a:hover { color: var(--accent-bright); }
+        .article-row .body { font-size: 0.85rem; color: var(--text-dim); }
         .severity-tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin-right: 6px; }
-        .severity-Extreme { background: #ff3333; color: #070906; }
-        .severity-Severe { background: #ff8c3d; color: #070906; }
-        .severity-Moderate { background: #ffb000; color: #070906; }
-        .severity-Minor { background: #556346; color: #cbd5c0; }
+        .severity-Extreme { background: var(--red); color: var(--bg); }
+        .severity-Severe { background: rgba(224,82,82,0.35); color: var(--text); }
+        .severity-Moderate { background: var(--amber); color: var(--bg); }
+        .severity-Minor { background: var(--gray); color: var(--text); }
 
         .log-form { display: flex; gap: 10px; margin-bottom: 16px; }
-        .log-form textarea { flex-grow: 1; background: #050604; border: 1px solid #283021; color: #cbd5c0; padding: 10px; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 44px; }
+        .log-form textarea { flex-grow: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 44px; }
 
         .sources-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .source-row { display: flex; justify-content: space-between; align-items: center; background: #050604; border: 1px solid #1c2116; border-radius: 4px; padding: 8px 12px; font-size: 0.85rem; }
-        .source-row .err { color: #ff3333; font-size: 0.75rem; }
+        .source-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; font-size: 0.85rem; }
+        .source-row .err { color: var(--red); font-size: 0.75rem; }
         .add-source-form { display: flex; gap: 8px; flex-wrap: wrap; }
-        .add-source-form input { background: #050604; border: 1px solid #283021; color: #cbd5c0; padding: 8px; border-radius: 4px; font-family: inherit; }
+        .add-source-form input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 4px; font-family: inherit; }
         .add-source-form input[name="name"] { flex: 1; min-width: 150px; }
         .add-source-form input[name="feed_url"] { flex: 2; min-width: 250px; }
-        .del-btn { background: none; border: 1px solid #ff3333; color: #ff3333; border-radius: 3px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; }
+        .del-btn { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -181,7 +187,7 @@
                 }
                 body.innerHTML = sources.map(s => `
                     <div class="source-row">
-                        <span>${escapeHtml(s.name)} — <span style="color:#556346">${escapeHtml(s.feed_url)}</span>
+                        <span>${escapeHtml(s.name)} — <span style="color:var(--text-faint)">${escapeHtml(s.feed_url)}</span>
                             ${s.last_error ? `<div class="err">${escapeHtml(s.last_error)}</div>` : ''}</span>
                         <button class="del-btn" onclick="deleteSource('${s.id}')">Remove</button>
                     </div>

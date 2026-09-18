@@ -6,27 +6,33 @@
     <title>CITADEL // KNOWLEDGE BASE</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #11120e; color: #e6e8e3; padding: 25px; margin: 0; box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; }
         .container { max-width: 1600px; margin: 0 auto; width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
         
-        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #1d3d2a; padding-bottom: 15px; flex-shrink: 0; }
-        h1 { color: #87986a; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 15px; flex-shrink: 0; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
         
-        .action-btn { background: #1d3d2a; border: 1px solid #3a7a53; color: #e6e8e3; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
-        .action-btn:hover { background: #264d36; border-color: #4b9e6c; }
+        .action-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: var(--panel-alt); border-color: var(--accent); }
 
-        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 15px; text-transform: uppercase; flex-shrink: 0; }
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: var(--text-faint); margin-top: -10px; margin-bottom: 15px; text-transform: uppercase; flex-shrink: 0; }
         
-        .library-frame-container { flex-grow: 1; background: #1c1f16; border: 1px solid #3a4031; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        .library-frame-container { flex-grow: 1; background: var(--panel); border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 10px; }
         iframe { width: 100%; height: 100%; border: none; background: #ffffff; }
         /* Real first-run guidance, added 2026-09-16 after an actual
            tester (Mark, N2UGA) reported a fresh install shows an empty
            library with no explanation of why, or what to do about it.
            Dismissible so it doesn't nag forever once someone's already
            added real content -- localStorage-backed, per-browser. */
-        .first-run-note { background: #1d3d2a; border: 1px solid #3a7a53; color: #cfe0c4; padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; line-height: 1.5; flex-shrink: 0; }
-        .first-run-note code { background: #11120e; padding: 1px 5px; border-radius: 3px; }
-        .first-run-note button { float: right; background: none; border: 1px solid #4b9e6c; color: #cfe0c4; border-radius: 4px; cursor: pointer; padding: 2px 8px; }
+        .first-run-note { background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); padding: 12px 15px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem; line-height: 1.5; flex-shrink: 0; }
+        .first-run-note code { background: var(--bg); padding: 1px 5px; border-radius: 3px; }
+        .first-run-note button { float: right; background: none; border: 1px solid var(--accent); color: var(--text-dim); border-radius: 4px; cursor: pointer; padding: 2px 8px; }
     </style>
 </head>
 <body>

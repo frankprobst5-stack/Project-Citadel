@@ -6,31 +6,37 @@
     <title>CITADEL // CRYPTO VAULT</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #0b0c10; color: #c5c6c7; padding: 25px; margin: 0; box-sizing: border-box; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text-dim); padding: 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1600px; margin: 0 auto; }
         
-        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #45a29e; padding-bottom: 15px; }
-        h1 { color: #66fcf1; margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(102, 252, 241, 0.3); }
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+        h1 { color: var(--accent-bright); margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(40, 200, 255, 0.3); }
         
-        .action-btn { background: #1f2833; border: 1px solid #45a29e; color: #66fcf1; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; font-family: monospace; }
-        .action-btn:hover { background: #45a29e; color: #0b0c10; box-shadow: 0 0 15px rgba(69, 162, 158, 0.4); }
+        .action-btn { background: var(--panel); border: 1px solid var(--border); color: var(--accent-bright); padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; font-family: monospace; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 15px rgba(40, 200, 255, 0.4); }
 
-        .status-bar { font-family: monospace; font-size: 0.8rem; color: #687259; margin-top: -10px; margin-bottom: 25px; text-transform: uppercase; }
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: var(--text-faint); margin-top: -10px; margin-bottom: 25px; text-transform: uppercase; }
 
         /* Split Row Workspaces */
         .crypto-split { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
-        .vault-panel { background: #1f2833; border: 1px solid #45a29e; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
-        .panel-header { font-family: monospace; font-size: 0.9rem; color: #66fcf1; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #45a29e; padding-bottom: 8px; letter-spacing: 1px; }
+        .vault-panel { background: var(--panel); border-radius: 6px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 15px rgba(0,0,0,0.6); padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        .panel-header { font-family: monospace; font-size: 0.9rem; color: var(--accent-bright); font-weight: bold; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 8px; letter-spacing: 1px; }
 
         /* Cryptographic Textboxes & Inputs */
-        textarea { width: 100%; height: 140px; background: #0b0c10; border: 1px solid #45a29e; color: #66fcf1; font-family: monospace; font-size: 0.95rem; padding: 12px; resize: none; box-sizing: border-box; outline: none; margin-bottom: 15px; border-radius: 4px; }
-        textarea:focus { border-color: #66fcf1; box-shadow: 0 0 10px rgba(102, 252, 241, 0.2); }
+        textarea { width: 100%; height: 140px; background: var(--bg); border: 1px solid var(--border); color: var(--accent-bright); font-family: monospace; font-size: 0.95rem; padding: 12px; resize: none; box-sizing: border-box; outline: none; margin-bottom: 15px; border-radius: 4px; }
+        textarea:focus { border-color: var(--accent-bright); box-shadow: 0 0 10px rgba(40, 200, 255, 0.2); }
         
         .input-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
-        .input-crypto { background: #0b0c10; border: 1px solid #45a29e; padding: 10px; color: #ffb000; font-family: monospace; font-size: 0.95rem; border-radius: 4px; outline: none; flex-grow: 1; }
-        .label-crypto { font-family: monospace; font-size: 0.85rem; color: #c5c6c7; text-transform: uppercase; font-weight: bold; min-width: 140px; }
+        .input-crypto { background: var(--bg); border: 1px solid var(--border); padding: 10px; color: var(--amber); font-family: monospace; font-size: 0.95rem; border-radius: 4px; outline: none; flex-grow: 1; }
+        .label-crypto { font-family: monospace; font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; font-weight: bold; min-width: 140px; }
 
-        .shard-output { background: #0b0c10; border: 1px dashed #45a29e; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #ffb000; margin-top: 10px; word-break: break-all; max-height: 180px; overflow-y: auto; }
+        .shard-output { background: var(--bg); border: 1px dashed var(--border); padding: 12px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: var(--amber); margin-top: 10px; word-break: break-all; max-height: 180px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -55,8 +61,8 @@
                 </div>
 
                 <div style="display: flex; gap: 15px;">
-                    <button class="action-btn" style="flex: 1; background: #1a423a;" onclick="executeAES(true)">Encrypt Text</button>
-                    <button class="action-btn" style="flex: 1; background: #42251a; border-color: #a84332; color: #ff9999;" onclick="executeAES(false)">Decrypt Text</button>
+                    <button class="action-btn" style="flex: 1; background: rgba(89,214,124,0.15); border-color: var(--green); color: var(--green);" onclick="executeAES(true)">Encrypt Text</button>
+                    <button class="action-btn" style="flex: 1; background: rgba(224,82,82,0.15); border-color: var(--red); color: var(--red);" onclick="executeAES(false)">Decrypt Text</button>
                 </div>
                 
                 <div style="margin-top: 15px;">
@@ -81,14 +87,14 @@
                     <input type="number" id="shardThreshold" class="input-crypto" style="max-width: 80px;" value="2" min="2" max="10">
                 </div>
 
-                <button class="action-btn" style="background: #2a3a4d; border-color: #3b5ca8; color: #b0d4ff;" onclick="generateKeyShards()">⚡ Fractured Key Shard Shunts</button>
+                <button class="action-btn" style="background: rgba(0,141,255,0.15); border-color: var(--accent); color: var(--accent-bright);" onclick="generateKeyShards()">⚡ Fractured Key Shard Shunts</button>
                 
                 <div id="shardBox" class="shard-output" style="display:none; margin-bottom: 15px;"></div>
 
-                <div class="panel-header" style="margin-top: 20px; border-top: 1px solid #45a29e; padding-top: 10px;">🧬 RECONSTRUCT MASTER FRACTURED KEY ASSET</div>
+                <div class="panel-header" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 10px;">🧬 RECONSTRUCT MASTER FRACTURED KEY ASSET</div>
                 
                 <textarea id="shardReconstructInput" style="height: 80px;" placeholder="Paste separate shards here (one shard per line). Requires matching threshold block count to unlock..."></textarea>
-                <button class="action-btn" style="background: #223a1a; border-color: #55cc33; color: #a4ffb0;" onclick="rebuildKeyFromShards()">🧩 Rebuild Master Asset Key</button>
+                <button class="action-btn" style="background: rgba(89,214,124,0.15); border-color: var(--green); color: var(--green);" onclick="rebuildKeyFromShards()">🧩 Rebuild Master Asset Key</button>
                 
                 <div id="reconstructOutput" class="shard-output" style="display:none;"></div>
             </div>
@@ -108,8 +114,8 @@
             <button class="action-btn" style="margin-bottom: 15px;" onclick="addVaultEntry()">+ Add Entry</button>
 
             <div style="display: flex; gap: 15px;">
-                <button class="action-btn" style="background: #1a423a;" onclick="saveVaultToFile()">💾 Save Vault to File</button>
-                <button class="action-btn" style="background: #2a3a4d; border-color: #3b5ca8; color: #b0d4ff;" onclick="document.getElementById('vaultFileInput').click()">📂 Load Vault from File</button>
+                <button class="action-btn" style="background: rgba(89,214,124,0.15); border-color: var(--green); color: var(--green);" onclick="saveVaultToFile()">💾 Save Vault to File</button>
+                <button class="action-btn" style="background: rgba(0,141,255,0.15); border-color: var(--accent); color: var(--accent-bright);" onclick="document.getElementById('vaultFileInput').click()">📂 Load Vault from File</button>
                 <input type="file" id="vaultFileInput" accept=".vault,.json" style="display:none" onchange="loadVaultFromFile(event)">
             </div>
 
@@ -301,7 +307,7 @@
                 }
 
                 const outBox = document.getElementById('reconstructOutput');
-                outBox.innerHTML = `<b>🔓 MASTER RECONSTRUCTED SECRET KEY RECOVERED:</b><br><br><span style="color:#00ff66; font-size:1.1rem; font-weight:bold;">${new TextDecoder().decode(new Uint8Array(resultBytes))}</span>`;
+                outBox.innerHTML = `<b>🔓 MASTER RECONSTRUCTED SECRET KEY RECOVERED:</b><br><br><span style="color:var(--green); font-size:1.1rem; font-weight:bold;">${new TextDecoder().decode(new Uint8Array(resultBytes))}</span>`;
                 outBox.style.display = "block";
             } catch (err) {
                 alert("CRITICAL RECONSTRUCTION FAILURE: Incompatible shard polynomials or insufficient threshold block metrics.");
@@ -326,7 +332,7 @@
         function renderVaultEntries() {
             const box = document.getElementById('vaultEntries');
             if (vaultEntries.length === 0) {
-                box.innerHTML = '<div style="color:#687259; font-family:monospace; font-size:0.85rem; margin-bottom:10px;">No entries yet — click "+ Add Entry" below.</div>';
+                box.innerHTML = '<div style="color:var(--text-faint); font-family:monospace; font-size:0.85rem; margin-bottom:10px;">No entries yet — click "+ Add Entry" below.</div>';
                 return;
             }
             box.innerHTML = vaultEntries.map((e, i) => `
@@ -336,7 +342,7 @@
                     <input type="password" class="input-crypto vault-pw-${i}" style="flex:1;" placeholder="Password" value="${escapeAttr(e.password)}" oninput="vaultEntries[${i}].password = this.value">
                     <button class="action-btn" style="padding:8px 10px;" onclick="toggleVaultPasswordVisibility(${i})" title="Show/hide password">👁</button>
                     <input class="input-crypto" style="flex:1.4;" placeholder="Notes (optional)" value="${escapeAttr(e.notes)}" oninput="vaultEntries[${i}].notes = this.value">
-                    <button class="action-btn" style="background:#42251a; border-color:#a84332; color:#ff9999; padding:8px 12px;" onclick="deleteVaultEntry(${i})" title="Remove this entry">✕</button>
+                    <button class="action-btn" style="background:rgba(224,82,82,0.15); border-color:var(--red); color:var(--red); padding:8px 12px;" onclick="deleteVaultEntry(${i})" title="Remove this entry">✕</button>
                 </div>
             `).join('');
         }
@@ -359,7 +365,7 @@
         function vaultStatus(msg, isError) {
             const el = document.getElementById('vaultStatus');
             el.style.display = 'block';
-            el.style.color = isError ? '#ff9999' : '#a4ffb0';
+            el.style.color = isError ? 'var(--red)' : 'var(--green)';
             el.textContent = msg;
         }
 

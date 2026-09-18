@@ -7,19 +7,25 @@
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
         :root {
-            --bg: #11120e;
-            --panel: #1c1f16;
-            --panel-alt: #181b13;
-            --border: #3a4031;
-            --border-dim: #282f20;
-            --text: #e6e8e3;
-            --text-dim: #aea79f;
-            --text-faint: #687259;
-            --accent: #87986a;
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 (replaces the
+               old tactical-green scheme per unanimous tester feedback) --
+               --accent is the brand color; --amber/--green/--red are
+               semantic status colors, not brand colors, and stay put
+               regardless of any future brand palette change. */
+            --bg: #05090d;
+            --panel: #071a2c;
+            --panel-alt: #0a2038;
+            --border: #2a4a66;
+            --border-dim: #16283a;
+            --text: #e7f1f8;
+            --text-dim: #aebbc7;
+            --text-faint: #71899d;
+            --accent: #008dff;
+            --accent-bright: #28c8ff;
             --amber: #ffb000;
             --green: #59d67c;
             --red: #e05252;
-            --gray: #6b7169;
+            --gray: #5b7386;
         }
         body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px 25px 50px 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1400px; margin: 0 auto; width: 100%; }
@@ -64,14 +70,19 @@
         .supply-item .name { color: var(--text); font-weight: bold; }
         .supply-item .count { color: var(--text-faint); font-family: monospace; font-size: 0.72rem; }
 
-        .status-bar { font-family: monospace; font-size: 0.85rem; color: var(--amber); text-transform: uppercase; margin-bottom: 25px; background: #1c1f16; padding: 10px 15px; border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .status-bar { font-family: monospace; font-size: 0.85rem; color: var(--amber); text-transform: uppercase; margin-bottom: 25px; background: var(--panel); padding: 10px 15px; border-radius: 4px; border: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 
         .matrix-grid { display: grid; grid-template-columns: repeat(3, 1fr) !important; gap: 20px; margin-bottom: 30px; }
         @media (max-width: 900px) { .matrix-grid { grid-template-columns: repeat(2, 1fr) !important; } .header-panel, .readiness-panel { flex-direction: column; align-items: flex-start; } .header-clock-block, .health-strip { border-left: none; padding-left: 0; } }
         @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr !important; } }
 
-        .module-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; }
-        .module-card:hover { border-color: var(--accent); background: #23271c; }
+        /* Double-line card frame, added 2026-09-18 -- echoes the ecosystem
+           logo's own steel-frame + neon-blue-edge hexagon styling. Two
+           abutting box-shadow rings (no border, so border-radius stays
+           clean on the corners) rather than nested elements -- this same
+           two-line pattern is the standard card treatment going forward. */
+        .module-card { background: var(--panel); border-radius: 6px; padding: 20px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; }
+        .module-card:hover { background: var(--panel-alt); box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--accent), 0 4px 15px rgba(0,0,0,0.5); }
 
         .card-top { display: flex; gap: 15px; margin-bottom: 10px; }
         .card-icon { font-size: 2.2rem; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 10px; border-radius: 6px; border: 1px solid var(--border-dim); flex-shrink: 0; height: 44px; width: 44px; box-sizing: content-box; }
@@ -123,8 +134,8 @@
         <div class="readiness-panel">
             <div class="readiness-ring-wrap">
                 <svg class="readiness-ring" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#282f20" stroke-width="8"/>
-                    <circle id="readinessArc" cx="40" cy="40" r="34" fill="none" stroke="#59d67c" stroke-width="8" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 40 40)"/>
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border-dim)" stroke-width="8"/>
+                    <circle id="readinessArc" cx="40" cy="40" r="34" fill="none" stroke="var(--green)" stroke-width="8" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 40 40)"/>
                 </svg>
                 <div class="readiness-text">
                     <div class="pct" id="readinessPct" style="color: var(--green);">--%</div>
@@ -222,7 +233,7 @@
             { key: 'static', title: "Crypto Vault", desc: "Offline AES-256-GCM text encryption, a real Shamir's Secret Sharing key splitter, and a simple password vault (add/edit/remove entries, save as one encrypted file) -- all run entirely client-side in your browser, nothing ever touches a network.", meta: "Engine: Web Crypto API", icon: "🔐", action: "crypto.html", profile: null },
             { key: 'static', title: "Master Operations Handbook", desc: "Access complete hardware manifests, radio channel frequencies, and launch directives to clone channel maps offline.", meta: "Engine: Operations Guide", icon: "📟", action: "manual.html", profile: null },
             { key: 'static', title: "System Settings", desc: "View live service diagnostics, station identity, and build info. Configuration editing is not wired up yet.", meta: "Engine: Citadel Core", icon: "⚙️", action: "settings.html", profile: null },
-            { key: 'muster', title: "Muster (Mobile Ops)", desc: "Grid-down operations control, reachable on any phone or tablet with zero install. Real messages and map markers, pulled live from WayStation.", meta: "Engine: Muster Bridge", icon: "✡", action: "muster/index.html", profile: 'muster' },
+            { key: 'muster', title: "Muster (Mobile Ops)", desc: "Grid-down operations control, reachable on any phone or tablet with zero install. Real messages and map markers, pulled live from WayStation.", meta: "Engine: Muster Bridge", icon: "👥", action: "muster/index.html", profile: 'muster' },
             { key: 'static', title: "News Archive & Local Log", desc: "Aggregated hazard alerts (NWS, USGS, NHC, InciWeb) and syndicated news, archived so it's still readable once the grid goes down -- plus a hand-typed local log for when nothing new can arrive at all. Add as many feed sources as you want here, not on the front page.", meta: "Engine: Hazard/CAP Feed Core", icon: "📰", action: "news.html", profile: null },
         ];
 

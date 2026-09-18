@@ -2,7 +2,7 @@
     "name": "muster",
     "profile": "muster",
     "title": "Muster (Mobile Ops)",
-    "icon": "✡",
+    "icon": "👥",
     "description": "Grid-down operations control, reachable on any phone/tablet on the LAN with zero install. Pulls real messages and map markers from WayStation over its own WSP/1 protocol.",
     "engine": "Muster Bridge",
     "cockpit_tile": true,

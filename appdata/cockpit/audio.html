@@ -6,38 +6,44 @@
     <title>CITADEL // AUDIO VAULT</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #1c1e17; color: #e6e8e3; padding: 40px 40px 120px 40px; margin: 0; }
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 40px 40px 120px 40px; margin: 0; }
         .container { max-width: 1600px; margin: 0 auto; }
-        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4b533f; padding-bottom: 15px; margin-bottom: 30px; }
-        h1 { color: #87986a; margin: 0; font-size: 2rem; text-transform: uppercase; letter-spacing: 1px; }
-        .back-btn { background: #2b3025; color: #a4b38a; text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid #3a4031; font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
-        .back-btn:hover { background: #353b2e; border-color: #87986a; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 30px; }
+        h1 { color: var(--accent); margin: 0; font-size: 2rem; text-transform: uppercase; letter-spacing: 1px; }
+        .back-btn { background: var(--panel-alt); color: var(--text-dim); text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; transition: all 0.2s; text-transform: uppercase; font-size: 0.8rem; }
+        .back-btn:hover { background: var(--panel-alt); border-color: var(--accent); }
         
-        #searchBar { width: 100%; padding: 15px 20px; background: #282c22; border: 2px solid #4b533f; border-radius: 8px; color: #ffb000; font-family: monospace; font-size: 1.1rem; margin-bottom: 30px; box-sizing: border-box; outline: none; }
-        #searchBar:focus { border-color: #87986a; }
+        #searchBar { width: 100%; padding: 15px 20px; background: var(--panel); border: 2px solid var(--border); border-radius: 8px; color: var(--accent-bright); font-family: monospace; font-size: 1.1rem; margin-bottom: 30px; box-sizing: border-box; outline: none; }
+        #searchBar:focus { border-color: var(--accent); }
         
         /* Enforced 2-Wide Layout Cards Grid */
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; }
-        .card { background: #23271e; padding: 25px; border-radius: 8px; border: 1px solid #3a4031; box-shadow: 0 4px 15px rgba(0,0,0,0.5); height: 350px; display: flex; flex-direction: column; box-sizing: border-box; }
-        h2 { color: #a4b38a; margin-top: 0; border-bottom: 1px solid #3a4031; padding-bottom: 10px; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card { background: var(--panel); padding: 25px; border-radius: 8px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 15px rgba(0,0,0,0.5); height: 350px; display: flex; flex-direction: column; box-sizing: border-box; }
+        h2 { color: var(--text-dim); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
         
         /* Vertical Scroll Area Inside Each Category Card */
         .box-content { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
         .box-content::-webkit-scrollbar { width: 6px; }
-        .box-content::-webkit-scrollbar-track { background: #1c1e17; border-radius: 4px; }
-        .box-content::-webkit-scrollbar-thumb { background: #4b533f; border-radius: 4px; }
-        .box-content::-webkit-scrollbar-thumb:hover { background: #87986a; }
+        .box-content::-webkit-scrollbar-track { background: var(--bg); border-radius: 4px; }
+        .box-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .box-content::-webkit-scrollbar-thumb:hover { background: var(--accent); }
         
-        .file-item { display: flex; justify-content: space-between; align-items: center; background: #1c1e17; padding: 12px 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #708090; text-decoration: none; cursor: pointer; transition: all 0.2s; }
-        .file-item:hover { background: #2b3025; border-left-color: #87986a; transform: translateX(3px); }
-        .file-name { color: #d0d6c9; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; font-family: monospace; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg); padding: 12px 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid var(--border); text-decoration: none; cursor: pointer; transition: all 0.2s; }
+        .file-item:hover { background: var(--panel-alt); border-left-color: var(--accent); transform: translateX(3px); }
+        .file-name { color: var(--text-dim); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; font-family: monospace; }
         .hidden { display: none !important; }
-        .empty-text { color: #5c6450; font-size: 0.9rem; font-style: italic; padding: 10px; text-align: center; border: 1px dashed #3a4031; border-radius: 4px; }
+        .empty-text { color: var(--text-faint); font-size: 0.9rem; font-style: italic; padding: 10px; text-align: center; border: 1px dashed var(--border); border-radius: 4px; }
 
         /* Fixed Spotify-Style Player Dock at Bottom */
-        .footer-player { position: fixed; bottom: 0; left: 0; right: 0; background: #23271e; border-top: 2px solid #4b533f; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.6); z-index: 1000; }
-        .track-info { min-width: 250px; color: #ffb000; font-family: monospace; font-weight: bold; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        audio { width: 50%; max-width: 600px; filter: sepia(0.2) hue-rotate(30deg); }
+        .footer-player { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 2px solid var(--border); padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.6); z-index: 1000; }
+        .track-info { min-width: 250px; color: var(--accent-bright); font-family: monospace; font-weight: bold; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        audio { width: 50%; max-width: 600px; filter: sepia(0.3) hue-rotate(180deg) saturate(2); }
     </style>
 </head>
 <body>
