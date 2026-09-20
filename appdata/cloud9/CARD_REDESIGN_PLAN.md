@@ -228,6 +228,76 @@ itself already belongs to) — a real, small decision for whenever
 implementation actually starts, not blocking the architecture being
 locked now.
 
+## School Library architecture — locked (2026-09-20)
+
+Real, urgent premise, from a second real meeting Frank had about Cloud9:
+**4 real homeschool families are now waiting on this**, up from 2. They
+are not sold on Kolibri — they find it has a lot more bloat than they
+need, and specifically like only the quizzes and videos. Real stakes
+named directly: don't miss the mark a second time with these families,
+or they walk away. This is the priority for the week; everything else
+(Gated Phase 3, WayStation's rebrand) is deliberately on hold — both are
+in a stable, fully-committed state, so pausing them costs nothing real.
+
+**The real diagnosis, before assuming Kolibri itself is the problem**:
+Cloud9's own `cards.json` right now has "Full School Library" as a plain
+`link` straight to `http://localhost:8081`, Kolibri's own real address —
+meaning families have only ever seen **Kolibri's own raw,
+coach/admin-facing interface** directly, not a Cloud9-native view. That's
+exactly the gap Stage 3 of the 2026-09-19 roadmap already named as
+unbuilt ("make Kolibri feel genuinely integrated, not just linked out
+to"). The "bloat" complaint is very likely the honest, correct reaction
+to seeing the engine directly, not a verdict on the actual content
+underneath it — real, good news, because it means the fix doesn't
+require abandoning Kolibri or rebuilding an LMS from scratch (the exact
+trap already flagged and avoided once this session).
+
+**Confirmed live against the actual running Kolibri instance** (not
+assumed): its real REST API supports exactly the filtering this needs.
+`GET /api/content/contentnode/?kind=video` and `?kind=exercise` (Kolibri's
+own real term for quiz/practice content) both return clean, structured
+JSON — real titles, thumbnails, durations, direct video file URLs — with
+zero need for any change to Kolibri itself.
+
+### The locked design
+
+Cloud9's real "School Library" becomes its own genuinely simple surface,
+built directly on Kolibri's existing API, showing **only** a clean grid
+of videos and exercises — real thumbnails, real titles, nothing else.
+No channel browsing, no coach tools, no class administration, none of
+Kolibri's own navigation chrome. Same real content underneath; a
+completely different, much simpler front door. This directly replaces
+the current plain `link` in `cards.json` with a real Cloud9 view.
+
+### Standalone + Citadel-integrated — locked sequencing
+
+Frank's own real idea, also confirmed smart: build Cloud9 for Citadel
+*and* as a genuine standalone app people can run on a laptop without
+installing all of Citadel — real strategic value, since plenty of
+parents want a great homeschool tool with zero interest in home
+security or ham radio, and requiring the full Citadel stack to get
+there is a real, unnecessary adoption wall.
+
+**Real course-correction on sequencing, not on the goal**: build both
+*at once*, starting this week, and the engineering surface roughly
+doubles — every data source (Kolibri, the AI Tutor) needs a real
+"where does this actually come from" abstraction in both directions
+simultaneously, which risks slowing down the thing four families are
+waiting on right now. Locked sequencing instead:
+
+1. **Build the Citadel-integrated version first** — the concrete,
+   fastest real path to the families already waiting.
+2. **Make the Kolibri/Ollama connection configurable from day one**,
+   not hardcoded to "this same box's Citadel" — the exact same real
+   pattern already proven this session in Gated's own new-tab page (a
+   configurable Citadel address, defaulting to the common case,
+   overridable for anything else — see `gated/ROADMAP.md`'s Phase 2
+   entry on the `localhost` gap).
+3. Standalone then stops being a second parallel project competing for
+   this week's attention — it becomes "point the same app at a bundled
+   local Kolibri instead of Citadel's," a real, fast follow-up once the
+   Citadel-integrated version is actually in the 4 families' hands.
+
 ## Cross-card design principle: theme/layout is as important as the data
 
 Real, from Frank directly, and applies to every card in this redesign,
