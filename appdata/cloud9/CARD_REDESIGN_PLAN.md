@@ -71,15 +71,22 @@ subjects deliberately — science (formation), geography (location), math
 (satellites), preparedness (planning) — rather than staying isolated in
 one box.
 
-**Cloud9 Tutor**: the shared Citadel Ollama service becomes a
-system-wide learning companion, not a separate, isolated chatbot card —
-every major area gets a real "Ask Tutor" action (Weather Labs: "why does
-this CAPE value matter?"; Writing: outlining/grammar help; Coding:
-explain an error; Reading: comprehension questions; Math: a hint before
-the answer). **Design principle, worth repeating everywhere**: the
-authoritative tool supplies the facts, the local AI helps the child
-understand them — for Weather Labs specifically, NOAA/NWS supplies the
-meteorology, Tutor explains the concepts. Never the reverse.
+**Cloud9 Tutor, named "Ollie" (locked 2026-09-20)**: the shared Citadel
+Ollama service becomes a system-wide learning companion, not a
+separate, isolated chatbot card — every major area gets a real "Ask
+Tutor" action (Weather Labs: "why does this CAPE value matter?";
+Writing: outlining/grammar help; Coding: explain an error; Reading:
+comprehension questions; Math: a hint before the answer). The Area is
+called **Tutor**; the AI character living inside it has a real name,
+**Ollie** — short, warm, easy for a young kid to say and remember, and
+a deliberate nod to Ollama (the real engine underneath) that only Frank
+and future engineers need ever notice. **Design principle, worth
+repeating everywhere**: the authoritative tool supplies the facts, the
+local AI helps the child understand them — for Weather Labs
+specifically, NOAA/NWS supplies the meteorology, Ollie explains the
+concepts. Never the reverse. And per the real Socratic-tutor finding
+above: Ollie asks before it answers — hints and leading questions, not
+the final answer handed over.
 
 **Project Workshop** (a real, signature feature, not yet built): a
 project holds a goal, materials, a checklist, research notes, journal
@@ -405,20 +412,35 @@ thumbnail) — not something to create as static art.
 
 **Home screen (Foundation/My Day, roadmap stages 1-2 — the current
 reference mockup)**
-- Hero banner background (mountain/sunrise landscape, full-width top bar)
+- [x] Hero banner background (mountain/sunrise landscape, full-width top
+      bar) — **done, real asset produced 2026-09-20**
 - Cloud9 mark/logo (already exists per the mockup — confirm final asset)
 - Default child avatar (for when no real photo is set)
-- Six Area card backgrounds/icons, one each: **My Day**, **Learn**,
-  **Explore**, **Create**, **Play**, **Tutor**
+- Six Area card backgrounds/icons, one each — **all six done, real
+  assets produced 2026-09-20**: [x] **My Day** (desk/planner scene),
+  [x] **Learn** (globe + subject-coded books), [x] **Explore** (Earth
+  from orbit), [x] **Create** (art/design/music/code desk scene),
+  [x] **Play** (racing scene with controller/headphones), [x] **Tutor**
+  (see the mascot section below — its own card art, not yet separately
+  produced beyond the mascot itself)
 - Three lower-row card backgrounds/icons: **Project Workshop**,
-  **Learning Journal**, **Video Shelf**
+  **Learning Journal**, **Video Shelf** — not yet produced
 - Weather widget condition icons (sun, partly cloudy, rain, storm, etc.
-  — a small, reusable set, same icons Weather Labs itself will want)
+  — a small, reusable set, same icons Weather Labs itself will want) —
+  not yet produced
 - "This Day in History" card icon/background (the block above — the
-  actual event thumbnail per day is *(dynamic)*, from Wikipedia)
+  actual event thumbnail per day is *(dynamic)*, from Wikipedia) — not
+  yet produced
 - "Continue Where You Left Off" thumbnail is *(dynamic)* — a real image
   tied to whatever the child was last doing (e.g. a real satellite
   frame for an active Weather Mission), not static art
+
+**Real production note, 2026-09-20**: all art produced so far is sitting
+on Frank's own desktop, not yet moved into the real project directory —
+expected and fine at this stage (still producing the set), just noting
+where these actually live until they get moved into
+`appdata/cloud9/server/static/img/` (or wherever the real build ends up
+wanting them) once building starts for real.
 
 **Tutor — needs the most deliberate treatment of anything on this list**:
 since Tutor appears system-wide (every Area gets an "Ask Tutor" action,
@@ -428,6 +450,15 @@ an "Ask Tutor" button, and the larger, friendlier version for its own
 card. Worth deciding now whether it needs more than one expression/pose
 (e.g. a "thinking" state while Ollama generates a response) before
 drawing just one static version.
+
+**Real first asset produced 2026-09-20**: a friendly white/silver robot
+with blue LED accents and the Cloud9 cloud mark on its chest, waving —
+this is **Ollie** (see the naming decision above). A strong first pose
+(greeting/idle state), confirms the emergent "warm environment, blue
+glow on anything electronic" pattern (see the palette decision above)
+applies to Ollie's own design too. A second "thinking"
+pose (for while Ollama is actually generating a response) is still real,
+useful future work, not a blocker on using this one now.
 
 **Weather Labs (the current active build, roadmap stage 5)**
 - NASA-control-deck chrome: panel borders/bezels, instrument-frame
