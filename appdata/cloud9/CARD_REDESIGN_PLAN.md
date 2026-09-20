@@ -298,6 +298,74 @@ waiting on right now. Locked sequencing instead:
    local Kolibri instead of Citadel's," a real, fast follow-up once the
    Citadel-integrated version is actually in the 4 families' hands.
 
+## Real findings from a full plan review + GitHub research (2026-09-20)
+
+Real premise: with 4 families waiting and Frank's own explicit "don't
+miss the mark a second time, this has to be our best work" — a full
+re-read of everything locked in so far, checked against Kolibri's actual
+live API and real GitHub research, not just re-reading our own notes.
+
+**Two things that looked like real gaps turned out to already be solved
+— confirmed live, not assumed**:
+
+- **Multi-child/learner-profile support.** Real families have more than
+  one kid; nothing in this doc addressed "which child is using this
+  right now." Checked live: Kolibri already has real learner accounts
+  via `GET /api/auth/facilityuser/` (confirmed `200`, real data). Cloud9
+  doesn't need to build profile switching from scratch — the School
+  Library view surfaces Kolibri's own existing accounts, another real
+  "orchestrate, don't rebuild" win.
+- **Progress/completion tracking.** A flat grid of videos/exercises with
+  no sense of "already done" would be a real regression from what
+  families expect. Checked live: Kolibri's real `GET
+  /api/logger/attemptlog/` endpoint exists and works (confirmed `200`,
+  empty result set on this test instance since nothing's been attempted
+  yet, but a real, functioning API). The School Library view should
+  surface this — checkmarks/scores on completed content — not just a
+  content list.
+
+**Real gap actually found, worth locking in before Tutor gets built**:
+real research (a Wharton field study) found students using an
+*unguarded* AI tutor that gave direct answers scored **worse** on exams
+than students with no AI tutor at all; a Socratic version — hints and
+leading questions, never the final answer — eliminated that harm
+entirely. Nothing in this doc's Tutor section addressed *how* Tutor
+explains, only that it should. **Locked**: Tutor asks before it answers
+— the same "authoritative tool supplies facts, AI explains" principle,
+extended to *how* it explains, not just to which tool it defers to.
+
+**Real candidate for enforcing that, not just hoping a system prompt
+holds**: NVIDIA's **NeMo Guardrails**
+(`github.com/NVIDIA/NeMo-Guardrails`) — real, mature, actively
+maintained (7,100+ stars, pushed within the last day, Python — fits
+alongside Cloud9's existing Flask backend), built specifically for
+programmable rails on LLM conversations (blocked topics, response
+shaping, age-appropriate tone). Confirmed real and active, not a toy
+project. **Real, honest caveat before adopting it**: its license shows
+as `Other` on GitHub, not a standard OSI license — read the actual
+license text before depending on it, not just the star count. (Also
+found a same-idea kid-safe-tutor repo from a solo dev, pushed the day
+before this research — zero stars, no real track record. Not something
+to build on; just confirms the Socratic-tutor idea is real and
+independently validated, not invented here.)
+
+**Real implementation detail named, not yet solved, for the School
+Library**: grade-level and subject-category filtering is technically
+possible — confirmed live that Kolibri's content API does return
+`grade_levels`/`categories` fields, populated with real values — but
+those values are opaque IDs (e.g. `wnarlxKo`), not human-readable
+labels. A real lookup/mapping step is needed before "show me 2nd-grade
+content" is buildable; this is a real, concrete piece of work, not
+something to assume is free once the fields exist.
+
+**Real "don't rebuild" opportunity found for the Learning Journal**:
+Citadel already runs Flatnotes (markdown notes) as a real, integrated
+module (`modules/notes/compose.fragment.yml`). Rather than building new
+storage for journal entries, the Learning Journal can be a Cloud9-native
+*view* over per-child Flatnotes notes — reusing a real, already-running
+piece of the ecosystem instead of adding a new one, matching the
+orchestration philosophy this whole redesign is built on.
+
 ## Cross-card design principle: theme/layout is as important as the data
 
 Real, from Frank directly, and applies to every card in this redesign,
