@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weather Labs - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/weather-labs.css') }}">
+</head>
+<body>
+  <header class="wl-topbar">
+    <a class="wl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="wl-heading">
+      <span class="wl-icon">&#9925;</span>
+      <span class="wl-title">Weather Labs</span>
+      <span class="wl-location" id="wl-location"></span>
+    </div>
+    <div class="wl-status" id="wl-status">Connecting&hellip;</div>
+  </header>
+
+  <main class="wl-main">
+
+    <section class="wl-deck" id="wl-deck-current">
+      <div class="wl-deck-header">
+        <span class="wl-deck-title">Current Conditions</span>
+        <span class="wl-deck-sub" id="wl-current-updated"></span>
+      </div>
+      <div class="wl-instrument-grid" id="wl-instrument-grid">
+        <div class="wl-loading">Loading live observation&hellip;</div>
+      </div>
+    </section>
+
+    <section class="wl-deck" id="wl-deck-hourly">
+      <div class="wl-deck-header"><span class="wl-deck-title">Next Few Hours</span></div>
+      <div class="wl-hourly-strip" id="wl-hourly-strip">
+        <div class="wl-loading">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="wl-deck" id="wl-deck-daily">
+      <div class="wl-deck-header"><span class="wl-deck-title">7-Day Forecast</span></div>
+      <div class="wl-daily-list" id="wl-daily-list">
+        <div class="wl-loading">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="wl-deck" id="wl-deck-alerts">
+      <div class="wl-deck-header"><span class="wl-deck-title">NWS Alerts</span></div>
+      <div class="wl-alerts-list" id="wl-alerts-list">
+        <div class="wl-loading">Checking for alerts&hellip;</div>
+      </div>
+    </section>
+
+    <section class="wl-deck" id="wl-deck-radar">
+      <div class="wl-deck-header">
+        <span class="wl-deck-title">Radar</span>
+        <button type="button" class="wl-refresh-btn" id="wl-radar-refresh">Refresh</button>
+      </div>
+      <div class="wl-deck-note">Basic regional reflectivity loop. A fuller live radar and satellite view is a planned future upgrade.</div>
+      <img id="wl-radar-img" class="wl-radar-img" alt="Live radar loop">
+    </section>
+
+    <section class="wl-deck" id="wl-deck-clouds">
+      <div class="wl-deck-header"><span class="wl-deck-title">Cloud Reference — What Are You Seeing?</span></div>
+      <div class="wl-cloud-grid" id="wl-cloud-grid">
+        <div class="wl-loading">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="wl-deck wl-deck-soon">
+      <div class="wl-deck-header"><span class="wl-deck-title">Storm Environment, Satellite, Climate &amp; Mission Mode</span></div>
+      <div class="wl-deck-note">These decks are planned next — CAPE/lightning/storm motion, live satellite imagery, and "is today normal?" climate comparisons all have real data sources lined up, just not built yet. Nothing faked in the meantime.</div>
+    </section>
+
+  </main>
+
+  <button type="button" class="wl-radio-btn" id="wl-radio-btn" hidden></button>
+
+  <div class="wl-popover-overlay" id="wl-popover-overlay" hidden>
+    <div class="wl-popover">
+      <button class="wl-popover-close" id="wl-popover-close" aria-label="Close">&#10005;</button>
+      <div class="wl-popover-title" id="wl-popover-title"></div>
+      <div class="wl-popover-section"><span class="wl-popover-label">What is it?</span><p id="wl-popover-what"></p></div>
+      <div class="wl-popover-section"><span class="wl-popover-label">Current reading</span><p id="wl-popover-reading"></p></div>
+      <div class="wl-popover-section"><span class="wl-popover-label">What it means</span><p id="wl-popover-meaning"></p></div>
+      <div class="wl-popover-section"><span class="wl-popover-label">How it's affecting today</span><p id="wl-popover-connection"></p></div>
+      <div class="wl-popover-section"><span class="wl-popover-label">What to watch next</span><p id="wl-popover-watch"></p></div>
+      <div class="wl-popover-source" id="wl-popover-source"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/weather-labs.js') }}"></script>
+</body>
+</html>

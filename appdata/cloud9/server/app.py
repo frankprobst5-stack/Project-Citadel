@@ -105,6 +105,11 @@ def api_launch(tool_id):
     return jsonify({"ok": ok, "message": message}), (200 if ok else 409)
 
 
+@app.route("/weather-labs")
+def weather_labs_page():
+    return render_template("weather_labs.html")
+
+
 @app.route("/api/weather/forecast")
 def weather_forecast():
     try:
@@ -113,6 +118,33 @@ def weather_forecast():
         return jsonify({"error": "No location set yet - add one in Settings."}), 409
     except Exception:
         return jsonify({"error": "Couldn't reach the weather service right now."}), 502
+
+
+@app.route("/api/weather/hourly")
+def weather_hourly():
+    try:
+        return jsonify(weather.get_hourly_forecast())
+    except ValueError:
+        return jsonify({"error": "No location set yet - add one in Settings."}), 409
+    except Exception:
+        return jsonify({"error": "Couldn't reach the weather service right now."}), 502
+
+
+@app.route("/api/weather/current")
+def weather_current():
+    try:
+        return jsonify(weather.get_current_conditions())
+    except ValueError:
+        return jsonify({"error": "No location set yet - add one in Settings."}), 409
+    except LookupError:
+        return jsonify({"error": "No observation station found near this location."}), 404
+    except Exception:
+        return jsonify({"error": "Couldn't reach the weather service right now."}), 502
+
+
+@app.route("/api/weather/alerts")
+def weather_alerts():
+    return jsonify(weather.get_active_alerts())
 
 
 @app.route("/api/weather/clouds")

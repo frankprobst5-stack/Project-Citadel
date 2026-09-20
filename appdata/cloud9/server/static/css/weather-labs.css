@@ -1,0 +1,361 @@
+/* Weather Labs deliberately uses the shared Citadel Ecosystem blue/steel
+   palette (citadel-ecosystem/brand/PALETTE.md), not Cloud9's own warm
+   secondary accent -- per the design brief, this card is meant to feel
+   like a NASA/NWS/NOAA command center, not the rest of Cloud9's warm,
+   inviting interior. */
+:root {
+  --bg: #05090d;
+  --panel: #071a2c;
+  --panel-alt: #0a2038;
+  --border: #2a4a66;
+  --border-dim: #16283a;
+  --text: #e7f1f8;
+  --text-dim: #aebbc7;
+  --text-faint: #71899d;
+  --accent: #008dff;
+  --accent-bright: #28c8ff;
+  --green: #59d67c;
+  --amber: #ffb000;
+  --red: #e05252;
+  --gray: #5b7386;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #0a1826 0%, var(--bg) 65%);
+  color: var(--text);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.wl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.wl-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.wl-back:hover {
+  border-color: var(--accent-bright);
+  color: var(--text);
+}
+
+.wl-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1 1 auto;
+}
+
+.wl-icon { font-size: 1.4rem; color: var(--accent-bright); }
+.wl-title { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.02em; }
+.wl-location { color: var(--text-faint); font-size: 0.95rem; }
+
+.wl-status {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+
+.wl-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 32px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.wl-deck {
+  background: var(--panel);
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px var(--accent-bright),
+    0 0 0 3px var(--border),
+    0 4px 15px rgba(0, 0, 0, 0.5);
+  padding: 18px 22px;
+}
+
+.wl-deck-soon {
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 0 0 3px var(--border-dim),
+    0 4px 15px rgba(0, 0, 0, 0.5);
+  opacity: 0.85;
+}
+
+.wl-deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.wl-deck-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wl-deck-sub {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+.wl-deck-note {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+}
+
+.wl-loading {
+  color: var(--text-faint);
+  padding: 10px 0;
+}
+
+.wl-instrument-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.wl-instrument {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  padding: 12px 14px;
+  position: relative;
+}
+
+.wl-instrument-label {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wl-instrument-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.wl-instrument-sub {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.wl-info-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.wl-info-btn:hover {
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
+}
+
+.wl-hourly-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.wl-hour {
+  flex: 0 0 auto;
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  padding: 10px 14px;
+  text-align: center;
+  min-width: 76px;
+}
+
+.wl-hour-time { color: var(--text-faint); font-size: 0.78rem; }
+.wl-hour-temp { font-size: 1.15rem; font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.wl-hour-precip { color: var(--accent-bright); font-size: 0.78rem; }
+
+.wl-daily-list, .wl-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wl-daily-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.wl-daily-name { font-weight: 600; }
+.wl-daily-desc { color: var(--text-dim); font-size: 0.85rem; }
+.wl-daily-temp { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.wl-alert {
+  border-radius: 6px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--gray);
+  background: var(--panel-alt);
+}
+
+.wl-alert-extreme, .wl-alert-severe { border-left-color: var(--red); }
+.wl-alert-moderate { border-left-color: var(--amber); }
+.wl-alert-minor { border-left-color: var(--gray); }
+
+.wl-alert-title { font-weight: 700; }
+.wl-alert-meta { color: var(--text-faint); font-size: 0.8rem; margin-top: 2px; }
+.wl-alert-none { color: var(--green); }
+
+.wl-refresh-btn {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.wl-refresh-btn:hover { border-color: var(--accent-bright); color: var(--text); }
+
+.wl-radar-img {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 6px;
+  border: 1px solid var(--border-dim);
+  display: block;
+}
+
+.wl-cloud-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.wl-cloud-item {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.wl-cloud-item img {
+  width: 100%;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.wl-radio-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 141, 255, 0.4);
+}
+
+.wl-radio-btn:hover { background: var(--accent-bright); }
+
+.wl-popover-overlay[hidden] {
+  display: none;
+}
+
+.wl-popover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.wl-popover {
+  background: var(--panel);
+  border: 1px solid var(--accent-bright);
+  border-radius: 10px;
+  max-width: 420px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 24px;
+  position: relative;
+}
+
+.wl-popover-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.wl-popover-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent-bright);
+  margin-bottom: 12px;
+  padding-right: 20px;
+}
+
+.wl-popover-section { margin-bottom: 12px; }
+
+.wl-popover-label {
+  display: block;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.wl-popover-section p { margin: 0; color: var(--text); font-size: 0.95rem; }
+
+.wl-popover-source {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 10px;
+  margin-top: 10px;
+}

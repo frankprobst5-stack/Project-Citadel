@@ -40,7 +40,7 @@
           "icon": "⛈️",
           "accent": "#8fb8ff",
           "status": "active",
-          "link": null
+          "link": "/weather-labs"
         },
         {
           "id": "code_lab",
