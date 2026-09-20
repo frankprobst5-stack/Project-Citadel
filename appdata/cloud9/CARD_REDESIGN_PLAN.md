@@ -460,22 +460,47 @@ reference mockup)**
 - [x] Hero banner background (mountain/sunrise landscape, full-width top
       bar) — **done, real asset produced 2026-09-20**
 - Cloud9 mark/logo (already exists per the mockup — confirm final asset)
-- Default child avatar (for when no real photo is set)
+- [x] Default child avatar — **done, real asset produced 2026-09-20**:
+      a full avatar sheet (two kid portraits, Ollie's face, wolf, cat,
+      plus five icon-style options — mountain, forest/river, compass,
+      tree, cloud/space) covering both "real kid" and "pick an icon"
+      styles
 - Six Area card backgrounds/icons, one each — **all six done, real
   assets produced 2026-09-20**: [x] **My Day** (desk/planner scene),
-  [x] **Learn** (globe + subject-coded books), [x] **Explore** (Earth
-  from orbit), [x] **Create** (art/design/music/code desk scene),
-  [x] **Play** (racing scene with controller/headphones), [x] **Tutor**
+  [x] **Learn** (globe + subject-coded books, plus a second close-up
+  variant — stacked subject books + atlas), [x] **Explore** (Earth
+  from orbit, plus a dedicated geography-focused piece — globe, world
+  flags, atlas, compass, binoculars — tying directly into the newly
+  locked Earth Lab/Country Explorer), [x] **Create** (art/design/music/
+  code desk scene, plus a second close-up variant), [x] **Play** (racing
+  scene with controller/headphones, plus a second variant), [x] **Tutor**
   (see the mascot section below — its own card art, not yet separately
   produced beyond the mascot itself)
 - Three lower-row card backgrounds/icons: **Project Workshop**,
-  **Learning Journal**, **Video Shelf** — not yet produced
-- Weather widget condition icons (sun, partly cloudy, rain, storm, etc.
-  — a small, reusable set, same icons Weather Labs itself will want) —
-  not yet produced
-- "This Day in History" card icon/background (the block above — the
-  actual event thumbnail per day is *(dynamic)*, from Wikipedia) — not
-  yet produced
+  **Learning Journal**, **Video Shelf** — **all three done, real assets
+  produced 2026-09-20**: [x] **Project Workshop** (robotics/3D-printing/
+  electronics build desk, "Build Learn Solve Create"), [x] **Learning
+  Journal** (an actual "Today I Learned" spread — checklist, Ideas,
+  Notes sections, "Small Steps, Big Progress"), [x] **Video Shelf**
+  (TV interface — Movies/Learn/Documentaries/Series/Kids/Fun rows,
+  "Good Stories, Brighter Tomorrows")
+- [x] Weather widget condition icons — **done, real asset produced
+      2026-09-20**: a full 16-icon set (sunny, partly cloudy, cloudy,
+      rain, thunderstorm, snow, wintry mix, fog, windy, haze, blowing
+      snow, freezing rain, sleet, clear night, partly cloudy night,
+      tornado/severe) — same set Weather Labs itself will reuse
+- [x] "This Day in History" card icon/background — **done, real asset
+      produced 2026-09-20** (books, hourglass, compass, open map — the
+      actual event thumbnail per day stays *(dynamic)*, from Wikipedia)
+- Extra pieces produced in this same batch, not yet tied to a specific
+  slot: a wide, unbranded mountain/lake sunrise panorama (general
+  landscape/atmosphere backdrop, usable behind any card), a planner/
+  journal desk scene with a mountain sunrise (candidate art for the
+  **Daily Planner** build once it starts), and a realistic Earth-from-
+  orbit shot with a visible hurricane and the ISS — a strong candidate
+  for **Weather Labs** hero/mission art specifically because of the
+  hurricane, though it also works for the future Space Lab (stage 6).
+  Frank to confirm final assignment when building reaches those cards.
 - "Continue Where You Left Off" thumbnail is *(dynamic)* — a real image
   tied to whatever the child was last doing (e.g. a real satellite
   frame for an active Weather Mission), not static art
@@ -501,9 +526,13 @@ with blue LED accents and the Cloud9 cloud mark on its chest, waving —
 this is **Ollie** (see the naming decision above). A strong first pose
 (greeting/idle state), confirms the emergent "warm environment, blue
 glow on anything electronic" pattern (see the palette decision above)
-applies to Ollie's own design too. A second "thinking"
-pose (for while Ollama is actually generating a response) is still real,
-useful future work, not a blocker on using this one now.
+applies to Ollie's own design too. A clean isolated full-body render of
+this same greeting pose (transparent-friendly, no background) was also
+produced same day — useful as the reusable master asset to crop/resize
+for the small inline "Ask Tutor" icon versus the larger card art. A
+second "thinking" pose (for while Ollama is actually generating a
+response) is still real, useful future work, not a blocker on using
+this one now.
 
 **Weather Labs (the current active build, roadmap stage 5)**
 - NASA-control-deck chrome: panel borders/bezels, instrument-frame
