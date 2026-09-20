@@ -59,6 +59,7 @@ def get_hourly_forecast():
             "temperature": p["temperature"],
             "temperatureUnit": p["temperatureUnit"],
             "shortForecast": p["shortForecast"],
+            "isDaytime": p.get("isDaytime"),
             "windSpeed": p.get("windSpeed"),
             "windDirection": p.get("windDirection"),
             "probabilityOfPrecipitation": (p.get("probabilityOfPrecipitation") or {}).get("value"),

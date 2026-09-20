@@ -13,6 +13,39 @@
   const satelliteFetched = document.getElementById("wl-satellite-fetched");
   const cloudGrid = document.getElementById("wl-cloud-grid");
   const radioBtn = document.getElementById("wl-radio-btn");
+  const conditionBanner = document.getElementById("wl-condition-banner");
+  const conditionIcon = document.getElementById("wl-condition-icon");
+  const conditionTemp = document.getElementById("wl-condition-temp");
+  const conditionDesc = document.getElementById("wl-condition-desc");
+
+  // Real keyword match against NWS's own free-text condition description,
+  // to Frank's own hand-drawn icon set (static/img/weather-icons/) instead
+  // of NWS's plain government icon -- checked in an order that resolves
+  // real overlaps correctly (e.g. "chance showers and thunderstorms"
+  // contains both "showers" and "thunderstorm", and should draw as the
+  // more severe one).
+  function conditionIconFile(textDescription, night) {
+    const t = (textDescription || "").toLowerCase();
+    if (t.includes("tornado") || t.includes("severe")) return "tornado-severe";
+    if (t.includes("thunderstorm")) return "thunderstorm";
+    if (t.includes("freezing rain")) return "freezing-rain";
+    if (t.includes("sleet")) return "sleet";
+    if (t.includes("wintry") || (t.includes("snow") && t.includes("rain"))) return "wintry-mix";
+    if (t.includes("blowing snow")) return "blowing-snow";
+    if (t.includes("snow")) return "snow";
+    if (t.includes("fog")) return "fog";
+    if (t.includes("haze") || t.includes("smoke")) return "haze";
+    if (t.includes("rain") || t.includes("shower") || t.includes("drizzle")) return "rain";
+    if (t.includes("wind")) return "windy";
+    if (t.includes("overcast") || t.includes("cloudy")) return "cloudy";
+    if (t.includes("partly") || t.includes("mostly clear") || t.includes("mostly sunny")) {
+      return night ? "partly-cloudy-night" : "partly-cloudy";
+    }
+    if (t.includes("clear") || t.includes("sunny") || t.includes("fair")) {
+      return night ? "clear-night" : "sunny";
+    }
+    return night ? "partly-cloudy-night" : "partly-cloudy";
+  }
 
   const popoverOverlay = document.getElementById("wl-popover-overlay");
   const popoverClose = document.getElementById("wl-popover-close");
@@ -328,7 +361,17 @@
     };
   }
 
+  function renderConditionBanner(c) {
+    const iconFile = conditionIconFile(c.textDescription, (c.icon || "").includes("/night/"));
+    conditionIcon.src = "/static/img/weather-icons/" + iconFile + ".png";
+    conditionIcon.alt = c.textDescription || "Current conditions";
+    conditionTemp.textContent = c.temperatureF !== null ? Math.round(c.temperatureF) + "°F" : "—";
+    conditionDesc.textContent = c.textDescription || "";
+    conditionBanner.hidden = false;
+  }
+
   function renderInstruments(c) {
+    renderConditionBanner(c);
     instrumentGrid.innerHTML = "";
     const tiles = [
       {
@@ -434,8 +477,10 @@
           const el = document.createElement("div");
           el.className = "wl-hour";
           const time = new Date(p.startTime).toLocaleTimeString([], { hour: "numeric" });
+          const iconFile = conditionIconFile(p.shortForecast, p.isDaytime === false);
           el.innerHTML =
             '<div class="wl-hour-time">' + time + "</div>" +
+            '<img class="wl-hour-icon" src="/static/img/weather-icons/' + iconFile + '.png" alt="' + p.shortForecast + '">' +
             '<div class="wl-hour-temp">' + p.temperature + "°" + p.temperatureUnit + "</div>" +
             (p.probabilityOfPrecipitation !== null && p.probabilityOfPrecipitation !== undefined
               ? '<div class="wl-hour-precip">' + p.probabilityOfPrecipitation + "% rain</div>"
@@ -464,8 +509,10 @@
         result.data.forEach(function (p) {
           const row = document.createElement("div");
           row.className = "wl-daily-row";
+          const iconFile = conditionIconFile(p.shortForecast, p.isDaytime === false);
           row.innerHTML =
-            '<div><div class="wl-daily-name">' + p.name + '</div><div class="wl-daily-desc">' + p.shortForecast + "</div></div>" +
+            '<img class="wl-daily-icon" src="/static/img/weather-icons/' + iconFile + '.png" alt="' + p.shortForecast + '">' +
+            '<div class="wl-daily-text"><div class="wl-daily-name">' + p.name + '</div><div class="wl-daily-desc">' + p.shortForecast + "</div></div>" +
             '<div class="wl-daily-temp">' + p.temperature + "°" + p.temperatureUnit + "</div>";
           dailyList.appendChild(row);
         });

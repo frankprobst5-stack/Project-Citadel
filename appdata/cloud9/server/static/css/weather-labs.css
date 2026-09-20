@@ -126,6 +126,33 @@ body {
   padding: 10px 0;
 }
 
+.wl-condition-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.wl-condition-icon {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(40, 200, 255, 0.25));
+}
+
+.wl-condition-temp {
+  font-size: 2.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.wl-condition-desc {
+  color: var(--text-dim);
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
 .wl-instrument-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -199,6 +226,7 @@ body {
 }
 
 .wl-hour-time { color: var(--text-faint); font-size: 0.78rem; }
+.wl-hour-icon { width: 36px; height: 36px; object-fit: contain; margin: 4px auto; display: block; }
 .wl-hour-temp { font-size: 1.15rem; font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; }
 .wl-hour-precip { color: var(--accent-bright); font-size: 0.78rem; }
 
@@ -218,6 +246,8 @@ body {
   padding: 10px 14px;
 }
 
+.wl-daily-icon { width: 40px; height: 40px; object-fit: contain; flex: 0 0 auto; }
+.wl-daily-text { flex: 1 1 auto; min-width: 0; }
 .wl-daily-name { font-weight: 600; }
 .wl-daily-desc { color: var(--text-dim); font-size: 0.85rem; }
 .wl-daily-temp { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }

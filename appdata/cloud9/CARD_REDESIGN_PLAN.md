@@ -923,3 +923,28 @@ support the reference panel's rate/24h/monthly/yearly totals. That
 panel stays as design reference only until a real climate/precip data
 source is actually integrated (ties into the already-planned NOAA NCEI
 Phase 4 climate work above).
+
+### Real weather condition icons, cropped from Frank's own art (2026-09-20)
+
+The weather-icon half of the combined reference sheet
+(`static/img/reference/weather-icons-history-avatars-sheet.png`)
+cropped cleanly into 16 individual real files
+(`static/img/weather-icons/*.png`) plus the This Day in History icon
+(`static/img/home/this-day-in-history-icon.png`) — verified by reading
+several crops back before trusting the rest. The default-avatar half of
+that same sheet did **not** crop cleanly on the same grid math (circles
+are a slightly different size/spacing than the icon rows) and there's
+no avatar-picker feature built yet to use them in, so that half is
+deliberately left as one sheet for now rather than spending more passes
+perfecting boundaries nothing consumes yet.
+
+The 16 real icons are now actually wired in, not just sitting in a
+folder: a new condition banner (icon + big temp + description) on
+Current Conditions, and real per-period icons on both the hourly strip
+and the 7-day forecast — replacing NWS's own plain government icons
+everywhere in Weather Labs. Matched by a real keyword search against
+NWS's own free-text `shortForecast`/`textDescription` (checked in an
+order that resolves real overlaps, e.g. "chance showers and
+thunderstorms" correctly draws as the thunderstorm icon, not rain), with
+day/night correctly read from NWS's own `isDaytime` field (daily/hourly)
+or its icon URL (current conditions) rather than guessed from the hour.
