@@ -148,6 +148,86 @@ This real roadmap doesn't replace the per-card `## Status` tracker below
 (stage 5) is the current, active piece of work; everything else in this
 roadmap is real, sequenced, future work, not started.
 
+## Cross-Subject Interactivity Engine — locked architecture (2026-09-19)
+
+Real, deliberate decision, and where it came from: an external reviewer
+correctly named cross-subject triggers ("if a hurricane is real-world
+news, how does Cloud9 know to surface a related math/writing/history
+connection?") as the one real architecture question that needs answering
+*before* Explore Labs (roadmap stage 6) get built independently — get
+this wrong and six future Labs end up writing six incompatible tagging
+schemes. First proposal on the table was a full event-broker diagram
+(Weather Labs → System Event Broker → Learn/Create/Explore, tag-matched).
+
+**Real course-correction from Frank, twice, worth recording because it
+sets the standard for how this whole redesign gets judged going
+forward**: don't reason from "the current implementation is small" to
+"so keep the fix small" — that's the same mistake as "don't build the
+road because the bridge isn't built yet." If the road (the taxonomy, the
+event infrastructure) isn't built now, ahead of the Labs that depend on
+it, it never gets built, and Explore Labs end up siloed anyway. Cloud9
+is explicitly **not** an area to under-build: real families are already
+using it, every tester without exception agrees the current app is weak,
+and the target is a full generational improvement, not an incremental
+one — so the architecture gets sized to that target, not to what a
+single small Flask app can trivially do today.
+
+**Real audit before deciding the shape**: checked Citadel's actual
+`docker-compose.yml` and its real module system
+(`include: modules/*/compose.fragment.yml` — ai, audio, camera,
+education, hardware, knowledge, notes, recipes, vigil) for any existing
+message broker or real database to build on. **None exists.** Vigil's
+own `paho-mqtt` dependency is a client library talking to an *external*
+Zigbee2MQTT device the user owns, not a broker Citadel itself runs.
+Nothing to reuse means nothing constraining the real design either — this
+gets built for real, sized to the actual target, not shoehorned into
+what happens to exist.
+
+### The locked design
+
+- **Redis (pub/sub, or Streams for replay) as the real event bus.** The
+  moment Weather Labs detects a real severe-weather threshold, every
+  subscribed Area gets pushed the event immediately — real push, not a
+  polling hack against a shared file. One lightweight container, proven,
+  well-understood technology; not overkill for what this needs to do,
+  and not artificially downsized either.
+- **SQLite as a durable event log and tag registry.** Every real-world
+  event Cloud9 ever surfaced gets persisted with its tags and metadata,
+  not just transient pub/sub that vanishes once delivered. This directly
+  feeds the Learning Journal/Portfolio (roadmap stage 9) later — "what
+  real events did my kid encounter, and what did Cloud9 connect it to"
+  is real, valuable retrospective data on its own, not just plumbing for
+  the live-trigger case.
+- **A real Tag Taxonomy as actual registry rows** (a `content_tags`
+  table — tag id, display name, subject area, description), not a
+  markdown convention someone has to remember. This is the literal road:
+  decided and built once, now, so every future Area/Lab is built to plug
+  into an existing, real schema from day one instead of inventing its
+  own.
+- **Tutor is a real subscriber, not a competing mechanism.** Its own
+  "explain what's happening" answers read the same event stream, so the
+  AI layer and the tagging layer reinforce each other — a severe-weather
+  event both triggers a tagged cross-subject connection *and* gives
+  Tutor live context for whatever a child asks it directly.
+
+### What this means for sequencing
+
+This is real, foundational infrastructure work, not deferred until
+Explore Labs exist — it belongs alongside/before roadmap stage 6, so
+Earth Lab/Space Lab/Nature Lab/History Explorer are each built against
+an already-real, already-decided event bus and tag registry rather than
+retrofitted onto one later. Weather Labs (the current, active card) is
+the first real publisher into this system once built; it doesn't need to
+wait for a second Area to exist to prove the mechanism, since Tutor is
+already a real, immediate second consumer.
+
+Not yet decided: which Citadel module this infrastructure lives in
+(likely a new fragment, or an addition to `modules/education/
+compose.fragment.yml` alongside Kolibri, since that's the module Cloud9
+itself already belongs to) — a real, small decision for whenever
+implementation actually starts, not blocking the architecture being
+locked now.
+
 ## Cross-card design principle: theme/layout is as important as the data
 
 Real, from Frank directly, and applies to every card in this redesign,
