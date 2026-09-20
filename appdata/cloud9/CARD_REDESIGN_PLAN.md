@@ -609,6 +609,60 @@ settle per card, but the *result* has to fill the screen the way sitting
 down at an actual console would, not float as a box over the dashboard
 behind it.
 
+## Earth Lab — Country Explorer, first real build (2026-09-20)
+
+The first real code for Cloud9 2.0's locked architecture, not just plan —
+built and live-verified end to end (ran the actual Flask app, clicked
+countries in a real browser, confirmed real data and real events logged):
+
+- **World map**: `server/static/data/world-countries.geojson`, generated
+  once from the public-domain `world-atlas` (110m resolution, 177
+  features) and the ISO 3166-1 standard (via `pycountry`, used only as a
+  one-time build-time tool, not a runtime dependency) — every feature
+  carries a pre-computed `alpha3` property so a click can look a country
+  up by its unambiguous code instead of a fuzzy name match. Two honest
+  gaps, verified live against countries.dev rather than guessed:
+  **Somaliland** and **Northern Cyprus** aren't in its dataset at all, so
+  they're tagged unavailable in the UI instead of faked; **Kosovo** has
+  no ISO numeric code (disputed-state edge case) but countries.dev does
+  carry it under the non-standard code `UNK` — confirmed live and wired
+  in as a named exception.
+- **Backend**: `server/earth_lab.py` proxies `countries.dev`'s real
+  `/alpha/{code}` endpoint (the only reliable lookup — `/name/{name}` is
+  a fuzzy substring search, no bulk "all countries" or "by numeric code"
+  route exists) and trims the response to what a kid's panel needs
+  (flag, capital, region, population, languages, currency).
+- **Frontend**: `/earth-lab` is a real full-screen page (not a modal) —
+  the first card built against the "cards open full-screen" requirement
+  below, using Leaflet + the bundled GeoJSON. Verified live: click a
+  country, a warm-accented panel slides in with its real flag and facts;
+  click the ✕ or another country to change it.
+- **Cross-Subject Interactivity Engine, first real implementation**: this
+  is the first feature built on the locked architecture from above, not
+  just Earth Lab's own code. `server/interactivity.py` is real, working
+  infrastructure now: SQLite (`data/interactivity.db`) as the durable
+  event log + a real `content_tags` registry table, plus a best-effort
+  Redis stream (`cloud9-redis`, added to
+  `modules/education/compose.fragment.yml`, `redis==5.0.8` added to
+  `requirements-docker.txt`) as the live broadcast layer on top — a
+  down/missing Redis never breaks a card, verified by actually running
+  with no Redis reachable and confirming Earth Lab still worked. Every
+  country view registers real tags (`geography`, `earth_lab`, its
+  region) and logs a real `content_viewed` event.
+- **Tutor as a real subscriber**: `server/ai.py`'s `chat_stream` now
+  reads the last 15 minutes of `content_viewed` events before answering
+  — verified live (asked for recent context right after viewing France,
+  got back "The child was just looking at this in another part of
+  Cloud9: France..."). Scoped deliberately small (a context note, not
+  proactive interruption) rather than guessing at more ambitious
+  behavior — a real, working end of the wire, with room to grow.
+
+Not done in this pass, named so it doesn't get lost: no second real
+subscriber besides Tutor yet (the architecture supports one, nothing
+else needs one today), and the map's country fill contrast is a little
+low against the app's dark background — worth a look once more of the
+dashboard's visual pass happens.
+
 ## Status
 
 - [ ] Weather Labs — plan in progress (this session)
@@ -621,6 +675,8 @@ behind it.
 - [ ] STEM Lab — not started
 - [ ] Bible Study — not started
 - [x] Full School Library (Kolibri) — **staying as-is**, real decision, not a gap
+- [x] Earth Lab (Explore) — **first real build, 2026-09-20** (see above) —
+      real card, real full-screen page, real data, real event log
 
 ---
 

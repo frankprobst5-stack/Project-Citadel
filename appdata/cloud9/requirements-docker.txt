@@ -10,3 +10,8 @@ Flask==3.0.3
 requests
 yt-dlp
 nltk
+# Cross-Subject Interactivity Engine's live event bus (see
+# interactivity.py) -- SQLite is the durable source of truth, this is
+# only the best-effort broadcast layer, so a missing/unreachable Redis
+# never breaks a card.
+redis==5.0.8

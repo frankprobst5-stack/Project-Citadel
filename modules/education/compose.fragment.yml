@@ -29,6 +29,7 @@ services:
       # own comment for the full reasoning (same pattern, same reason).
       - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
       - OLLAMA_MODEL=llama3.2:1b
+      - REDIS_URL=redis://citadel-cloud9-redis:6379/0
     # Real memory cap, added 2026-09-14 (see docker-compose.yml's
     # cockpit comment for the full "why"). Measured ~50MB in real use
     # (the AI inference itself now runs in the shared ollama container,
@@ -40,6 +41,24 @@ services:
     # open-webui's (modules/ai/compose.fragment.yml): ollama now lives in
     # its own "ollama-local" profile, and a depends_on crossing an
     # inactive profile is a hard Compose error, verified directly.
+    # No depends_on on cloud9-redis either, same reasoning -- interactivity.py
+    # already treats Redis as best-effort (a missing/slow-starting Redis
+    # never blocks a card), so a hard startup ordering dependency isn't
+    # needed here.
+    restart: unless-stopped
+
+  # Cross-Subject Interactivity Engine's live event bus (see
+  # server/interactivity.py) -- internal only, no host port exposed, no
+  # persistence volume: it's a best-effort broadcast layer on top of
+  # SQLite's own durable event log, not a source of truth worth
+  # surviving a container restart.
+  cloud9-redis:
+    image: redis:7-alpine
+    container_name: citadel-cloud9-redis
+    profiles: ["education"]
+    mem_limit: 64m
+    networks:
+      - citadel-net
     restart: unless-stopped
 
   # Layer 10: The Offline Home Schooling Matrix Hub

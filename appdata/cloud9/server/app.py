@@ -4,6 +4,7 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 
 import ai
 import dictionary
+import earth_lab
 import journal
 import launcher
 import notes_tools
@@ -117,6 +118,21 @@ def weather_forecast():
 @app.route("/api/weather/clouds")
 def weather_clouds():
     return jsonify(weather.get_cloud_types())
+
+
+@app.route("/earth-lab")
+def earth_lab_page():
+    return render_template("earth_lab.html")
+
+
+@app.route("/api/earth-lab/country/<alpha3>")
+def earth_lab_country(alpha3):
+    try:
+        return jsonify(earth_lab.get_country(alpha3))
+    except LookupError:
+        return jsonify({"error": "That country isn't in our atlas yet."}), 404
+    except Exception:
+        return jsonify({"error": "Couldn't reach the country database right now."}), 502
 
 
 @app.route("/api/verse-of-day")

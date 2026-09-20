@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Earth Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/earth-lab.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+</head>
+<body class="earth-lab-body">
+  <header class="topbar earth-lab-topbar">
+    <div class="brand">
+      <a class="earth-lab-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="earth-lab-heading">
+      <span class="earth-lab-icon">🌍</span>
+      <span class="earth-lab-title">Earth Lab: Country Explorer</span>
+    </div>
+    <div class="earth-lab-hint">Click any country to learn about it</div>
+  </header>
+
+  <main class="earth-lab-main">
+    <div id="earth-lab-map"></div>
+
+    <aside class="earth-lab-panel" id="earth-lab-panel" hidden>
+      <button class="earth-lab-panel-close" id="earth-lab-panel-close" aria-label="Close">✕</button>
+      <div id="earth-lab-panel-body"></div>
+    </aside>
+
+    <div class="earth-lab-empty" id="earth-lab-empty">
+      <div class="earth-lab-empty-emoji">🧭</div>
+      <div>Click a country on the map to start exploring!</div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="{{ url_for('static', filename='js/earth-lab.js') }}"></script>
+</body>
+</html>

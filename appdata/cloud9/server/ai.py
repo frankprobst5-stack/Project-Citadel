@@ -3,6 +3,8 @@ import os
 
 import requests
 
+import interactivity
+
 # Cloud9 used to bundle its own private llama-cpp-python + a 1.1GB Qwen
 # GGUF model -- removed 2026-09-14 in favor of calling Citadel's shared
 # Ollama instance instead, so the whole system only ever runs one
@@ -46,12 +48,39 @@ def is_model_ready():
         return False
 
 
+RECENT_CONTEXT_WINDOW_SECONDS = 900
+
+
+def _recent_context_note():
+    """Tutor as a real subscriber to the Cross-Subject Interactivity
+    Engine's event log (see interactivity.py / CARD_REDESIGN_PLAN.md):
+    if the child looked at something in the last 15 minutes, let Ollie
+    know so it can connect what it's asked next to what they just saw,
+    instead of the two living in separate silos. Silently skipped if
+    nothing recent or nothing interesting is logged yet."""
+    import time
+
+    events = interactivity.get_recent_events(limit=3, event_type="content_viewed")
+    now = time.time()
+    recent = [e for e in events if now - e["ts"] < RECENT_CONTEXT_WINDOW_SECONDS]
+    if not recent:
+        return None
+    names = [e["payload"].get("name") for e in recent if e["payload"].get("name")]
+    if not names:
+        return None
+    return "The child was just looking at this in another part of Cloud9: " + ", ".join(names) + \
+        ". Bring it up only if it's actually relevant to what they ask."
+
+
 def chat_stream(message, history=None):
     """Same external contract as the old llama-cpp-python version --
     still a generator yielding plain text chunks -- so app.py's
     stream_with_context(ai.chat_stream(...)) call needed no changes."""
     history = history or []
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    context_note = _recent_context_note()
+    if context_note:
+        messages.append({"role": "system", "content": context_note})
     for turn in history:
         messages.append({"role": turn["role"], "content": turn["content"]})
     messages.append({"role": "user", "content": message})

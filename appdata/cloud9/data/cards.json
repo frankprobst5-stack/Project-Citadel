@@ -96,6 +96,19 @@
     {
       "cards": [
         {
+          "id": "earth_lab",
+          "title": "Earth Lab",
+          "subtitle": "Click a country, learn something new",
+          "icon": "🌍",
+          "accent": "#e8a23f",
+          "status": "active",
+          "link": "/earth-lab"
+        }
+      ]
+    },
+    {
+      "cards": [
+        {
           "id": "kolibri",
           "title": "Full School Library",
           "subtitle": "Lessons, exercises & courses",

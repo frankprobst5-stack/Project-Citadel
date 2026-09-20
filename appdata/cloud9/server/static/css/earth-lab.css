@@ -1,0 +1,197 @@
+:root {
+  --earth-accent: #e8a23f;
+  --earth-accent-dim: #7a5322;
+}
+
+.earth-lab-body {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.earth-lab-topbar {
+  flex: 0 0 auto;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.earth-lab-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.earth-lab-back:hover {
+  border-color: var(--earth-accent);
+  color: var(--text);
+}
+
+.earth-lab-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.earth-lab-icon {
+  font-size: 1.5rem;
+}
+
+.earth-lab-hint {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.earth-lab-main {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#earth-lab-map {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
+
+.earth-lab-empty {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  pointer-events: none;
+  z-index: 500;
+}
+
+.earth-lab-empty-emoji {
+  font-size: 1.2rem;
+}
+
+.earth-lab-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 340px;
+  max-width: calc(100% - 40px);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 600;
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+}
+
+.earth-lab-panel-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.earth-lab-panel-close:hover {
+  color: var(--text);
+}
+
+.earth-lab-flag {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.earth-lab-flag-img {
+  width: 100%;
+  max-width: 220px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  display: block;
+  margin-bottom: 14px;
+}
+
+.earth-lab-country-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.earth-lab-country-sub {
+  color: var(--earth-accent);
+  font-size: 0.95rem;
+  margin: 0 0 16px;
+}
+
+.earth-lab-fact-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.95rem;
+}
+
+.earth-lab-fact-row:last-child {
+  border-bottom: none;
+}
+
+.earth-lab-fact-label {
+  color: var(--text-dim);
+}
+
+.earth-lab-fact-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.earth-lab-panel-error,
+.earth-lab-panel-loading {
+  color: var(--text-dim);
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* Leaflet country fill/hover -- warm accent per Cloud9's own locked
+   secondary palette, kept as the one pop of color against the app's
+   shared dark/steel chrome. */
+.leaflet-container {
+  background: var(--bg) !important;
+}
+
+path.earth-lab-country {
+  fill: #2a2e42;
+  stroke: #12141c;
+  stroke-width: 0.6;
+  transition: fill 0.12s;
+}
+
+path.earth-lab-country:hover {
+  fill: var(--earth-accent-dim);
+  cursor: pointer;
+}
+
+path.earth-lab-country-selected {
+  fill: var(--earth-accent) !important;
+}
+
+path.earth-lab-country-unavailable:hover {
+  fill: #4a2e2e;
+  cursor: not-allowed;
+}
