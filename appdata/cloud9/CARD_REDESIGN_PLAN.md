@@ -492,15 +492,20 @@ reference mockup)**
 - [x] "This Day in History" card icon/background — **done, real asset
       produced 2026-09-20** (books, hourglass, compass, open map — the
       actual event thumbnail per day stays *(dynamic)*, from Wikipedia)
-- Extra pieces produced in this same batch, not yet tied to a specific
-  slot: a wide, unbranded mountain/lake sunrise panorama (general
-  landscape/atmosphere backdrop, usable behind any card), a planner/
-  journal desk scene with a mountain sunrise (candidate art for the
-  **Daily Planner** build once it starts), and a realistic Earth-from-
-  orbit shot with a visible hurricane and the ISS — a strong candidate
-  for **Weather Labs** hero/mission art specifically because of the
-  hurricane, though it also works for the future Space Lab (stage 6).
-  Frank to confirm final assignment when building reaches those cards.
+- [x] Remaining three pieces from this batch, **assignments locked
+      2026-09-20**:
+  - **Mountain/lake sunrise panorama** → Cloud9's reusable visual
+    foundation, not a single card's art: the Home hero/header, the
+    login/welcome screen, empty states, and possibly the backdrop
+    behind certain Explore experiences. Treat this as shared chrome
+    referenced from multiple templates, not a one-off asset copied
+    into each.
+  - **Planner/journal desk scene** → **My Day**'s feature/header
+    artwork.
+  - **Earth-from-orbit shot with the hurricane + ISS** → **Weather
+    Labs**' landing/mission artwork — locked over the Space Lab
+    alternative because the hurricane specifically reads as satellite
+    imagery/severe weather/observation, exactly Weather Labs' subject.
 - "Continue Where You Left Off" thumbnail is *(dynamic)* — a real image
   tied to whatever the child was last doing (e.g. a real satellite
   frame for an active Weather Mission), not static art
