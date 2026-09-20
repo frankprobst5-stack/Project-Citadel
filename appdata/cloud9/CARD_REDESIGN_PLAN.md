@@ -366,6 +366,84 @@ storage for journal entries, the Learning Journal can be a Cloud9-native
 piece of the ecosystem instead of adding a new one, matching the
 orchestration philosophy this whole redesign is built on.
 
+## "This Day in History" — new home-screen block, locked (2026-09-20)
+
+Frank's own idea, checked against a real source before deciding whether
+to build it green-field. **Real, existing solution found — no need to
+build this from scratch**: Wikipedia/Wikimedia's own real, free,
+no-API-key **On This Day** feed —
+`api.wikimedia.org/feed/v1/wikipedia/en/onthisday/events/{month}/{day}`
+— confirmed live (queried it directly): returns a real event
+description, a thumbnail image, and a link to the full Wikipedia
+article, exactly matching "shows a fact, click for more detail."
+
+Real, honest details that come with using it:
+- **Attribution required** — Wikipedia content is CC BY-SA, so the
+  popup needs a small "via Wikipedia" credit line.
+- **Online-only for *today's* fact** — Citadel's offline Kiwix archives
+  don't carry this curated feed (a live-editorial feature, not part of
+  the raw article dumps), so this is a real online-first feature.
+  Matches the same honest pattern already locked for Weather Labs: cache
+  each day's fetched fact with a timestamp; if offline, show the last
+  one actually fetched, clearly marked as not today's, never silently
+  presented as current.
+
+Home-screen placement: a new block alongside "Continue Where You Left
+Off"/"Today's Assignments" in the working area (see the 2026-09-19
+layout above) — click opens a popup with the fuller description and the
+real Wikipedia link, not a full-screen takeover like the major Areas.
+
+## Real image/artwork list, requested 2026-09-20
+
+Frank is producing all of this art himself, starting now — this is the
+real, concrete list of what's actually needed, organized by what it's
+for, pulled from everything locked in across this whole document so far.
+**Real vs. dynamic, called out explicitly** so nothing gets drawn that
+doesn't need to be: anything marked *(dynamic)* is a real live image
+fetched from an API at runtime (a NOAA satellite frame, a Wikipedia
+thumbnail) — not something to create as static art.
+
+**Home screen (Foundation/My Day, roadmap stages 1-2 — the current
+reference mockup)**
+- Hero banner background (mountain/sunrise landscape, full-width top bar)
+- Cloud9 mark/logo (already exists per the mockup — confirm final asset)
+- Default child avatar (for when no real photo is set)
+- Six Area card backgrounds/icons, one each: **My Day**, **Learn**,
+  **Explore**, **Create**, **Play**, **Tutor**
+- Three lower-row card backgrounds/icons: **Project Workshop**,
+  **Learning Journal**, **Video Shelf**
+- Weather widget condition icons (sun, partly cloudy, rain, storm, etc.
+  — a small, reusable set, same icons Weather Labs itself will want)
+- "This Day in History" card icon/background (the block above — the
+  actual event thumbnail per day is *(dynamic)*, from Wikipedia)
+- "Continue Where You Left Off" thumbnail is *(dynamic)* — a real image
+  tied to whatever the child was last doing (e.g. a real satellite
+  frame for an active Weather Mission), not static art
+
+**Tutor — needs the most deliberate treatment of anything on this list**:
+since Tutor appears system-wide (every Area gets an "Ask Tutor" action,
+not just its own card), its character design needs to work consistently
+at multiple sizes and in multiple contexts — a small inline icon next to
+an "Ask Tutor" button, and the larger, friendlier version for its own
+card. Worth deciding now whether it needs more than one expression/pose
+(e.g. a "thinking" state while Ollama generates a response) before
+drawing just one static version.
+
+**Weather Labs (the current active build, roadmap stage 5)**
+- NASA-control-deck chrome: panel borders/bezels, instrument-frame
+  textures, the overall "mission control room" dressing
+- A small icon per instrument type (temperature, wind, pressure,
+  visibility, etc.) for the standard popover pattern
+- Mission Mode badge/icon
+- Radar/satellite legend graphics (the live imagery itself is
+  *(dynamic)*, from NOAA/NWS — only the legend/UI chrome around it is
+  real art)
+
+**Not yet needed — later roadmap stages, only flagging so nothing gets
+drawn before it's actually locked**: Earth/Space/Nature/STEM/History Lab
+icons (stage 6), Creative Studio tool icons (stage 8), Portfolio/My
+Learning Year art (stage 9) — real, future work, not this week's list.
+
 ## Cross-card design principle: theme/layout is as important as the data
 
 Real, from Frank directly, and applies to every card in this redesign,
