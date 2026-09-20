@@ -210,6 +210,48 @@ XMLEOF
 fi
 mkdir -p backups
 
+# Real gap, found and fixed 2026-09-20 from two live tester reports (both
+# hit "Map error: ... 404" on the Tactical Map): appdata/cockpit/tiles/
+# holds the map's real data (a vector basemap + elevation tiles for the
+# Southwest US), multiple GB, deliberately gitignored -- too big for a
+# normal git repo. With no download step, every fresh clone got an empty
+# tiles/ folder and the map 404'd for every single new install, not just
+# these two. Fetches from a real GitHub Release (map-data-v1) instead of
+# bundling it in git. Non-fatal on failure -- Citadel itself, and every
+# other module, works fine with no map data; the Tactical Map alone just
+# stays down and says so, the same as any other degraded-but-honest
+# feature in this project.
+MAP_DATA_BASE="https://github.com/frankprobst5-stack/Project-Citadel/releases/download/map-data-v1"
+mkdir -p appdata/cockpit/tiles
+
+if [ ! -f appdata/cockpit/tiles/comms_base.pmtiles ]; then
+    echo "== Downloading Tactical Map basemap (~1.8GB, one-time) =="
+    if curl -fL -o appdata/cockpit/tiles/comms_base.pmtiles.part "$MAP_DATA_BASE/comms_base.pmtiles"; then
+        BASEMAP_SIZE="$(stat -c%s appdata/cockpit/tiles/comms_base.pmtiles.part 2>/dev/null || stat -f%z appdata/cockpit/tiles/comms_base.pmtiles.part)"
+        if [ "$BASEMAP_SIZE" -gt 1000000000 ]; then
+            mv appdata/cockpit/tiles/comms_base.pmtiles.part appdata/cockpit/tiles/comms_base.pmtiles
+        else
+            echo "WARNING: basemap download looked too small (${BASEMAP_SIZE} bytes) -- skipping, Tactical Map will show no data until this is retried." >&2
+            rm -f appdata/cockpit/tiles/comms_base.pmtiles.part
+        fi
+    else
+        echo "WARNING: couldn't download the Tactical Map basemap -- continuing without it (re-run this script later to retry, or the map just won't have data until then)." >&2
+    fi
+fi
+
+if [ ! -d appdata/cockpit/tiles/terrain ] || [ -z "$(ls -A appdata/cockpit/tiles/terrain 2>/dev/null)" ]; then
+    echo "== Downloading Tactical Map terrain data (~180MB, one-time) =="
+    TERRAIN_TMP="$(mktemp -d)"
+    if curl -fL -o "$TERRAIN_TMP/terrain_default.tar.gz" "$MAP_DATA_BASE/terrain_default.tar.gz"; then
+        tar -xzf "$TERRAIN_TMP/terrain_default.tar.gz" -C "$TERRAIN_TMP"
+        rm -rf appdata/cockpit/tiles/terrain
+        mv "$TERRAIN_TMP/terrain_default" appdata/cockpit/tiles/terrain
+    else
+        echo "WARNING: couldn't download the Tactical Map terrain data -- continuing without it." >&2
+    fi
+    rm -rf "$TERRAIN_TMP"
+fi
+
 echo "Starting Citadel — this pulls a handful of container images the first"
 echo "time, so it may take a few minutes..."
 

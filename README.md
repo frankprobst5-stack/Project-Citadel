@@ -209,7 +209,12 @@ Same idea — downloads to `%USERPROFILE%\citadel` and hands off to `install.bat
    later by editing `COMPOSE_PROFILES` in `.env` and running `docker compose
    up -d` again — no need to re-run the installer.
 4. **Wait for first startup** — Docker will pull container images for
-   whatever you selected (a few minutes on first run)
+   whatever you selected (a few minutes on first run). The installer also
+   downloads the Tactical Map's real map data (~2GB total: a Southwest US
+   basemap + terrain) from a GitHub Release the first time — this is a
+   one-time download regardless of which modules you picked, and if it
+   fails (slow connection, etc.) the rest of Citadel still comes up fine;
+   just re-run the installer later to retry the map data alone.
 5. **Open your browser** to **http://localhost:8085**
 
 Everything runs locally. Your entire home infrastructure is now up and running.

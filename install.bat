@@ -221,6 +221,53 @@ if not exist appdata\kiwix-library\library.xml (
     ) > appdata\kiwix-library\library.xml
 )
 
+REM Real gap, found and fixed 2026-09-20 from two live tester reports
+REM (both hit "Map error: ... 404" on the Tactical Map): appdata\cockpit\
+REM tiles\ holds the map's real data (a vector basemap + elevation tiles
+REM for the Southwest US), multiple GB, deliberately gitignored -- too
+REM big for a normal git repo. With no download step, every fresh clone
+REM got an empty tiles\ folder and the map 404'd for every single new
+REM install, not just these two. Fetches from a real GitHub Release
+REM (map-data-v1) instead of bundling it in git. Non-fatal on failure --
+REM Citadel itself, and every other module, works fine with no map data;
+REM the Tactical Map alone just stays down and says so, the same as any
+REM other degraded-but-honest feature in this project. curl.exe and
+REM tar.exe both ship built into Windows 10 (1803+) and Windows 11, same
+REM baseline this script already assumes by requiring Docker Desktop.
+set "MAP_DATA_BASE=https://github.com/frankprobst5-stack/Project-Citadel/releases/download/map-data-v1"
+if not exist appdata\cockpit\tiles mkdir appdata\cockpit\tiles
+
+if not exist appdata\cockpit\tiles\comms_base.pmtiles (
+    echo == Downloading Tactical Map basemap ^(~1.8GB, one-time^) ==
+    curl -fL -o appdata\cockpit\tiles\comms_base.pmtiles.part "%MAP_DATA_BASE%/comms_base.pmtiles"
+    if errorlevel 1 (
+        echo WARNING: couldn't download the Tactical Map basemap -- continuing without it ^(re-run this script later to retry^).
+        del /q appdata\cockpit\tiles\comms_base.pmtiles.part 2>nul
+    ) else (
+        for %%F in (appdata\cockpit\tiles\comms_base.pmtiles.part) do set "BASEMAP_SIZE=%%~zF"
+        if !BASEMAP_SIZE! GTR 1000000000 (
+            move /y appdata\cockpit\tiles\comms_base.pmtiles.part appdata\cockpit\tiles\comms_base.pmtiles >nul
+        ) else (
+            echo WARNING: basemap download looked too small ^(!BASEMAP_SIZE! bytes^) -- skipping.
+            del /q appdata\cockpit\tiles\comms_base.pmtiles.part 2>nul
+        )
+    )
+)
+
+dir /b appdata\cockpit\tiles\terrain 2>nul | findstr "." >nul
+if errorlevel 1 (
+    echo == Downloading Tactical Map terrain data ^(~180MB, one-time^) ==
+    curl -fL -o "%TEMP%\terrain_default.tar.gz" "%MAP_DATA_BASE%/terrain_default.tar.gz"
+    if errorlevel 1 (
+        echo WARNING: couldn't download the Tactical Map terrain data -- continuing without it.
+    ) else (
+        tar -xzf "%TEMP%\terrain_default.tar.gz" -C "%TEMP%"
+        if exist appdata\cockpit\tiles\terrain rmdir /s /q appdata\cockpit\tiles\terrain
+        move /y "%TEMP%\terrain_default" appdata\cockpit\tiles\terrain >nul
+    )
+    del /q "%TEMP%\terrain_default.tar.gz" 2>nul
+)
+
 echo Starting Citadel - this pulls a handful of container images the first
 echo time, so it may take a few minutes...
 
