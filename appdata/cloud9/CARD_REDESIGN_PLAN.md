@@ -400,6 +400,51 @@ Off"/"Today's Assignments" in the working area (see the 2026-09-19
 layout above) — click opens a popup with the fuller description and the
 real Wikipedia link, not a full-screen takeover like the major Areas.
 
+## Earth Lab — Country Explorer, locked (2026-09-20)
+
+Real, external validation this time, not just Frank's own idea: a
+parent in one of the 4 waiting families mentioned another homeschool
+group using a clickable-country-map tool ("click a country, get a
+popup about it") — she thought it came from GitHub but couldn't
+remember the specific one. Real research done before building anything,
+rather than trying to track down a repo from a vague secondhand
+description:
+
+**The specific mystery tool isn't worth chasing, and isn't needed**:
+checked the real GitHub landscape for this pattern — the actual
+candidates found are all tiny hobby projects (0-8 stars), not something
+established enough to explain a whole parent group's excitement on
+their own. "Clickable country map with an info popup" is simply a
+well-known, easy-to-build pattern — likely what the other group is
+using is just a decent individual implementation of it, not a
+must-have specific tool.
+
+**Real, live-verified data source found**: `countries.dev` — genuinely
+free, confirmed live with a real request (pulled capital, population,
+flag, languages, and currency for a real country in one call), no API
+key, no signup, no rate limit. **Real, honest caveat surfaced doing this
+research**: the more famous "REST Countries" API most small hobby repos
+of this kind actually use has been deprecated (`v3.1` now returns a
+deprecation error) — its replacement (`v5`) requires a real account and
+API key. If the other homeschool group's tool breaks in the coming
+months, this is almost certainly why. `countries.dev` was found and
+verified specifically as a real, current, keyless response to that same
+deprecation, not an assumption.
+
+**The locked decision**: build this as Earth Lab's real first feature —
+not a green-field invention, and not a copy of someone else's unknown
+repo — using `countries.dev` for real country data (capital, population,
+flag, languages, currency) paired with a standard, well-established
+clickable-map library (Leaflet + GeoJSON, or an equivalent). Same
+popover-teaching pattern already locked for Weather Labs applies here:
+a country click surfaces real facts, not just a name.
+
+**Real tie-in to the Cross-Subject Interactivity Engine**, since Earth
+Lab lives inside Explore: a country clicked during a Weather Labs
+hurricane mission, or during a history lesson elsewhere, can be the same
+real, tagged connection — not a second, disconnected map tool bolted on
+separately from everything else already locked in this document.
+
 ## Real image/artwork list, requested 2026-09-20
 
 Frank is producing all of this art himself, starting now — this is the
