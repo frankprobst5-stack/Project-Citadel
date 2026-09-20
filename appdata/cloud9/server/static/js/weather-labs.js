@@ -17,6 +17,8 @@
   const popoverOverlay = document.getElementById("wl-popover-overlay");
   const popoverClose = document.getElementById("wl-popover-close");
   const popoverTitle = document.getElementById("wl-popover-title");
+  const popoverGauge = document.getElementById("wl-popover-gauge");
+  const popoverGraph = document.getElementById("wl-popover-graph");
   const popoverWhat = document.getElementById("wl-popover-what");
   const popoverReading = document.getElementById("wl-popover-reading");
   const popoverMeaning = document.getElementById("wl-popover-meaning");
@@ -24,8 +26,27 @@
   const popoverWatch = document.getElementById("wl-popover-watch");
   const popoverSource = document.getElementById("wl-popover-source");
 
+  let historyCache = null;
+
+  function loadHistory() {
+    return fetch("/api/weather/history")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (points) {
+        historyCache = Array.isArray(points) ? points : [];
+        return historyCache;
+      })
+      .catch(function () {
+        historyCache = [];
+        return historyCache;
+      });
+  }
+
   function openPopover(content) {
     popoverTitle.textContent = content.title;
+    popoverGauge.innerHTML = content.gauge || "";
+    popoverGraph.innerHTML = content.graph || "";
     popoverWhat.textContent = content.what;
     popoverReading.textContent = content.reading;
     popoverMeaning.textContent = content.meaning;
@@ -33,6 +54,148 @@
     popoverWatch.textContent = content.watch;
     popoverSource.textContent = "Source: " + content.source;
     popoverOverlay.hidden = false;
+  }
+
+  // ---- Reusable SVG gauge + graph builders -----------------------------
+  // Real, live-data visualizations matching Frank's reference panel
+  // designs (kids-visualization-first, per his own note) -- hand-rolled
+  // SVG rather than a charting library, since the whole dataset here is
+  // at most a few hundred small points and Cloud9 otherwise ships no
+  // client-side dependencies at all.
+
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+  function buildThermometerGauge(tempF) {
+    const MIN = -20, MAX = 120;
+    const w = 90, h = 220, tubeX = 30, tubeTop = 14, tubeBottom = 170, bulbCy = 190, bulbR = 20;
+    const pct = tempF === null ? 0 : clamp((tempF - MIN) / (MAX - MIN), 0, 1);
+    const fillTop = tubeBottom - pct * (tubeBottom - tubeTop);
+    const color = tempF === null ? "#5b7386" : tempF >= 90 ? "#e05252" : tempF >= 70 ? "#ffb000" : tempF >= 40 ? "#28c8ff" : "#008dff";
+    const ticks = [120, 90, 60, 30, 0, -20].map(function (t) {
+      const y = tubeBottom - clamp((t - MIN) / (MAX - MIN), 0, 1) * (tubeBottom - tubeTop);
+      return '<text class="wl-gauge-tick-label" x="4" y="' + (y + 3) + '" text-anchor="start">' + t + '</text>' +
+        '<line x1="' + (tubeX - 4) + '" y1="' + y + '" x2="' + tubeX + '" y2="' + y + '" stroke="#71899d" stroke-width="1"/>';
+    }).join("");
+    return (
+      '<svg viewBox="0 0 ' + w + ' ' + (h + 20) + '" width="180">' +
+      '<rect x="' + tubeX + '" y="' + tubeTop + '" width="16" height="' + (tubeBottom - tubeTop) + '" rx="8" fill="#0a2038" stroke="#2a4a66"/>' +
+      '<rect x="' + tubeX + '" y="' + fillTop + '" width="16" height="' + (tubeBottom - fillTop) + '" rx="8" fill="' + color + '"/>' +
+      '<circle cx="' + (tubeX + 8) + '" cy="' + bulbCy + '" r="' + bulbR + '" fill="' + color + '" stroke="#2a4a66" stroke-width="2"/>' +
+      ticks +
+      '<text class="wl-gauge-value" x="60" y="100" text-anchor="middle">' + (tempF !== null ? Math.round(tempF) + "°F" : "—") + '</text>' +
+      '</svg>'
+    );
+  }
+
+  function buildCompassGauge(speedMph, dirDeg, gustMph) {
+    const cx = 100, cy = 100, r = 78;
+    const angle = dirDeg === null || dirDeg === undefined ? 0 : dirDeg;
+    const rad = (angle - 90) * Math.PI / 180;
+    const nx = cx + r * 0.7 * Math.cos(rad);
+    const ny = cy + r * 0.7 * Math.sin(rad);
+    const tailRad = rad + Math.PI;
+    const tx = cx + r * 0.3 * Math.cos(tailRad);
+    const ty = cy + r * 0.3 * Math.sin(tailRad);
+    const dirs = [["N", 0], ["E", 90], ["S", 180], ["W", 270]];
+    const dirLabels = dirs.map(function (d) {
+      const a = (d[1] - 90) * Math.PI / 180;
+      const x = cx + (r + 12) * Math.cos(a);
+      const y = cy + (r + 12) * Math.sin(a);
+      return '<text class="wl-gauge-tick-label" x="' + x + '" y="' + (y + 4) + '" text-anchor="middle" font-weight="700">' + d[0] + '</text>';
+    }).join("");
+    return (
+      '<svg viewBox="0 0 200 200" width="200">' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="#0a2038" stroke="#2a4a66" stroke-width="2"/>' +
+      dirLabels +
+      (speedMph !== null
+        ? '<line x1="' + tx + '" y1="' + ty + '" x2="' + nx + '" y2="' + ny + '" stroke="#28c8ff" stroke-width="4" stroke-linecap="round"/>' +
+          '<circle cx="' + nx + '" cy="' + ny + '" r="5" fill="#28c8ff"/>'
+        : "") +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#e7f1f8"/>' +
+      '<text class="wl-gauge-value" x="' + cx + '" y="' + (cy + r + 34) + '" text-anchor="middle" font-size="1.1rem">' +
+      (speedMph !== null ? speedMph + " mph" : "Calm") + (gustMph ? " (gust " + gustMph + ")" : "") +
+      '</text>' +
+      '</svg>'
+    );
+  }
+
+  // Shared 180-degree radial dial -- used for both Pressure and Humidity,
+  // just with different ranges/zones/units, matching the reference art's
+  // dial style for both.
+  function buildRadialGauge(value, opts) {
+    const cx = 110, cy = 110, r = 90;
+    const min = opts.min, max = opts.max;
+    const pct = value === null ? 0.5 : clamp((value - min) / (max - min), 0, 1);
+    const angle = -180 + pct * 180;
+    const rad = angle * Math.PI / 180;
+    const needleX = cx + r * 0.8 * Math.cos(rad);
+    const needleY = cy + r * 0.8 * Math.sin(rad);
+
+    function arcPath(fromPct, toPct) {
+      const a0 = (-180 + fromPct * 180) * Math.PI / 180;
+      const a1 = (-180 + toPct * 180) * Math.PI / 180;
+      const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+      const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+      return "M " + x0 + " " + y0 + " A " + r + " " + r + " 0 0 1 " + x1 + " " + y1;
+    }
+
+    const zoneArcs = opts.zones.map(function (z) {
+      return '<path d="' + arcPath(z.from, z.to) + '" stroke="' + z.color + '" stroke-width="14" fill="none" stroke-linecap="round"/>';
+    }).join("");
+
+    return (
+      '<svg viewBox="0 0 220 140" width="220">' +
+      zoneArcs +
+      '<line x1="' + cx + '" y1="' + cy + '" x2="' + needleX + '" y2="' + needleY + '" stroke="#e7f1f8" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="6" fill="#e7f1f8"/>' +
+      '<text class="wl-gauge-value" x="' + cx + '" y="' + (cy - 18) + '" text-anchor="middle">' +
+      (value !== null ? value + (opts.unit || "") : "—") + '</text>' +
+      '<text class="wl-gauge-sub" x="' + cx + '" y="' + (cy - 2) + '" text-anchor="middle">' + (opts.label || "") + '</text>' +
+      '</svg>'
+    );
+  }
+
+  function buildLineChart(points, opts) {
+    if (!points || points.length < 2) {
+      return '<div class="wl-graph-title">' + opts.title + '</div>' +
+        '<div class="wl-graph-empty">Still collecting data today — check back later to see the trend fill in.</div>';
+    }
+    const w = 400, h = 120, padL = 34, padR = 10, padT = 10, padB = 18;
+    const values = points.map(opts.getValue).filter(function (v) { return v !== null; });
+    let yMin = opts.yMin !== undefined ? opts.yMin : Math.min.apply(null, values);
+    let yMax = opts.yMax !== undefined ? opts.yMax : Math.max.apply(null, values);
+    if (yMin === yMax) { yMin -= 1; yMax += 1; }
+    const tMin = points[0].fetched_at, tMax = points[points.length - 1].fetched_at;
+    const tSpan = Math.max(tMax - tMin, 1);
+
+    const coords = points
+      .map(function (p) {
+        const v = opts.getValue(p);
+        if (v === null) return null;
+        const x = padL + ((p.fetched_at - tMin) / tSpan) * (w - padL - padR);
+        const y = padT + (1 - (v - yMin) / (yMax - yMin)) * (h - padT - padB);
+        return [x, y];
+      })
+      .filter(Boolean);
+
+    const linePath = coords.map(function (c, i) { return (i === 0 ? "M" : "L") + c[0] + " " + c[1]; }).join(" ");
+    const dots = coords.map(function (c) { return '<circle class="wl-graph-dot" cx="' + c[0] + '" cy="' + c[1] + '" r="2.5"/>'; }).join("");
+
+    const fmtTime = function (ts) { return new Date(ts * 1000).toLocaleTimeString([], { hour: "numeric" }); };
+
+    return (
+      '<div class="wl-graph-title">' + opts.title + '</div>' +
+      '<svg class="wl-graph-svg" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<text class="wl-graph-axis-label" x="2" y="' + (padT + 4) + '">' + Math.round(yMax) + opts.unit + '</text>' +
+      '<text class="wl-graph-axis-label" x="2" y="' + (h - padB) + '">' + Math.round(yMin) + opts.unit + '</text>' +
+      '<text class="wl-graph-axis-label" x="' + padL + '" y="' + (h - 4) + '">' + fmtTime(tMin) + '</text>' +
+      '<text class="wl-graph-axis-label" x="' + (w - padR) + '" y="' + (h - 4) + '" text-anchor="end">' + fmtTime(tMax) + '</text>' +
+      '<path class="wl-graph-line" d="' + linePath + '"/>' +
+      dots +
+      '</svg>'
+    );
   }
 
   popoverClose.addEventListener("click", function () {
@@ -55,6 +218,12 @@
   function popoverForTemperature(c) {
     return {
       title: "Temperature",
+      gauge: buildThermometerGauge(c.temperatureF),
+      graph: buildLineChart(historyCache, {
+        title: "Past 24 Hours",
+        unit: "°F",
+        getValue: function (p) { return p.payload.temperatureF; },
+      }),
       what: "How hot or cold the air is right now, measured by a thermometer at the weather station.",
       reading: c.temperatureF !== null ? c.temperatureF + "°F" : "Not reported right now",
       meaning: "Warmer air can hold more water vapor than cold air -- that's part of why hot, humid days feel so heavy.",
@@ -67,6 +236,16 @@
   function popoverForHumidity(c) {
     return {
       title: "Humidity",
+      gauge: buildRadialGauge(c.relativeHumidityPct, {
+        min: 0, max: 100, unit: "%", label: "Humidity",
+        zones: [{ from: 0, to: 0.3, color: "#ffb000" }, { from: 0.3, to: 0.6, color: "#59d67c" }, { from: 0.6, to: 1, color: "#008dff" }],
+      }),
+      graph: buildLineChart(historyCache, {
+        title: "Past 24 Hours",
+        unit: "%",
+        yMin: 0, yMax: 100,
+        getValue: function (p) { return p.payload.relativeHumidityPct; },
+      }),
       what: "How much water vapor is in the air right now, compared to the most the air could hold at this temperature.",
       reading: c.relativeHumidityPct !== null ? c.relativeHumidityPct + "%" : "Not reported right now",
       meaning: "High humidity slows down sweat evaporating off your skin, which is the body's main way of cooling itself off.",
@@ -79,6 +258,12 @@
   function popoverForWind(c) {
     return {
       title: "Wind",
+      gauge: buildCompassGauge(c.windSpeedMph, c.windDirectionDeg, c.windGustMph),
+      graph: buildLineChart(historyCache, {
+        title: "Past 24 Hours",
+        unit: " mph",
+        getValue: function (p) { return p.payload.windSpeedMph; },
+      }),
       what: "How fast the air near the ground is moving, and which direction it's blowing from.",
       reading: c.windSpeedMph !== null ? c.windSpeedMph + " mph from the " + compassDirection(c.windDirectionDeg) : "Calm or not reported",
       meaning: "Wind carries temperature, moisture, and sometimes whole storm systems from one place to another.",
@@ -95,11 +280,50 @@
     else if (c.pressureTrend === "steady") trendText = "holding steady";
     return {
       title: "Barometric Pressure",
+      gauge: buildRadialGauge(c.pressureInHg, {
+        min: 29.0, max: 31.0, unit: " inHg", label: "Pressure",
+        zones: [{ from: 0, to: 0.25, color: "#e05252" }, { from: 0.25, to: 0.75, color: "#59d67c" }, { from: 0.75, to: 1, color: "#008dff" }],
+      }),
+      graph: buildLineChart(historyCache, {
+        title: "Past 24 Hours",
+        unit: "",
+        getValue: function (p) { return p.payload.pressureInHg; },
+      }),
       what: "The weight of the air pressing down on the weather station, measured in inches of mercury (inHg).",
       reading: c.pressureInHg !== null ? c.pressureInHg + " inHg" : "Not reported by this station",
       meaning: "Falling pressure usually means storms or unsettled weather are moving in; rising pressure usually means clearer, calmer weather is on its way.",
       connection: "Pressure here is " + trendText + " compared to about 3 hours ago.",
       watch: "Compare this trend to the forecast below -- they should usually agree with each other.",
+      source: "NWS surface observation, station " + c.stationId,
+    };
+  }
+
+  function popoverForDewpoint(c) {
+    let comfort = "unknown";
+    if (c.dewpointF !== null) {
+      comfort = c.dewpointF < 50 ? "dry and comfortable" : c.dewpointF < 60 ? "comfortable" : c.dewpointF < 70 ? "humid" : c.dewpointF < 75 ? "very humid" : "oppressive";
+    }
+    return {
+      title: "Dew Point",
+      gauge: buildRadialGauge(c.dewpointF, {
+        min: 30, max: 85, unit: "°F", label: "Dew Point",
+        zones: [
+          { from: 0, to: 0.36, color: "#008dff" },
+          { from: 0.36, to: 0.55, color: "#59d67c" },
+          { from: 0.55, to: 0.73, color: "#ffb000" },
+          { from: 0.73, to: 1, color: "#e05252" },
+        ],
+      }),
+      graph: buildLineChart(historyCache, {
+        title: "Past 24 Hours",
+        unit: "°F",
+        getValue: function (p) { return p.payload.dewpointF; },
+      }),
+      what: "The temperature the air would need to cool to for the water vapor in it to start condensing into dew, fog, or clouds.",
+      reading: c.dewpointF !== null ? c.dewpointF + "°F (" + comfort + ")" : "Not reported right now",
+      meaning: "Unlike relative humidity, dew point doesn't change just because the temperature does -- it's a more honest read on how much moisture is actually in the air.",
+      connection: "The closer today's temperature (" + (c.temperatureF !== null ? c.temperatureF + "°F" : "unknown") + ") gets to the dew point, the more likely fog, dew, or clouds are to form.",
+      watch: "A dew point above about 65°F is when most people start describing the air as muggy, no matter what the thermometer says.",
       source: "NWS surface observation, station " + c.stationId,
     };
   }
@@ -141,7 +365,7 @@
         label: "Dewpoint",
         value: c.dewpointF !== null ? c.dewpointF + "°F" : "—",
         sub: "",
-        popover: null,
+        popover: popoverForDewpoint,
       },
     ];
 
@@ -346,7 +570,7 @@
 
   radarRefresh.addEventListener("click", refreshRadar);
 
-  loadCurrent();
+  loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();
   loadAlerts();

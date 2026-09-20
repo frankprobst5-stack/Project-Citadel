@@ -63,6 +63,21 @@ def get_latest():
     return {"fetched_at": row[0], "station": row[1], "payload": json.loads(row[2])}
 
 
+def get_history(hours=24):
+    """Every real cached observation from the last `hours` -- powers the
+    instrument popovers' trend graphs. Deliberately returns whatever
+    real points exist rather than padding/interpolating a smooth curve:
+    a family that's only opened Weather Labs twice today gets two real
+    points and an honest gap, not a fabricated line between them."""
+    cutoff = time.time() - hours * 60 * 60
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT fetched_at, payload FROM observations WHERE fetched_at >= ? ORDER BY fetched_at ASC",
+            (cutoff,),
+        ).fetchall()
+    return [{"fetched_at": ts, "payload": json.loads(payload)} for ts, payload in rows]
+
+
 def get_near(seconds_ago, tolerance_seconds=TREND_TOLERANCE_SECONDS):
     """The observation closest to `seconds_ago` in the past, only if
     within `tolerance_seconds` of that target -- returns None rather

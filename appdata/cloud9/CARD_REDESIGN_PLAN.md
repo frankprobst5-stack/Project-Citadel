@@ -885,3 +885,41 @@ scraped "image valid at" time that can't actually be verified.
 RIDGE2/MRMS radar layer (pannable/zoomable, warning polygons) beyond
 the existing basic loop, and GOES GLM lightning data — both still need
 real integration work this pass didn't do.
+
+### Instrument popovers rebuilt as real gauges + graphs (2026-09-20)
+
+Frank produced six real reference panel designs (Temperature, Wind,
+Pressure, Humidity, Dew Point, Precipitation — all moved into
+`static/img/weather-labs/reference-panel-*.png`) and asked for the
+popovers to actually match that visual level, since **kid-facing
+visualization is a first-class part of this card's design**, not an
+afterthought on top of the data.
+
+Rebuilt for real, hand-rolled SVG (no charting library — Cloud9 ships
+no client-side dependencies at all, and the dataset involved is tiny):
+a vertical thermometer for Temperature; a compass rose with a real
+direction needle for Wind; a 180° radial dial, colored by zone, shared
+between Pressure and Humidity (and now Dew Point too); and a real
+line-graph renderer reused by all of them. **Dew Point got a genuine
+fifth popover** — `dewpointF` was already a real field this app
+fetches, so its comfort-zone thresholds (Dry/Comfortable/Humid/Very
+Humid/Oppressive, matching Frank's reference panel exactly) are real
+values, not decoration.
+
+**The 24-hour trend graphs are real, not smoothed**: `weather_cache.py`
+gained `get_history()`, and a new `/api/weather/history` route feeds
+it to every popover. Since there's still no background poller (see
+"still open" above), the graph is only as complete as how often the
+family actually opens the page — verified this renders correctly with
+a sparse real history, and shows an honest "still collecting data
+today" message instead of a graph when there are fewer than two real
+points, rather than faking the smooth curves the reference mockups
+show.
+
+**Precipitation, explicitly not built**: checked the real NWS
+observation payload before committing to anything — the only real
+field available is `precipitationLast3Hours`, nowhere near enough to
+support the reference panel's rate/24h/monthly/yearly totals. That
+panel stays as design reference only until a real climate/precip data
+source is actually integrated (ties into the already-planned NOAA NCEI
+Phase 4 climate work above).

@@ -312,12 +312,87 @@ body {
   background: var(--panel);
   border: 1px solid var(--accent-bright);
   border-radius: 10px;
-  max-width: 420px;
-  width: 90%;
-  max-height: 80vh;
+  max-width: 480px;
+  width: 92%;
+  max-height: 86vh;
   overflow-y: auto;
   padding: 24px;
   position: relative;
+}
+
+.wl-gauge-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.wl-gauge-wrap svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.wl-gauge-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  fill: var(--text);
+}
+
+.wl-gauge-sub {
+  font-size: 0.7rem;
+  fill: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wl-gauge-tick-label {
+  font-size: 0.55rem;
+  fill: var(--text-faint);
+}
+
+.wl-graph-wrap {
+  margin-bottom: 16px;
+}
+
+.wl-graph-title {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.wl-graph-empty {
+  background: var(--panel-alt);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+.wl-graph-svg {
+  width: 100%;
+  height: auto;
+  background: var(--panel-alt);
+  border-radius: 6px;
+  border: 1px solid var(--border-dim);
+}
+
+.wl-graph-line {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 2;
+}
+
+.wl-graph-dot {
+  fill: var(--accent-bright);
+}
+
+.wl-graph-axis-label {
+  font-size: 0.55rem;
+  fill: var(--text-faint);
 }
 
 .wl-popover-close {

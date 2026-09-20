@@ -13,6 +13,7 @@ import settings
 import verses
 import videos
 import weather
+import weather_cache
 from paths import DATA_DIR, SERVER_DIR
 
 CARDS_FILE = DATA_DIR / "cards.json"
@@ -145,6 +146,11 @@ def weather_current():
 @app.route("/api/weather/alerts")
 def weather_alerts():
     return jsonify(weather.get_active_alerts())
+
+
+@app.route("/api/weather/history")
+def weather_history():
+    return jsonify(weather_cache.get_history(hours=24))
 
 
 @app.route("/api/weather/clouds")
