@@ -806,6 +806,59 @@ implementation detail, not an open question.
 ### Still open
 
 - Exact refresh schedules per data type (observations vs. forecast vs.
-  alerts vs. radar/satellite) — not yet decided.
-- Local cache format/location for the offline-staleness behavior — not
-  yet designed.
+  alerts vs. radar/satellite) — not yet decided. Phase 1's build fetches
+  each on page load/manual refresh only; no background polling yet.
+
+### Phase 1 — first real build (2026-09-20)
+
+Live-verified end to end against real NWS data for a real ZIP code:
+
+- **Current Conditions**: nearest-station observation, converted from
+  NWS's raw SI units to °F/mph/inHg, with a value showing `—` (never a
+  guess) whenever the station itself doesn't report that field — a real
+  station in testing genuinely doesn't report pressure, confirmed
+  handled honestly rather than papered over.
+- **Local cache — the "still open" question above, now resolved**:
+  SQLite (`data/weather_cache.db`), one row per successful fetch.
+  Powers two real things: the pressure trend (current vs. the cached
+  reading closest to 3 hours ago, only shown when one actually exists
+  within a real tolerance window) and the offline fallback (last cached
+  reading + its real age, explicitly marked `stale`, never relabeled as
+  current) — matches the brief's reliability rule exactly.
+  Housekeeping deletes anything older than 7 days.
+- **Forecast**: existing `get_forecast()` extended from 4 to 7 periods;
+  new `get_hourly_forecast()` added (verified live that the real NWS
+  endpoint is `/forecast/hourly`, not `/forecastHourly` as first
+  guessed — caught by a live 404, fixed, re-verified).
+- **Alerts**: real reuse, not a second fetcher — calls media-vault's
+  already-live `/api/news/active-alerts` over the shared Docker network,
+  exactly as the plan called for. Worth knowing: that endpoint uses
+  Citadel's whole-install `STATION_LAT`/`STATION_LON`, while the rest of
+  Weather Labs uses Cloud9's own separately-configured ZIP — the same
+  physical address for a normal home install, but a real, undocumented-
+  until-now seam if they're ever set differently.
+- **Standard instrument popover**: built as a real, reusable pattern
+  (not copy-pasted per metric) and applied to Temperature, Humidity,
+  Wind, and Pressure — each of the six parts filled with real, dynamic
+  values from the live reading, not static text. The same pattern is
+  meant to extend to every future instrument for free.
+- **Full-screen, not modal**: `/weather-labs` replaces the old
+  `#weather-overlay` modal entirely — the dead modal HTML/JS/CSS was
+  removed from `index.html`/`dashboard.js`/`style.css`, not just
+  superseded. Styled in the shared Citadel Ecosystem blue/steel palette
+  (`PALETTE.md`) per the brief, a deliberate departure from Cloud9's own
+  warm secondary accent used everywhere else — this card is meant to
+  feel like NWS/NOAA mission control, not the rest of Cloud9's warm
+  interior.
+- **Carried over from the old modal, not dropped**: the live regional
+  radar loop (radar.weather.gov GIF), the weather-radio link, and the
+  full cloud-type reference chart — all real, working features that
+  predate this rebuild.
+- **Cross-Subject Interactivity Engine**: Weather Labs is now the
+  engine's second real producer (after Earth Lab) — every current-
+  conditions view logs a real tagged event (`weather`, `science`,
+  `weather_labs`).
+- **Honestly not built yet, shown as such in the UI**: Storm
+  Environment, Satellite, Climate, and Mission Mode — a labeled "planned
+  next" panel, not a broken or faked one. Phase 2-4 per the build order
+  above.
