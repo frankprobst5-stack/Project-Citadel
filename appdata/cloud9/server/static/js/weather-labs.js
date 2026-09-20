@@ -8,6 +8,9 @@
   const alertsList = document.getElementById("wl-alerts-list");
   const radarImg = document.getElementById("wl-radar-img");
   const radarRefresh = document.getElementById("wl-radar-refresh");
+  const satelliteImg = document.getElementById("wl-satellite-img");
+  const satelliteRefresh = document.getElementById("wl-satellite-refresh");
+  const satelliteFetched = document.getElementById("wl-satellite-fetched");
   const cloudGrid = document.getElementById("wl-cloud-grid");
   const radioBtn = document.getElementById("wl-radio-btn");
 
@@ -303,6 +306,23 @@
       });
   }
 
+  // Real, live, keyless NOAA STAR/NESDIS GOES-19 GeoColor imagery --
+  // verified live before building this (GOES16's own URL now 301s to
+  // GOES19, confirming it's the current operational GOES-East
+  // satellite). CONUS at 625x375 is the smallest real size NOAA
+  // publishes for the whole continental US in one image -- picked over
+  // trying to map every US state to its own regional sector, which
+  // would need a real lookup table this pass didn't build. NOAA doesn't
+  // expose a machine-readable capture time for this static image
+  // endpoint, so the timestamp shown is honestly our own fetch time,
+  // not a scraped "image valid at" time we can't actually verify.
+  function refreshSatellite() {
+    satelliteImg.src = "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/625x375.jpg?t=" + Date.now();
+    satelliteFetched.textContent = "Fetched " + new Date().toLocaleTimeString();
+  }
+
+  satelliteRefresh.addEventListener("click", refreshSatellite);
+
   function loadClouds() {
     fetch("/api/weather/clouds")
       .then(function (res) {
@@ -332,4 +352,5 @@
   loadAlerts();
   loadClouds();
   refreshRadar();
+  refreshSatellite();
 })();

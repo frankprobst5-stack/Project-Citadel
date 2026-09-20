@@ -859,6 +859,29 @@ Live-verified end to end against real NWS data for a real ZIP code:
   conditions view logs a real tagged event (`weather`, `science`,
   `weather_labs`).
 - **Honestly not built yet, shown as such in the UI**: Storm
-  Environment, Satellite, Climate, and Mission Mode — a labeled "planned
-  next" panel, not a broken or faked one. Phase 2-4 per the build order
-  above.
+  Environment, Climate, and Mission Mode — a labeled "planned next"
+  panel, not a broken or faked one. Phase 3-4 per the build order above.
+
+### Phase 2 — first increment: real Satellite deck (2026-09-20)
+
+A real, live, keyless addition, scoped deliberately smaller than the
+full Phase 2 described above: **NOAA STAR/NESDIS GOES-19 GeoColor**,
+whole-continental-US view, refreshed on demand — same "just an `<img>`
+pointing at a real public CDN" pattern the existing radar loop already
+used, not a new backend integration. Verified live before building:
+GOES16's own URL now 301-redirects to GOES19 at the identical path,
+confirming GOES19 is the current operational GOES-East satellite, not
+an outdated one. `625x375.jpg` is the smallest real size NOAA publishes
+for the whole CONUS in one image (~280KB) — picked over building a
+real per-state sector lookup table (confirmed several real regional
+sector codes exist — `sp`, `se`, `ne`, `nr`, `sr`, `pr` — but not a full
+clean 50-state map, e.g. no working Pacific Northwest code found), which
+stays real, useful future work rather than something guessed at here.
+NOAA doesn't expose a machine-readable capture time for this static
+image endpoint, so the panel honestly shows *our own fetch time*, not a
+scraped "image valid at" time that can't actually be verified.
+
+**Still real, still open for Phase 2**: a fuller interactive
+RIDGE2/MRMS radar layer (pannable/zoomable, warning polygons) beyond
+the existing basic loop, and GOES GLM lightning data — both still need
+real integration work this pass didn't do.

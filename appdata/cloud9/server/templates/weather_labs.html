@@ -55,8 +55,18 @@
         <span class="wl-deck-title">Radar</span>
         <button type="button" class="wl-refresh-btn" id="wl-radar-refresh">Refresh</button>
       </div>
-      <div class="wl-deck-note">Basic regional reflectivity loop. A fuller live radar and satellite view is a planned future upgrade.</div>
+      <div class="wl-deck-note">Basic regional reflectivity loop (NWS RIDGE). A fuller interactive radar layer is still a planned upgrade.</div>
       <img id="wl-radar-img" class="wl-radar-img" alt="Live radar loop">
+    </section>
+
+    <section class="wl-deck" id="wl-deck-satellite">
+      <div class="wl-deck-header">
+        <span class="wl-deck-title">Satellite</span>
+        <button type="button" class="wl-refresh-btn" id="wl-satellite-refresh">Refresh</button>
+      </div>
+      <div class="wl-deck-note" id="wl-satellite-note">GOES-19 GeoColor, whole-continental-US view. Updates roughly every 5-10 minutes.</div>
+      <img id="wl-satellite-img" class="wl-radar-img" alt="Live GOES-19 satellite image of the continental United States">
+      <div class="wl-deck-sub" id="wl-satellite-fetched"></div>
     </section>
 
     <section class="wl-deck" id="wl-deck-clouds">
@@ -68,7 +78,7 @@
 
     <section class="wl-deck wl-deck-soon">
       <div class="wl-deck-header"><span class="wl-deck-title">Storm Environment, Satellite, Climate &amp; Mission Mode</span></div>
-      <div class="wl-deck-note">These decks are planned next — CAPE/lightning/storm motion, live satellite imagery, and "is today normal?" climate comparisons all have real data sources lined up, just not built yet. Nothing faked in the meantime.</div>
+      <div class="wl-deck-note">These decks are planned next — CAPE/lightning/storm motion and "is today normal?" climate comparisons both have real data sources lined up, just not built yet. Nothing faked in the meantime.</div>
     </section>
 
   </main>
