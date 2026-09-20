@@ -444,6 +444,22 @@ drawn before it's actually locked**: Earth/Space/Nature/STEM/History Lab
 icons (stage 6), Creative Studio tool icons (stage 8), Portfolio/My
 Learning Year art (stage 9) — real, future work, not this week's list.
 
+### Real, deliberate palette decision for Cloud9's own art (2026-09-20)
+
+Frank's first four real pieces (hero banner, My Day desk scene, Learn
+globe/books, Explore orbital view) confirmed live: **warm — golden-hour
+oranges and ambers — not the cooler blue/steel/near-black palette locked
+as the shared family DNA across Citadel/WayStation/Gated.** Checked with
+Frank directly rather than assumed either way: this is a deliberate
+choice, not an accidental first-batch default. **Locked**: Cloud9 gets
+its own warmer, more inviting secondary palette on purpose — a kids'
+homeschool product reasonably wants a different feeling than a tactical
+command-center dashboard, and `PALETTE.md` itself already allows each
+app a secondary accent on top of the shared family DNA. All of Cloud9's
+own art (this list and everything added later) should stay warm/inviting
+to match these first four, not drift toward the ecosystem's cooler
+palette by default.
+
 ## Cross-card design principle: theme/layout is as important as the data
 
 Real, from Frank directly, and applies to every card in this redesign,
