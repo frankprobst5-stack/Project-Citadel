@@ -10,6 +10,7 @@ import journal
 import launcher
 import notes_tools
 import planner
+import school_library
 import settings
 import verses
 import videos
@@ -180,6 +181,44 @@ def history_fact_route():
         return jsonify(history_fact.get_today_fact())
     except Exception:
         return jsonify({"error": "Couldn't reach Wikipedia right now, and nothing is cached yet."}), 502
+
+
+@app.route("/school-library")
+def school_library_page():
+    return render_template("school_library.html")
+
+
+@app.route("/api/school-library/content")
+def school_library_content():
+    kind = request.args.get("kind", "video")
+    if kind not in ("video", "exercise"):
+        return jsonify({"error": "kind must be 'video' or 'exercise'."}), 400
+    search = request.args.get("search") or None
+    page = max(1, request.args.get("page", 1, type=int))
+    try:
+        school_library.sync_library()
+    except Exception:
+        pass  # serve whatever's cached; sync failures are never fatal
+    return jsonify(school_library.get_content(kind, search=search, page=page))
+
+
+@app.route("/api/school-library/learners")
+def school_library_learners():
+    return jsonify(school_library.get_learners())
+
+
+@app.route("/api/school-library/status")
+def school_library_status():
+    return jsonify(school_library.get_status())
+
+
+@app.route("/api/school-library/sync", methods=["POST"])
+def school_library_sync():
+    try:
+        school_library.sync_library(force=True)
+        return jsonify(school_library.get_status())
+    except Exception:
+        return jsonify({"error": "Couldn't reach Kolibri right now."}), 502
 
 
 @app.route("/api/verse-of-day")

@@ -110,12 +110,12 @@
       "cards": [
         {
           "id": "kolibri",
-          "title": "Full School Library",
-          "subtitle": "Lessons, exercises & courses",
+          "title": "School Library",
+          "subtitle": "Videos & exercises",
           "icon": "📚",
           "accent": "#7ea8e8",
           "status": "active",
-          "link": "http://localhost:8081"
+          "link": "/school-library"
         }
       ]
     }

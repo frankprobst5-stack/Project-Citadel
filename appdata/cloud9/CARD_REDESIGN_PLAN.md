@@ -699,9 +699,61 @@ dashboard's visual pass happens.
 - [ ] Arcade — not started
 - [ ] STEM Lab — not started
 - [ ] Bible Study — not started
-- [x] Full School Library (Kolibri) — **staying as-is**, real decision, not a gap
+- [x] School Library (Kolibri) — **real build, 2026-09-20** (see below) —
+      the old plain link to Kolibri's own raw interface is gone
 - [x] Earth Lab (Explore) — **first real build, 2026-09-20** (see above) —
       real card, real full-screen page, real data, real event log
+- [x] This Day in History — **first real build, 2026-09-20** (see above)
+
+## School Library — first real build (2026-09-20)
+
+Built exactly to the locked design above: `cards.json`'s "kolibri" card
+no longer links straight to Kolibri's own raw interface (`http://
+localhost:8081`) — it opens `/school-library`, a real Cloud9-native
+full-screen grid (videos and exercises, tabs, search, pagination),
+using the real `contentnode` API this doc already verified.
+
+**A real, severe problem found and fixed before this was buildable at
+all**: `?kind=video` against the actual running library (100GB+,
+21,690 real videos, 13,483 real exercises) never completed in over 3
+minutes against Kolibri's original 1024m memory cap — traced to the
+container being pinned at that ceiling, not a slow query in general.
+Raised `modules/education/compose.fragment.yml`'s kolibri `mem_limit`
+to 2048m; the identical request came back in ~10 seconds afterward.
+This was a real, load-bearing infrastructure bug, not a Cloud9-side
+issue — worth knowing if Kolibri ever feels slow elsewhere in Citadel
+too.
+
+**Even at 10 seconds, still too slow to call live per page view** — a
+family opening the library shouldn't wait on Kolibri directly every
+time. `server/school_library.py` syncs the full video/exercise list
+into its own SQLite cache (`data/school_library.db`) on a real interval
+(6 hours) and serves every real request from there — verified live:
+first request triggered a real 13s sync, the very next request (a
+different page) returned in 20ms.
+
+**Real content plays natively in Cloud9** for videos — the API returns
+a direct, playable `storage_url`, so clicking a video opens a real
+`<video>` player in Cloud9 itself, verified live with real Khan-Academy-
+style content actually playing. **Exercises deep-link to Kolibri's own
+real learner UI** instead (`/en/learn/#/topics/c/<id>`, confirmed to be
+the real route by checking what Kolibri's own frontend does) — exercises
+need Kolibri's real interactive engine, which is exactly the kind of
+thing this whole redesign's "orchestrate, don't rebuild" principle says
+not to reimplement.
+
+**Learner profiles**: the picker calls the real `facilityuser` API as
+planned, but this instance currently has zero real learner accounts
+(`num_learners: 0`, confirmed live) — so the picker honestly shows just
+"Everyone" for now rather than fake profiles. Wired and ready the moment
+real accounts exist.
+
+**Not built this pass, named honestly**: progress/completion checkmarks
+(`attemptlog`) — the real endpoint exists and returns `200`, but with
+zero real attempts logged yet on this instance, its actual populated
+field shape couldn't be verified against real data, only against its
+API metadata. Grade-level/subject filtering remains the same real,
+already-named gap (opaque category IDs, no lookup table yet).
 
 ---
 

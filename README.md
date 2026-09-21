@@ -157,7 +157,7 @@ you actually enable in the installer's module picker:
 |---|---|
 | Just the lightweight tier (Home Monitor, Secure Notes, Knowledge Base) | ~1 GB |
 | + Recipes and/or Whisper audio transcription | ~2 GB |
-| + Off-Grid AI and/or Home Education (share one Ollama engine, so enabling both doesn't double this cost) | ~4 GB, more for a larger model than the default `llama3.2:1b` |
+| + Off-Grid AI and/or Home Education (share one Ollama engine, so enabling both doesn't double this cost) | ~5 GB, more for a larger model than the default `llama3.2:1b` — Kolibri's own cap was raised to 2GB 2026-09-20 after a real content-library query needed it |
 | Everything at once (the installer's non-interactive default) | **8 GB+ free, 16 GB total system RAM is comfortable** — this is what actually froze a real 15 GB test machine when combined with normal desktop use, so don't undersize this |
 
 If you're on a laptop or a machine you also use for other things, pick only the
@@ -287,10 +287,12 @@ Then access them via the **Knowledge Base** module.
 
 ### Home Education Lessons
 
-Kolibri is a full learning platform. Once running, visit **http://localhost:8081** or click the **Home Education Hub** module to:
-- Browse thousands of lessons (math, science, history, language, etc.)
-- Track student progress
-- Download content for offline use
+Kolibri is a full learning platform underneath Cloud9's own kid-facing
+front door. Day to day, kids use Cloud9's **School Library** card — a
+simple grid of videos and exercises, no coach tools or admin chrome.
+For actually managing the platform (importing content channels,
+creating learner accounts, downloading content for offline use), visit
+Kolibri's own real interface directly at **http://localhost:8081**.
 
 ### Homestead Logistics
 

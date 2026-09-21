@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>School Library - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/school-library.css') }}">
+</head>
+<body class="sl-body">
+  <header class="topbar sl-topbar">
+    <a class="sl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="sl-heading">
+      <span class="sl-icon">📚</span>
+      <span class="sl-title">School Library</span>
+    </div>
+    <select class="sl-learner-select" id="sl-learner-select">
+      <option value="">Everyone</option>
+    </select>
+  </header>
+
+  <main class="sl-main">
+    <div class="sl-controls">
+      <div class="sl-tabs">
+        <button type="button" class="sl-tab sl-tab-active" id="sl-tab-video">🎬 Videos</button>
+        <button type="button" class="sl-tab" id="sl-tab-exercise">✏️ Exercises</button>
+      </div>
+      <input type="text" class="sl-search" id="sl-search" placeholder="Search titles...">
+    </div>
+
+    <div class="sl-status" id="sl-status"></div>
+
+    <div class="sl-grid" id="sl-grid">
+      <div class="sl-loading">Loading the library&hellip;</div>
+    </div>
+
+    <div class="sl-pagination" id="sl-pagination" hidden>
+      <button type="button" id="sl-prev">&larr; Previous</button>
+      <span id="sl-page-label"></span>
+      <button type="button" id="sl-next">Next &rarr;</button>
+    </div>
+  </main>
+
+  <div class="sl-player-overlay" id="sl-player-overlay" hidden>
+    <div class="sl-player-panel">
+      <button class="sl-player-close" id="sl-player-close" aria-label="Close">&#10005;</button>
+      <video class="sl-player-video" id="sl-player-video" controls></video>
+      <div class="sl-player-title" id="sl-player-title"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/school-library.js') }}"></script>
+</body>
+</html>

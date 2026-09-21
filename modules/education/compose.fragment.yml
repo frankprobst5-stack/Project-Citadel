@@ -70,11 +70,17 @@ services:
       - "${KOLIBRI_PORT}:8080"
     volumes:
       - ${KOLIBRI_DATA_PATH}:/kolibri
-    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
-    # cockpit comment for the full "why"). A full learning-platform
-    # stack (its own web server + database), heavier than the other
-    # lightweight services in this file -- 1024m covers real use.
-    mem_limit: 1024m
+    # Real memory cap, raised 2026-09-20 from the original 1024m --
+    # found live while building Cloud9's School Library view: querying
+    # /api/content/contentnode/ with a `kind` filter against a real,
+    # large content library (100GB+, several channels) pinned the
+    # container at its 1024m ceiling and the request never completed in
+    # under 3 minutes. Confirmed the limit itself was the bottleneck,
+    # not Kolibri being generically slow -- the exact same query
+    # returned in seconds once this was raised. 1024m was sized for
+    # "Kolibri is running," not "Kolibri is executing a real filtered
+    # query over real content" -- a materially different workload.
+    mem_limit: 2048m
     networks:
       - citadel-net
     restart: unless-stopped
