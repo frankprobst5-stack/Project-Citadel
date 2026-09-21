@@ -5,6 +5,7 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 import ai
 import dictionary
 import earth_lab
+import history_fact
 import journal
 import launcher
 import notes_tools
@@ -171,6 +172,14 @@ def earth_lab_country(alpha3):
         return jsonify({"error": "That country isn't in our atlas yet."}), 404
     except Exception:
         return jsonify({"error": "Couldn't reach the country database right now."}), 502
+
+
+@app.route("/api/history-fact")
+def history_fact_route():
+    try:
+        return jsonify(history_fact.get_today_fact())
+    except Exception:
+        return jsonify({"error": "Couldn't reach Wikipedia right now, and nothing is cached yet."}), 502
 
 
 @app.route("/api/verse-of-day")

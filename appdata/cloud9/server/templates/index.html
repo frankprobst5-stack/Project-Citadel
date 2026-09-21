@@ -32,6 +32,13 @@
   </header>
 
   <main class="board">
+    <div class="history-teaser" id="history-teaser" hidden>
+      <img class="history-teaser-icon" src="{{ url_for('static', filename='img/home/this-day-in-history-icon.png') }}" alt="">
+      <div class="history-teaser-text">
+        <div class="history-teaser-label">This Day in History</div>
+        <div class="history-teaser-fact" id="history-teaser-fact"></div>
+      </div>
+    </div>
     {% for row in rows %}
     <div class="row">
       {% for card in row.cards %}
@@ -284,6 +291,16 @@
 
         <button type="submit" id="settings-save-btn">Save Settings</button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="history-overlay" hidden>
+    <div class="notepad-panel history-panel">
+      <div class="chat-header">
+        <span class="chat-title">📜 This Day in History</span>
+        <button class="chat-close" id="history-close" aria-label="Close">✕</button>
+      </div>
+      <div class="history-body" id="history-body"></div>
     </div>
   </div>
 

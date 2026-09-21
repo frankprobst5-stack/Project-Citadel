@@ -9,6 +9,58 @@
   tickClock();
   setInterval(tickClock, 1000);
 
+  // --- This Day in History ---
+  const historyTeaser = document.getElementById("history-teaser");
+  const historyTeaserFact = document.getElementById("history-teaser-fact");
+  const historyOverlay = document.getElementById("history-overlay");
+  const historyClose = document.getElementById("history-close");
+  const historyBody = document.getElementById("history-body");
+  let historyFactCache = null;
+
+  function openHistory() {
+    if (!historyFactCache) return;
+    const f = historyFactCache;
+    let html = "";
+    if (f.stale) {
+      html += '<div class="history-stale-note">Couldn\'t reach Wikipedia today — showing the last fact fetched (' + f.staleDate + ').</div>';
+    }
+    if (f.year) {
+      html += '<div class="history-year">' + f.year + '</div>';
+    }
+    if (f.thumbnail) {
+      html += '<img class="history-thumb" src="' + f.thumbnail + '" alt="">';
+    }
+    html += '<div class="history-text">' + f.text + '</div>';
+    if (f.pageUrl) {
+      html += '<a class="history-link" href="' + f.pageUrl + '" target="_blank" rel="noopener">Read more on Wikipedia →</a><br>';
+    }
+    html += '<div class="history-attribution">Content via Wikipedia, CC BY-SA.</div>';
+    historyBody.innerHTML = html;
+    historyOverlay.hidden = false;
+  }
+
+  historyTeaser.addEventListener("click", openHistory);
+  historyClose.addEventListener("click", function () {
+    historyOverlay.hidden = true;
+  });
+  historyOverlay.addEventListener("click", function (e) {
+    if (e.target === historyOverlay) historyOverlay.hidden = true;
+  });
+
+  fetch("/api/history-fact")
+    .then(function (res) {
+      return res.json().then(function (data) {
+        return { ok: res.ok, data: data };
+      });
+    })
+    .then(function (result) {
+      if (!result.ok) return;
+      historyFactCache = result.data;
+      historyTeaserFact.textContent = (historyFactCache.year ? historyFactCache.year + ": " : "") + historyFactCache.text;
+      historyTeaser.hidden = false;
+    })
+    .catch(function () {});
+
   const overlay = document.getElementById("chat-overlay");
   const messagesEl = document.getElementById("chat-messages");
   const form = document.getElementById("chat-form");

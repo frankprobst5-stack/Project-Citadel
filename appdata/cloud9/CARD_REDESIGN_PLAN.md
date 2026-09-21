@@ -400,6 +400,31 @@ Off"/"Today's Assignments" in the working area (see the 2026-09-19
 layout above) — click opens a popup with the fuller description and the
 real Wikipedia link, not a full-screen takeover like the major Areas.
 
+### First real build (2026-09-20)
+
+Built against the current dashboard (the six-Area reskin above is still
+a mockup, not built yet), so the teaser landed as a real, clickable
+strip at the top of `index.html`'s existing card board rather than in
+the not-yet-existing "working area" — the right call once that
+redesign actually happens is to move it in, not duplicate it.
+
+`server/history_fact.py` calls the real Wikimedia endpoint, caches
+today's pick in `data/history_fact_cache.json` (date + fact), and
+serves the last real cached fact — clearly marked stale, with its real
+date — if the network's down. Verified live: killed network access
+after a real fetch, cache served correctly with `stale: true`.
+
+**A real problem found and fixed before shipping this, not after**: the
+raw feed is a plain historical record, not curated for kids — the
+first live test picked a bishop's real martyrdom as today's "fun fact."
+Added `history_fact.py`'s `BLOCK_KEYWORDS` (graphic death/violence
+phrasings) and `PREFER_KEYWORDS` (discovery/launch/first/etc.), scored
+and picked deterministically per day. Spot-checked against several real
+dates including 9/11 — correctly skipped the 2001 attacks and picked a
+2023 ISS launch fact instead. Documented in the module's own docstring
+as a real, best-effort filter worth a periodic human spot-check, not a
+solved content-safety problem.
+
 ## Earth Lab — Country Explorer, locked (2026-09-20)
 
 Real, external validation this time, not just Frank's own idea: a
