@@ -156,9 +156,9 @@ def weather_history():
     return jsonify(weather_cache.get_history(hours=24))
 
 
-@app.route("/api/storm-environment/cape")
-def storm_environment_cape():
-    return jsonify(storm_environment.get_cape())
+@app.route("/api/storm-environment")
+def storm_environment_route():
+    return jsonify(storm_environment.get_all())
 
 
 @app.route("/api/weather/clouds")

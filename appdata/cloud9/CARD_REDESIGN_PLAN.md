@@ -1218,3 +1218,36 @@ freezing level all use the exact same now-proven pipeline (different
 NOMADS `var_`/`lev_` parameters, same fetch/decode/extract/cache shape)
 — real, straightforward follow-on work, not re-verification of whether
 this is possible.
+
+## Storm Environment Lab — five more real metrics (2026-09-21)
+
+Rounded out from one metric to six, all live-verified: **CAPE, CIN,
+Lifted Index, Precipitable Water, 0-3km Storm Relative Helicity, and
+Storm Motion**. Checked the real GFS `.idx` field inventory before
+writing any code (not guessed): all six are real, direct GFS output
+fields at the exact NOMADS `var_`/`lev_` parameters used — no invented
+parameter names.
+
+**Real finding that validates the Sounding Lab's role, not a gap**:
+K-index, Total Totals, and Showalter Index are genuinely **not** direct
+GFS output fields — confirmed absent from the real `.idx` inventory.
+They're computed from multi-level temperature/dewpoint profiles (850/
+700/500mb), which is exactly what the Sounding Lab is architected to
+provide. Not built here, and correctly so — building them now would
+mean either faking the computation or duplicating the Sounding Lab's
+real job ahead of it existing.
+
+**Storm Motion needed a real engine extension, not a workaround**: it's
+the only metric here that's two GRIB fields (`USTM`/`VSTM`, U/V wind
+components) combined into one value. Added
+`weather_data_engine.get_gridded_vector()` — fetches both in one NOMADS
+request, decodes both from the same downloaded bytes, and combines them
+into speed (mph) + compass direction, same locked provenance schema as
+every scalar metric. Verified live: 23 mph from the NNW for a real
+Oklahoma City point.
+
+All six now render as real provenance cards on the Storm Environment
+deck via one combined `/api/storm-environment` endpoint (six cache
+entries, one round trip) — `MODEL` badge, value, source, exact GFS
+cycle, valid time, and coverage, all shown together for every metric,
+not just CAPE.

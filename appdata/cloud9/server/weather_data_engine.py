@@ -19,7 +19,7 @@ Every value this engine returns carries its own scientific identity
 (the locked schema) rather than just a number -- see `describe()`.
 """
 
-import subprocess
+import math
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
@@ -56,23 +56,27 @@ def _candidate_cycles(max_tries=4):
     return candidates
 
 
-def _fetch_grib_subset(variable, level_param, lat, lon, box_degrees=1.5):
+def _fetch_grib_subset(fields, lat, lon, box_degrees=1.5):
     """Real NOMADS GRIB Filter fetch, trying recent GFS cycles until one
-    actually has data (see `_candidate_cycles`). Returns (grib_bytes,
+    actually has data (see `_candidate_cycles`). `fields` is a list of
+    (variable, level_param) tuples -- multiple fields in one request
+    (e.g. storm motion's U/V components) is real, supported NOMADS
+    filter behavior, not a workaround. Returns (grib_bytes,
     cycle_datetime, forecast_hour) or raises if every candidate failed."""
     last_error = None
     for cycle in _candidate_cycles():
         params = {
             "dir": f"/gfs.{cycle.strftime('%Y%m%d')}/{cycle.strftime('%H')}/atmos",
             "file": f"gfs.t{cycle.strftime('%H')}z.pgrb2.0p25.f000",
-            f"var_{variable}": "on",
-            level_param: "on",
             "subregion": "",
             "toplat": lat + box_degrees,
             "bottomlat": lat - box_degrees,
             "leftlon": lon - box_degrees + 360 if lon < 0 else lon - box_degrees,
             "rightlon": lon + box_degrees + 360 if lon < 0 else lon + box_degrees,
         }
+        for variable, level_param in fields:
+            params[f"var_{variable}"] = "on"
+            params[level_param] = "on"
         try:
             resp = requests.get(NOMADS_FILTER_URL, params=params, headers=HEADERS, timeout=30)
             resp.raise_for_status()
@@ -84,19 +88,39 @@ def _fetch_grib_subset(variable, level_param, lat, lon, box_degrees=1.5):
     raise LookupError(f"No published GFS cycle had usable data: {last_error}")
 
 
-def _decode_point(grib_bytes, var_key, lat, lon):
-    """Real decode + nearest-grid-point extraction. cfgrib needs a real
-    file path (it shells out to eccodes), not an in-memory buffer --
-    confirmed directly, not assumed."""
+def _decode_points(grib_bytes, var_keys, lat, lon):
+    """Real decode + nearest-grid-point extraction for one or more
+    variables from the same downloaded subset. cfgrib needs a real file
+    path (it shells out to eccodes), not an in-memory buffer -- confirmed
+    directly, not assumed. Returns {var_key: (value, valid_time)}."""
     with tempfile.NamedTemporaryFile(suffix=".grib2") as f:
         f.write(grib_bytes)
         f.flush()
-        ds = xr.open_dataset(f.name, engine="cfgrib")
         lon_grid = lon + 360 if lon < 0 else lon
-        point = ds[var_key].sel(latitude=lat, longitude=lon_grid, method="nearest")
-        value = float(point.values)
-        valid_time = str(point.coords["valid_time"].values) if "valid_time" in point.coords else None
-        return value, valid_time
+        results = {}
+        # Multiple fields at different levels/type-of-level combos can't
+        # always merge into one cfgrib Dataset (real cfgrib limitation --
+        # confirmed live: mixed level types raise on open_dataset), so
+        # each variable gets decoded from its own filtered view of the
+        # same bytes rather than assuming one shared Dataset works.
+        for var_key in var_keys:
+            ds = xr.open_dataset(f.name, engine="cfgrib", backend_kwargs={"filter_by_keys": {}, "indexpath": ""})
+            if var_key not in ds.data_vars:
+                # Real fallback for the mixed-level-type case: reopen
+                # scoped to just this variable's own GRIB messages.
+                ds = xr.open_dataset(
+                    f.name, engine="cfgrib",
+                    backend_kwargs={"filter_by_keys": {"shortName": var_key}, "indexpath": ""},
+                )
+            point = ds[var_key].sel(latitude=lat, longitude=lon_grid, method="nearest")
+            value = float(point.values)
+            valid_time = str(point.coords["valid_time"].values) if "valid_time" in point.coords else None
+            results[var_key] = (value, valid_time)
+        return results
+
+
+def _product_label(cycle, fhour):
+    return f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle, f{fhour:03d}"
 
 
 def get_gridded_value(name, variable, var_key, level_param, unit, lat, lon, product_type="model"):
@@ -105,14 +129,41 @@ def get_gridded_value(name, variable, var_key, level_param, unit, lat, lon, prod
     calculated, when it's valid, and whether it's actually usable right
     now. Never fabricates a value: raises up to the caller (which decides
     the honest UNAVAILABLE/cache-fallback behavior) rather than guessing."""
-    grib_bytes, cycle, fhour = _fetch_grib_subset(variable, level_param, lat, lon)
-    value, valid_time = _decode_point(grib_bytes, var_key, lat, lon)
+    grib_bytes, cycle, fhour = _fetch_grib_subset([(variable, level_param)], lat, lon)
+    value, valid_time = _decode_points(grib_bytes, [var_key], lat, lon)[var_key]
     return {
         "name": name,
         "value": round(value, 1),
         "unit": unit,
         "source": "NOAA/NCEP",
-        "product": f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle, f{fhour:03d}",
+        "product": _product_label(cycle, fhour),
+        "type": product_type,
+        "validTime": valid_time,
+        "retrievedTime": time.time(),
+        "coverage": "Global model grid (0.25 degree resolution)",
+        "status": "valid",
+    }
+
+
+def get_gridded_vector(name, variable_u, variable_v, var_key_u, var_key_v, level_param, lat, lon, product_type="model"):
+    """For metrics that only exist as U/V wind components (storm motion)
+    -- fetches both in one request, combines into speed (mph) + compass
+    direction, same locked schema as a scalar value."""
+    grib_bytes, cycle, fhour = _fetch_grib_subset(
+        [(variable_u, level_param), (variable_v, level_param)], lat, lon
+    )
+    points = _decode_points(grib_bytes, [var_key_u, var_key_v], lat, lon)
+    u, valid_time = points[var_key_u]
+    v, _ = points[var_key_v]
+    speed_mph = round(((u**2 + v**2) ** 0.5) * 2.23694, 1)
+    direction_deg = round((270 - math.degrees(math.atan2(v, u))) % 360)
+    return {
+        "name": name,
+        "value": speed_mph,
+        "unit": "mph",
+        "direction": direction_deg,
+        "source": "NOAA/NCEP",
+        "product": _product_label(cycle, fhour),
         "type": product_type,
         "validTime": valid_time,
         "retrievedTime": time.time(),

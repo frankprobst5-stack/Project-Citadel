@@ -641,7 +641,8 @@
     card.innerHTML =
       '<div class="wl-provenance-name">' + data.name +
       '<span class="wl-provenance-type ' + typeClass + '">' + data.type + "</span></div>" +
-      '<div class="wl-provenance-value">' + data.value + " " + data.unit + "</div>" +
+      '<div class="wl-provenance-value">' + data.value + " " + data.unit +
+      (data.direction !== undefined ? " from the " + compassDirection(data.direction) : "") + "</div>" +
       (data.stale ? '<div class="history-stale-note">Showing the last successful fetch (' + data.ageHours + "h ago) — couldn't reach NOAA's model data just now.</div>" : "") +
       '<div class="wl-provenance-rows">' +
       '<div class="wl-provenance-row"><span class="wl-provenance-label">Source</span><span class="wl-provenance-val">' + data.source + "</span></div>" +
@@ -654,13 +655,16 @@
 
   function loadStormEnvironment() {
     stormGrid.innerHTML = '<div class="wl-loading">Loading model data&hellip;</div>';
-    fetch("/api/storm-environment/cape")
+    fetch("/api/storm-environment")
       .then(function (res) {
         return res.json();
       })
       .then(function (data) {
         stormGrid.innerHTML = "";
-        stormGrid.appendChild(renderProvenanceCard(Object.assign({ name: "CAPE" }, data)));
+        [data.cape, data.cin, data.liftedIndex, data.precipitableWater, data.stormRelativeHelicity, data.stormMotion]
+          .forEach(function (metric) {
+            stormGrid.appendChild(renderProvenanceCard(metric));
+          });
       })
       .catch(function () {
         stormGrid.innerHTML = '<div class="wl-loading">Couldn\'t reach the Weather Data Engine.</div>';
