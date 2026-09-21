@@ -1025,3 +1025,151 @@ order that resolves real overlaps, e.g. "chance showers and
 thunderstorms" correctly draws as the thunderstorm icon, not rain), with
 day/night correctly read from NWS's own `isDaytime` field (daily/hourly)
 or its icon URL (current conditions) rather than guessed from the hour.
+
+## Weather Labs reframed: a meteorology learning laboratory, not a weather app (2026-09-21)
+
+Real, explicit course-correction from Frank, and a big one — not a new
+feature request, a reframing of what this whole card *is*. Direct quote,
+worth keeping verbatim because it's the organizing principle for
+everything below: **"Weather Labs is a meteorology learning laboratory
+that uses the real atmosphere as its laboratory."** The design brief
+already said this ("what is the atmosphere doing, how do we know, and
+what should I watch next") — this locks it as the literal scope
+definition, not just a tagline, and reverses the earlier instinct to
+scope Storm Environment down to whatever `api.weather.gov` happens to
+expose for free.
+
+**Explicitly rejected**: cutting CAPE/LI/K-index/SRH/PWAT because the
+real sources aren't simple JSON. Frank's own words: "if there's no
+deadline, I would not cut the difficult meteorological data just
+because it requires GRIB2/geospatial work... build the whole weather
+laboratory." Checked and confirmed live before accepting this as
+buildable, not just aspirational: downloaded a real, geographically
+subsetted GRIB2 file from NCEP's NOMADS GRIB Filter (a real, live
+service — confirmed `200` against `nomads.ncep.noaa.gov`), decoded it
+with `cfgrib`/`xarray` (both installed clean, `eccodes`'s compiled
+backend came bundled in the PyPI wheel, no extra system package
+needed), and extracted a real point value (CAPE near Oklahoma City) via
+`xarray`'s nearest-neighbor `.sel()`. The full real pipeline — subset,
+download, decode, point-extract — works today, in this environment, not
+just in theory.
+
+**Also explicitly rejected: every screen orbiting the student's home
+location.** Location is one *mode*, not the architecture. A kid on a
+clear day in Texas should be able to study a blizzard in Montana, a
+hurricane in the Atlantic, or a typhoon on the other side of the planet.
+Real scale ladder: **My Location → Region → United States → Hemisphere
+→ Planet**.
+
+### The nine labs
+
+1. **Surface Weather Lab** — the existing Phase 1/2 instrument decks
+   (temperature, dew point, humidity, pressure, wind, visibility) plus
+   precipitation, cloud cover, solar/UV, apparent temperature, and
+   ceiling/present weather. Same six-part popover pattern, deepened:
+   clicking Temperature should eventually teach diurnal heating,
+   inversions, fronts, and altitude effects, not just show a number.
+2. **Radar Lab** — reflectivity, base velocity, storm motion,
+   inbound/outbound velocity, rotation signatures, beam height,
+   dual-pol, range limitations — taught as a real instrument, with
+   guided tasks ("find the cold front," "identify rotation," "compare
+   to 30 minutes ago"), not just a loop image. Real sources: NWS
+   RIDGE2/MRMS/NEXRAD (already locked above, not `api.weather.gov`).
+3. **Satellite Lab** — GeoColor, visible, infrared, water vapor, cloud
+   products, with the *why* taught explicitly (visible = reflected
+   sunlight, IR = emitted thermal radiation, water vapor = upper-level
+   moisture). Real source: NOAA GOES via NESDIS/NODD (already locked
+   above for the GeoColor piece).
+4. **Atmosphere / Sounding Lab** — new. Vertical levels (surface, 850,
+   700, 500, 300, 250 mb), building toward a real Skew-T/log-P viewer:
+   temperature profile, dew-point profile, LCL, freezing level, CAPE,
+   CIN, wind profile, shear. This is *where CAPE actually comes from* —
+   the lab that makes Storm Environment's numbers make sense instead of
+   being memorized.
+5. **Storm Environment Lab** — the original full panel, kept in full:
+   CAPE, CIN, Lifted Index, K-Index, Total Totals, Showalter Index, SRH,
+   bulk wind shear, precipitable water, storm motion, lapse rates,
+   freezing level, lightning activity. Real sources confirmed: GOES-R
+   Derived Stability Indices + SPC mesoanalysis (satellite-derived/
+   analysis) and NCEP model grids via NOMADS (model) — the GRIB2
+   pipeline above is what makes this real instead of aspirational.
+6. **Model Lab** — new. Teaches observation ≠ analysis ≠ forecast model
+   ≠ forecast, using real GFS/NAM/other NOMADS-hosted NCEP products.
+   Real lesson shape: show today's observed atmosphere, then the
+   model's atmosphere +6h/+12h/+24h, then compare to what actually
+   happened.
+7. **Global Weather Lab** — the architectural reframe: the backend
+   contract is "give me atmospheric data for a place, region,
+   phenomenon, time, and product," never "give me weather for lat/lon."
+   Real, honest constraint to surface in the UI, not hide: NWS/NOAA
+   observing systems are U.S.-centric, while satellite and global model
+   products have much broader real coverage — the UI states each
+   product's real coverage rather than implying everything is global.
+8. **Weather Event Explorer** — a workspace built around one real named
+   event (a hurricane, a tornado outbreak), pulling satellite, radar,
+   pressure, wind, water vapor, forecast, alerts, history, and geography
+   into one place. Real, direct tie-in to Earth Lab (geography) and This
+   Day in History (historical comparison) — a live realization of the
+   master plan's "one event connects science, geography, math, writing,
+   history" cross-subject goal, not just a Weather Labs feature.
+9. **Mission Mode** — the capstone, not a separate feature. Three
+   mission types: **Live** (real weather happening somewhere right now),
+   **Guided** (concepts — fronts, thunderstorms, hurricanes, tornado
+   environments, winter storms, pressure), **Historical** (replaying a
+   real archived event with real archived data/imagery where NCEI/NOMADS
+   archives make that feasible). The existing briefing → observe →
+   question → reveal → investigate-related → recap interaction pattern
+   stays; this expands what feeds it, not how it works.
+
+### The Weather Data Engine — isolating the hard part
+
+**Locked architectural decision**: the GRIB2/geospatial complexity lives
+in one place, not spread through Cloud9. A real `weather_data_engine`
+layer sits underneath Weather Labs and is the only thing that knows how
+to talk to `api.weather.gov`, NWS METAR observations, NEXRAD/RIDGE2/
+MRMS, GOES/NESDIS/NODD, SPC products, NCEP/NOMADS, and NCEI archives.
+For gridded data specifically, the real pipeline (verified live above):
+**download/subset via NOMADS GRIB Filter → decode with cfgrib/xarray →
+spatial point-extraction → unit conversion → cache → normalized API**
+that the rest of Weather Labs consumes the same way regardless of which
+of the nine labs is asking.
+
+**The one rule every value in this engine must follow** (Frank's own
+formulation, and it's exactly this project's existing reliability rules
+— cache responsibly, never invent an unavailable value, distinguish
+observed from calculated, mark stale data — extended from "per-field"
+to "structural"): every value carries its own scientific identity, not
+just a number:
+
+```
+CAPE
+value: 1820
+unit: J/kg
+source: NOAA/NCEP
+product: <specific model/analysis name>
+type: observed | satellite-derived | analysis | model
+valid_time: ...
+retrieved_time: ...
+coverage: <real geographic/temporal coverage of this product>
+quality/status: valid | stale | unavailable
+```
+
+This is what makes "what is this, where did it come from, was it
+observed or calculated, when is it valid, what does it tell us, what
+doesn't it" answerable for *every* instrument in every lab, not just
+the ones built so far — the six-part popover pattern already locked
+above is this same principle applied at the UI layer; this is it
+applied at the data layer underneath.
+
+### Real roadmap change
+
+Old framing: "local weather dashboard → maybe advanced weather someday."
+**New framing, locked**: build the Weather Data Engine and the nine labs
+as the real target from the start, sequenced by real dependency order
+(Surface/Radar/Satellite already have real live groundwork; Sounding and
+Storm Environment need the Engine's GRIB2 pipeline built first; Model
+and Global/Event Explorer build on top of that; Mission Mode is the
+capstone that ties all nine together) — not descoped to whatever the
+simplest API happens to expose. Exact phase-by-phase sequencing is real
+future work, not decided in this entry — this locks the *destination and
+architecture*, not yet the week-by-week plan to get there.
