@@ -617,6 +617,58 @@
 
   radarRefresh.addEventListener("click", refreshRadar);
 
+  // ---- Storm Environment: the Weather Data Engine's first real lab --
+  // every value renders with its full scientific identity (type badge,
+  // product, valid time, retrieved time, coverage, status) per the
+  // locked provenance schema, not just a bare number.
+  const stormGrid = document.getElementById("wl-storm-grid");
+
+  function formatTimestamp(iso) {
+    if (!iso) return "unknown";
+    return new Date(iso).toLocaleString();
+  }
+
+  function renderProvenanceCard(data) {
+    const card = document.createElement("div");
+    card.className = "wl-provenance-card";
+    if (data.status === "unavailable") {
+      card.innerHTML =
+        '<div class="wl-provenance-name">' + (data.name || "Storm Environment") + "</div>" +
+        '<div class="wl-provenance-unavailable">UNAVAILABLE — ' + (data.reason || "no data right now") + "</div>";
+      return card;
+    }
+    const typeClass = "wl-provenance-type-" + (data.type || "model").replace(/_/g, "-");
+    card.innerHTML =
+      '<div class="wl-provenance-name">' + data.name +
+      '<span class="wl-provenance-type ' + typeClass + '">' + data.type + "</span></div>" +
+      '<div class="wl-provenance-value">' + data.value + " " + data.unit + "</div>" +
+      (data.stale ? '<div class="history-stale-note">Showing the last successful fetch (' + data.ageHours + "h ago) — couldn't reach NOAA's model data just now.</div>" : "") +
+      '<div class="wl-provenance-rows">' +
+      '<div class="wl-provenance-row"><span class="wl-provenance-label">Source</span><span class="wl-provenance-val">' + data.source + "</span></div>" +
+      '<div class="wl-provenance-row"><span class="wl-provenance-label">Product</span><span class="wl-provenance-val">' + data.product + "</span></div>" +
+      '<div class="wl-provenance-row"><span class="wl-provenance-label">Valid time</span><span class="wl-provenance-val">' + formatTimestamp(data.validTime) + "</span></div>" +
+      '<div class="wl-provenance-row"><span class="wl-provenance-label">Coverage</span><span class="wl-provenance-val">' + data.coverage + "</span></div>" +
+      "</div>";
+    return card;
+  }
+
+  function loadStormEnvironment() {
+    stormGrid.innerHTML = '<div class="wl-loading">Loading model data&hellip;</div>';
+    fetch("/api/storm-environment/cape")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        stormGrid.innerHTML = "";
+        stormGrid.appendChild(renderProvenanceCard(Object.assign({ name: "CAPE" }, data)));
+      })
+      .catch(function () {
+        stormGrid.innerHTML = '<div class="wl-loading">Couldn\'t reach the Weather Data Engine.</div>';
+      });
+  }
+
+  loadStormEnvironment();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

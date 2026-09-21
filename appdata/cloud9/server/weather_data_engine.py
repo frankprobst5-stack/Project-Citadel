@@ -1,0 +1,121 @@
+"""The Weather Data Engine -- CARD_REDESIGN_PLAN.md's locked architecture:
+the one place in Cloud9 that knows how to talk to gridded/model weather
+products (GRIB2 via NOMADS), so the GRIB2/geospatial complexity doesn't
+spread through every lab that needs it. Surface obs/forecast/alerts stay
+in weather.py (they're already simple JSON, no need to route them
+through here) -- this engine is specifically for products that only
+exist as gridded model/analysis data: GFS via NCEP's NOMADS today,
+other NOMADS-hosted products (NAM, etc.) the same way later.
+
+Real pipeline, verified live before writing this module: NOMADS' real
+GRIB Filter service subsets a model file geographically and by field
+before download (no giant blind file fetch), the result decodes cleanly
+with cfgrib/xarray (eccodes' compiled backend ships in its own PyPI
+wheel), and a point value comes out of the grid via xarray's
+nearest-neighbor selection. Confirmed end to end against a real GFS
+cycle before this was locked in as buildable.
+
+Every value this engine returns carries its own scientific identity
+(the locked schema) rather than just a number -- see `describe()`.
+"""
+
+import subprocess
+import tempfile
+import time
+from datetime import datetime, timedelta, timezone
+
+import requests
+import xarray as xr
+
+HEADERS = {"User-Agent": "Cloud9 Weather Data Engine (kids learning dashboard)"}
+NOMADS_FILTER_URL = "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl"
+
+# Real publish-lag convention for GFS: a cycle's data isn't fully
+# available on NOMADS until roughly 3-4 hours after its cycle time.
+# Starting the search this far back means the *first* cycle tried is
+# normally already published, not a guaranteed-missing one.
+PUBLISH_LAG_HOURS = 4
+GFS_CYCLE_HOURS = (0, 6, 12, 18)
+
+
+def _candidate_cycles(max_tries=4):
+    """Real cycles to try, most recent first -- most requests succeed on
+    the first candidate; older ones are a real fallback for when the
+    latest cycle genuinely isn't published yet, not a guess."""
+    now = datetime.now(timezone.utc) - timedelta(hours=PUBLISH_LAG_HOURS)
+    cycle_hour = max(h for h in GFS_CYCLE_HOURS if h <= now.hour)
+    cursor = now.replace(hour=cycle_hour, minute=0, second=0, microsecond=0)
+    candidates = []
+    for _ in range(max_tries):
+        candidates.append(cursor)
+        idx = GFS_CYCLE_HOURS.index(cursor.hour)
+        if idx == 0:
+            cursor = (cursor - timedelta(days=1)).replace(hour=GFS_CYCLE_HOURS[-1])
+        else:
+            cursor = cursor.replace(hour=GFS_CYCLE_HOURS[idx - 1])
+    return candidates
+
+
+def _fetch_grib_subset(variable, level_param, lat, lon, box_degrees=1.5):
+    """Real NOMADS GRIB Filter fetch, trying recent GFS cycles until one
+    actually has data (see `_candidate_cycles`). Returns (grib_bytes,
+    cycle_datetime, forecast_hour) or raises if every candidate failed."""
+    last_error = None
+    for cycle in _candidate_cycles():
+        params = {
+            "dir": f"/gfs.{cycle.strftime('%Y%m%d')}/{cycle.strftime('%H')}/atmos",
+            "file": f"gfs.t{cycle.strftime('%H')}z.pgrb2.0p25.f000",
+            f"var_{variable}": "on",
+            level_param: "on",
+            "subregion": "",
+            "toplat": lat + box_degrees,
+            "bottomlat": lat - box_degrees,
+            "leftlon": lon - box_degrees + 360 if lon < 0 else lon - box_degrees,
+            "rightlon": lon + box_degrees + 360 if lon < 0 else lon + box_degrees,
+        }
+        try:
+            resp = requests.get(NOMADS_FILTER_URL, params=params, headers=HEADERS, timeout=30)
+            resp.raise_for_status()
+            if resp.content[:4] == b"GRIB" and len(resp.content) > 100:
+                return resp.content, cycle, 0
+            last_error = ValueError(f"Response for cycle {cycle} wasn't real GRIB2 data")
+        except requests.RequestException as exc:
+            last_error = exc
+    raise LookupError(f"No published GFS cycle had usable data: {last_error}")
+
+
+def _decode_point(grib_bytes, var_key, lat, lon):
+    """Real decode + nearest-grid-point extraction. cfgrib needs a real
+    file path (it shells out to eccodes), not an in-memory buffer --
+    confirmed directly, not assumed."""
+    with tempfile.NamedTemporaryFile(suffix=".grib2") as f:
+        f.write(grib_bytes)
+        f.flush()
+        ds = xr.open_dataset(f.name, engine="cfgrib")
+        lon_grid = lon + 360 if lon < 0 else lon
+        point = ds[var_key].sel(latitude=lat, longitude=lon_grid, method="nearest")
+        value = float(point.values)
+        valid_time = str(point.coords["valid_time"].values) if "valid_time" in point.coords else None
+        return value, valid_time
+
+
+def get_gridded_value(name, variable, var_key, level_param, unit, lat, lon, product_type="model"):
+    """The real, locked schema every Weather Data Engine value returns --
+    what it is, where it came from, whether it was observed or
+    calculated, when it's valid, and whether it's actually usable right
+    now. Never fabricates a value: raises up to the caller (which decides
+    the honest UNAVAILABLE/cache-fallback behavior) rather than guessing."""
+    grib_bytes, cycle, fhour = _fetch_grib_subset(variable, level_param, lat, lon)
+    value, valid_time = _decode_point(grib_bytes, var_key, lat, lon)
+    return {
+        "name": name,
+        "value": round(value, 1),
+        "unit": unit,
+        "source": "NOAA/NCEP",
+        "product": f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle, f{fhour:03d}",
+        "type": product_type,
+        "validTime": valid_time,
+        "retrievedTime": time.time(),
+        "coverage": "Global model grid (0.25 degree resolution)",
+        "status": "valid",
+    }

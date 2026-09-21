@@ -15,6 +15,8 @@ DEFAULTS = {
     "grid_office": "",
     "grid_x": None,
     "grid_y": None,
+    "lat": None,
+    "lon": None,
     "radar_station": "",
     "weather_radio_url": "",
     "weather_radio_label": "",
@@ -45,8 +47,11 @@ def resolve_zip(zip_code):
     geo_resp = requests.get(f"http://api.zippopotam.us/us/{zip_code}", timeout=10)
     geo_resp.raise_for_status()
     place = geo_resp.json()["places"][0]
-    lat = place["latitude"]
-    lon = place["longitude"]
+    # zippopotam.us returns these as strings -- real bug caught live:
+    # every downstream numeric use (grid math, GRIB point extraction)
+    # needs real floats, not "35.4726".
+    lat = float(place["latitude"])
+    lon = float(place["longitude"])
     label = f"{place['place name']}, {place['state abbreviation']}"
 
     points_resp = requests.get(
@@ -64,4 +69,6 @@ def resolve_zip(zip_code):
         "grid_x": props["gridX"],
         "grid_y": props["gridY"],
         "radar_station": props["radarStation"],
+        "lat": lat,
+        "lon": lon,
     }

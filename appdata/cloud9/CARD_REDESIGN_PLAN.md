@@ -1173,3 +1173,48 @@ capstone that ties all nine together) — not descoped to whatever the
 simplest API happens to expose. Exact phase-by-phase sequencing is real
 future work, not decided in this entry — this locks the *destination and
 architecture*, not yet the week-by-week plan to get there.
+
+## Weather Data Engine + Storm Environment Lab — first real build (2026-09-21)
+
+The Engine's real GRIB2 pipeline exists now, not just in the verification
+spike above: `server/weather_data_engine.py` (generic — subset via
+NOMADS GRIB Filter, decode with cfgrib/xarray, extract a real point via
+nearest-neighbor, return the locked provenance schema) and
+`server/storm_environment.py` (CAPE specifically, the first metric,
+cached in its own SQLite store on a 3-hour TTL since a GFS cycle is only
+real for 6). Live-verified end to end for a real Oklahoma City location:
+138 J/kg, `GFS 0.25deg, 2026-09-21 00Z cycle, f000`, full provenance
+rendering correctly on a new Storm Environment deck in Weather Labs —
+the `MODEL` type badge, source, product, valid time, and coverage all
+shown together, the first real instance of the locked "every value
+carries its scientific identity" principle actually rendering in the UI.
+
+**Two real infrastructure problems found and fixed before this worked,
+neither hypothetical**:
+- `settings.py`'s `resolve_zip` was silently storing `lat`/`lon` as
+  *strings* (zippopotam.us's own real response shape) — harmless for
+  the fields already built (never used numerically), but a real
+  `TypeError` waiting to happen the moment anything did real math on
+  them, which the Engine's grid-box math immediately did. Fixed at the
+  source (`float()` cast on write), not papered over downstream.
+- Cloud9's own container needed more memory than it ever has before:
+  measured `xarray`+`cfgrib` importing and decoding one real subset at
+  ~157MB RSS, well past the existing 256m cap. Raised
+  `modules/education/compose.fragment.yml`'s cloud9 `mem_limit` to
+  512m — the same real lesson just learned fixing Kolibri's own limit
+  days earlier, caught proactively this time instead of by a live
+  failure.
+
+**Verified the real deployment path, not just a local venv**: built
+Cloud9's actual Docker image (`python:3.11-slim`) with `cfgrib`/`xarray`
+added to `requirements-docker.txt`, confirmed the build succeeds and
+`eccodes`'s compiled backend installs from its own PyPI wheel with zero
+extra `apt` packages needed, and confirmed the import actually works at
+runtime inside that real container (not just at build time).
+
+**Scoped honestly to one metric this pass**: CIN, LI, K-index, Total
+Totals, Showalter, SRH, bulk shear, PWAT, storm motion, lapse rates, and
+freezing level all use the exact same now-proven pipeline (different
+NOMADS `var_`/`lev_` parameters, same fetch/decode/extract/cache shape)
+— real, straightforward follow-on work, not re-verification of whether
+this is possible.

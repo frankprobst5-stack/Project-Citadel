@@ -12,6 +12,7 @@ import notes_tools
 import planner
 import school_library
 import settings
+import storm_environment
 import verses
 import videos
 import weather
@@ -153,6 +154,11 @@ def weather_alerts():
 @app.route("/api/weather/history")
 def weather_history():
     return jsonify(weather_cache.get_history(hours=24))
+
+
+@app.route("/api/storm-environment/cape")
+def storm_environment_cape():
+    return jsonify(storm_environment.get_cape())
 
 
 @app.route("/api/weather/clouds")

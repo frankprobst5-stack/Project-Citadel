@@ -30,11 +30,16 @@ services:
       - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
       - OLLAMA_MODEL=llama3.2:1b
       - REDIS_URL=redis://citadel-cloud9-redis:6379/0
-    # Real memory cap, added 2026-09-14 (see docker-compose.yml's
-    # cockpit comment for the full "why"). Measured ~50MB in real use
-    # (the AI inference itself now runs in the shared ollama container,
-    # not here) -- 256m is generous headroom.
-    mem_limit: 256m
+    # Real memory cap, raised 2026-09-21 from the original 256m --
+    # Weather Labs' new Storm Environment lab pulls in xarray/cfgrib to
+    # decode real GRIB2 model data (the Weather Data Engine, see
+    # CARD_REDESIGN_PLAN.md), and measured directly: importing those
+    # libraries plus decoding one real subset already peaks at ~157MB
+    # RSS in a short-lived test process, before Flask's own baseline or
+    # a larger regional subset. Learned this exact lesson already this
+    # week with Kolibri's own mem_limit (see that service's comment) --
+    # raising it now instead of waiting for the same failure mode here.
+    mem_limit: 512m
     networks:
       - citadel-net
     # depends_on: [ollama] removed 2026-09-16 -- same real reason as

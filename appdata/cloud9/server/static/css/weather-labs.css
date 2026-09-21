@@ -308,6 +308,80 @@ body {
   margin-bottom: 6px;
 }
 
+.wl-storm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.wl-provenance-card {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.wl-provenance-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.wl-provenance-name {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.wl-provenance-type {
+  display: inline-block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.wl-provenance-type-observed { border-color: var(--green); color: var(--green); }
+.wl-provenance-type-satellite-derived { border-color: var(--accent-bright); color: var(--accent-bright); }
+.wl-provenance-type-analysis { border-color: var(--amber); color: var(--amber); }
+.wl-provenance-type-model { border-color: #b088ff; color: #b088ff; }
+
+.wl-provenance-rows {
+  margin-top: 10px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 8px;
+}
+
+.wl-provenance-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  padding: 3px 0;
+}
+
+.wl-provenance-label {
+  color: var(--text-faint);
+}
+
+.wl-provenance-val {
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.wl-provenance-unavailable {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
 .wl-radio-btn {
   position: fixed;
   bottom: 20px;

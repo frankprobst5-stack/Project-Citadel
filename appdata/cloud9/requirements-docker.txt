@@ -15,3 +15,9 @@ nltk
 # only the best-effort broadcast layer, so a missing/unreachable Redis
 # never breaks a card.
 redis==5.0.8
+# Weather Data Engine's real GRIB2 decode pipeline (see
+# weather_data_engine.py / CARD_REDESIGN_PLAN.md) -- eccodes' compiled
+# backend ships bundled in its own PyPI wheel, verified directly, so no
+# extra apt package (e.g. libeccodes-dev) is needed in the Dockerfile.
+cfgrib==0.9.15.1
+xarray==2026.7.0
