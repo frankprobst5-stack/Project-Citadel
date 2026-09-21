@@ -102,6 +102,28 @@ if errorlevel 1 (
     move /y .env.tmp .env >nul
 )
 
+REM Real fix for a live-reported vulnerability (2026-09-21, a real
+REM tester's own audit -- see app.py's own comment for the full story):
+REM vault-api's API had zero authentication, and with the host's
+REM docker.sock mounted into that container, an unauthenticated request
+REM could get root-equivalent control of the host. Generated ONCE
+REM (unlike CITADEL_HOST_PATH above, which is always rewritten) -- an
+REM existing install's token must never change under it, or every
+REM browser tab still holding the old one in vault-token.json starts
+REM failing until reloaded. PowerShell's RandomNumberGenerator is real
+REM cryptographic randomness, available on every Windows version this
+REM installer already targets (same baseline as curl/tar, both already
+REM required above).
+findstr /b /c:"VAULT_API_TOKEN=" .env >nul 2>nul
+if errorlevel 1 (
+    REM [BitConverter]::ToString + Replace, not a pipe into ForEach-Object
+    REM -- a literal `|` inside this already-quoted batch command line is
+    REM a real escaping risk not worth taking when a pipe-free one-liner
+    REM does the exact same job.
+    for /f "delims=" %%t in ('powershell -NoProfile -Command "$b=New-Object byte[] 32; (New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes($b); [BitConverter]::ToString($b).Replace('-','').ToLower()"') do set "VAULT_API_TOKEN=%%t"
+    >>.env echo VAULT_API_TOKEN=!VAULT_API_TOKEN!
+)
+
 REM Module picker (ROADMAP.md Phase B) -- same logic as install.sh's, see
 REM that file's own comment for why this only runs when .env has no
 REM COMPOSE_PROFILES line yet (a fresh install), and why titles/hardware

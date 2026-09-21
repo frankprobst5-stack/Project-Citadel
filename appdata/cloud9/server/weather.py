@@ -18,6 +18,11 @@ HEADERS = {"User-Agent": "Cloud9 Weather Labs (kids learning dashboard)"}
 # "Real reuse found" note. Same `${VAR:-default}` container-name pattern
 # ai.py already uses for citadel-ollama.
 VAULT_API_BASE_URL = os.environ.get("VAULT_API_BASE_URL", "http://citadel-vault-brain:5000")
+# Real fix for a live-reported vulnerability (2026-09-21) -- vault-api
+# now requires this on every request (see its own app.py comment for the
+# full story). Empty when unset rather than a made-up default, matching
+# the honest-empty-state pattern already used elsewhere in this file.
+VAULT_API_TOKEN = os.environ.get("VAULT_API_TOKEN", "")
 
 
 def get_cloud_types():
@@ -164,7 +169,11 @@ def get_active_alerts():
     list (not an error) if media-vault is unreachable or genuinely has
     nothing active -- both are honest, valid states."""
     try:
-        resp = requests.get(f"{VAULT_API_BASE_URL}/api/news/active-alerts", timeout=10)
+        resp = requests.get(
+            f"{VAULT_API_BASE_URL}/api/news/active-alerts",
+            headers={"X-Vault-Token": VAULT_API_TOKEN},
+            timeout=10,
+        )
         resp.raise_for_status()
         return resp.json().get("alerts", [])
     except requests.RequestException:

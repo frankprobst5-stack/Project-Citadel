@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script src="vault-auth.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CITADEL // SYSTEM SETTINGS</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
@@ -61,7 +62,7 @@
             <div class="row"><span class="label">Build</span><span class="value">Project Citadel v0.1.0</span></div>
             <div class="row"><span class="label">License</span><span class="value">GPL-3.0-or-later</span></div>
             <div class="row"><span class="label">Deployment model</span><span class="value">Single-site (LAN-trust only)</span></div>
-            <div class="note">No account/login layer exists yet — anyone on this network can reach every module. Fine for one trusted household; revisit before exposing this box beyond the LAN.</div>
+            <div class="note">No per-person account/login layer exists yet — anyone who can load this dashboard can reach every module, by design, for one trusted household. As of 2026-09-21, the API itself does require a real install-time token (attached automatically by this dashboard, blocking unrelated pages/devices that never loaded it) — that closes the unauthenticated-request gap, but not per-person accounts. Revisit before exposing this box beyond the LAN.</div>
         </div>
 
         <div class="panel">

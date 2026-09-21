@@ -30,6 +30,12 @@ services:
       - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
       - OLLAMA_MODEL=llama3.2:1b
       - REDIS_URL=redis://citadel-cloud9-redis:6379/0
+      # Real fix for a live-reported vulnerability (2026-09-21) -- see
+      # docker-compose.yml's own comment on this variable for the full
+      # story. weather.py's alerts proxy is the one real container-to-
+      # container caller of vault-api's /api/*, so it needs this token
+      # too now that vault-api requires it on every request.
+      - VAULT_API_TOKEN=${VAULT_API_TOKEN:-}
     # Real memory cap, raised 2026-09-21 from the original 256m --
     # Weather Labs' new Storm Environment lab pulls in xarray/cfgrib to
     # decode real GRIB2 model data (the Weather Data Engine, see

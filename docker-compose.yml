@@ -61,6 +61,20 @@ services:
       - STATION_GRID=${STATION_GRID:-AA00aa}
       - STATION_LAT=${STATION_LAT:-0}
       - STATION_LON=${STATION_LON:-0}
+      # Real fix for a live-reported vulnerability (2026-09-21, a real
+      # tester's own audit): vault-api's /api/* had zero authentication,
+      # and its docker.sock mount + module-install endpoint together mean
+      # an unauthenticated request can get root-equivalent control of the
+      # host. Generated once at install time (install.sh/install.bat),
+      # written here into a real static file (vault-token.json) the same
+      # way station-config.json already is, so cockpit's own pages can
+      # read it and attach it to their own /api/ calls -- see
+      # vault-auth.js. Baking it into a page anyone on the LAN can already
+      # load (the tester's own stated threat model explicitly accepts LAN
+      # access) is the correct scope: this blocks a *different* page that
+      # never loaded the dashboard from blindly POSTing to the API, which
+      # is the real CSRF-shaped attack the report named.
+      - VAULT_API_TOKEN=${VAULT_API_TOKEN:-}
     command: >
       sh -c "
       json='[';
@@ -72,6 +86,7 @@ services:
       json=\"$$json]\";
       echo \"$$json\" > /usr/share/nginx/html/modules-enabled.json;
       printf '{\"callsign\":\"%s\",\"location\":\"%s\",\"grid\":\"%s\",\"lat\":%s,\"lon\":%s}' \"$$STATION_CALLSIGN\" \"$$STATION_LOCATION\" \"$$STATION_GRID\" \"$$STATION_LAT\" \"$$STATION_LON\" > /usr/share/nginx/html/station-config.json;
+      printf '{\"token\":\"%s\"}' \"$$VAULT_API_TOKEN\" > /usr/share/nginx/html/vault-token.json;
       mkdir -p /etc/nginx/modules-enabled;
       rm -f /etc/nginx/modules-enabled/*.conf;
       for p in $$(echo \"$$COMPOSE_PROFILES\" | tr ',' ' '); do
@@ -205,6 +220,12 @@ services:
       - MEALIE_BASE_URL=http://citadel-mealie:9000
       - MEALIE_API_TOKEN=${MEALIE_API_TOKEN}
       - CITADEL_HOST_PATH=${CITADEL_HOST_PATH:-}
+      # Real fix for a live-reported vulnerability (2026-09-21) -- see
+      # cockpit's own comment on this same variable above for the full
+      # story. Required on every real request from here on (app.py's
+      # before_request hook) -- generated once by install.sh/install.bat,
+      # never guessed or defaulted to something predictable.
+      - VAULT_API_TOKEN=${VAULT_API_TOKEN:-}
       # News Archive & Local Log's real location-based alert scoping
       # (news_location.py/news_matcher.py) -- the same STATION_LAT/
       # STATION_LON cockpit already uses for the Tactical Map marker,

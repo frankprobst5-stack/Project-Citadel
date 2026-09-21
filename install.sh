@@ -60,6 +60,26 @@ else
     echo "CITADEL_HOST_PATH=${CITADEL_HOST_PATH}" >> .env
 fi
 
+# Real fix for a live-reported vulnerability (2026-09-21, a real
+# tester's own audit -- see app.py's own comment for the full story):
+# vault-api's API had zero authentication, and with the host's
+# docker.sock mounted into that container, an unauthenticated request
+# could get root-equivalent control of the host. Generated ONCE (unlike
+# CITADEL_HOST_PATH above, which is always rewritten) -- an existing
+# install's token must never change under it, or every browser tab
+# still holding the old one in vault-token.json starts failing until
+# reloaded. `openssl` is virtually always present alongside Docker; a
+# /dev/urandom fallback covers the rare box where it isn't, rather than
+# failing the whole install over this one step.
+if ! grep -q "^VAULT_API_TOKEN=" .env 2>/dev/null; then
+    if command -v openssl >/dev/null 2>&1; then
+        VAULT_API_TOKEN="$(openssl rand -hex 32)"
+    else
+        VAULT_API_TOKEN="$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')"
+    fi
+    echo "VAULT_API_TOKEN=${VAULT_API_TOKEN}" >> .env
+fi
+
 # Module picker (ROADMAP.md Phase B) -- every module here matches a real
 # folder in modules/<name>/, each with its own manifest.json describing
 # exactly what it is. This only runs on a truly fresh install (no

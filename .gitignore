@@ -94,6 +94,11 @@ appdata/media-vault/intercept/
 # Provision separately (install script / release asset), never via git.
 appdata/cockpit/tiles/
 
+# Generated at cockpit container startup from .env's VAULT_API_TOKEN
+# (see docker-compose.yml's cockpit command) -- a real per-install
+# secret, same reasoning as .env itself never being committed.
+appdata/cockpit/vault-token.json
+
 # Python bytecode cache
 __pycache__/
 *.pyc

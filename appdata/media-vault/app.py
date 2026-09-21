@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 import sqlite3
 import os
 import json
+import hmac
 import requests
 import threading
 
@@ -26,6 +27,38 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 DB_PATH = "/app/citadel.db"
+
+# Real fix for a live-reported vulnerability (2026-09-21, a real
+# tester's own audit, verified directly against this file before fixing
+# it): every route here had zero authentication, and this container has
+# the host's own docker.sock mounted (see docker-compose.yml's own
+# comment on that mount) -- an unauthenticated request to
+# /api/modules/install can get root-equivalent control of the host, not
+# hypothetically: the zip-install path validates path-safety inside the
+# archive but never validates the *content* of the compose fragment it
+# installs, and a service block with no `profiles:` key starts
+# immediately and unconditionally on the next `docker compose up`.
+#
+# VAULT_API_TOKEN is generated once at install time (install.sh/
+# install.bat), never a guessed or predictable default -- an empty
+# token here means installs haven't been through the fixed installer
+# yet, and every request is honestly rejected rather than silently
+# trusting nothing, which would defeat the point.
+#
+# hmac.compare_digest, not `==`, for the same reason every other secret
+# comparison in this codebase uses it (see db::verify_hmac equivalents
+# elsewhere in this ecosystem) -- a timing side-channel on a home LAN is
+# a real if minor risk, and the fix costs nothing.
+VAULT_API_TOKEN = os.environ.get("VAULT_API_TOKEN", "")
+
+
+@app.before_request
+def _require_vault_token():
+    if request.method == "OPTIONS":
+        return None
+    provided = request.headers.get("X-Vault-Token", "")
+    if not VAULT_API_TOKEN or not hmac.compare_digest(provided, VAULT_API_TOKEN):
+        return jsonify({"error": "Missing or invalid X-Vault-Token header."}), 401
 
 # Mealie pantry-check bridge (see /api/pantry-check below) -- server-to-
 # server config, never exposed to the browser.
