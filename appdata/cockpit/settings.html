@@ -63,6 +63,11 @@
             <div class="row"><span class="label">License</span><span class="value">GPL-3.0-or-later</span></div>
             <div class="row"><span class="label">Deployment model</span><span class="value">Single-site (LAN-trust only)</span></div>
             <div class="note">No per-person account/login layer exists yet — anyone who can load this dashboard can reach every module, by design, for one trusted household. As of 2026-09-21, the API itself does require a real install-time token (attached automatically by this dashboard, blocking unrelated pages/devices that never loaded it) — that closes the unauthenticated-request gap, but not per-person accounts. Revisit before exposing this box beyond the LAN.</div>
+            <div class="row">
+                <span class="label">Vault API token</span>
+                <span class="value"><code id="vault-token-value">loading…</code> <button type="button" id="vault-token-copy">Copy</button></span>
+            </div>
+            <div class="note">Other apps that talk to this API directly — right now, WayStation's trunked-scanner bridge — need this exact value pasted into their own settings. Keep it as private as a password; anyone with it can reach every module here.</div>
         </div>
 
         <div class="panel">
@@ -111,6 +116,33 @@
     </div>
 
     <script>
+        // Real fix for a live-reported vulnerability (2026-09-21) --
+        // reads the same vault-token.json vault-auth.js already loads
+        // (a same-origin static file, not a /api/ route, so no
+        // chicken-and-egg auth problem showing it here). Displayed so a
+        // real person can copy it into another app's own settings
+        // (WayStation's Station Identity panel is the first real one).
+        (async function loadVaultToken() {
+            const el = document.getElementById('vault-token-value');
+            try {
+                const r = await fetch('/vault-token.json', { cache: 'no-store' });
+                const data = await r.json();
+                el.textContent = data.token || '(not generated yet — re-run the installer)';
+            } catch {
+                el.textContent = '(unavailable)';
+            }
+        })();
+        document.getElementById('vault-token-copy').addEventListener('click', async () => {
+            const text = document.getElementById('vault-token-value').textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                const btn = document.getElementById('vault-token-copy');
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = original; }, 1500);
+            } catch { /* clipboard permission denied -- the text is still selectable by hand */ }
+        });
+
         const CHECKS = [
             { name: 'Vigil power hub', kind: 'same-origin', url: '/api/grid' },
             { name: 'Media vault (vault-api)', kind: 'same-origin', url: '/api/inventory/general' },
