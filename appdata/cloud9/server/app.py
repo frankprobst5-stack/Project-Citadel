@@ -8,6 +8,7 @@ import dictionary
 import earth_lab
 import event_explorer
 import global_lab
+import guided_missions
 import history_fact
 import journal
 import launcher
@@ -190,6 +191,16 @@ def event_explorer_route():
 @app.route("/api/mission")
 def mission_route():
     return jsonify(mission_mode.get_mission())
+
+
+@app.route("/api/mission/guided")
+def guided_missions_list_route():
+    return jsonify(guided_missions.list_concepts())
+
+
+@app.route("/api/mission/guided/<concept_id>")
+def guided_mission_route(concept_id):
+    return jsonify(guided_missions.get_guided_mission(concept_id))
 
 
 @app.route("/api/climate-lab")

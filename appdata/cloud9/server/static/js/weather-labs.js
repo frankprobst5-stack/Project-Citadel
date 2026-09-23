@@ -961,9 +961,17 @@
   loadEventExplorer();
 
   // ---- Mission Mode: the capstone, orchestrating the labs above -----
+  const missionTabs = document.getElementById("wl-mission-tabs");
+  const missionConcepts = document.getElementById("wl-mission-concepts");
+
   function renderObserveRow(label, value) {
     return '<div class="wl-mission-observe-row"><span class="wl-event-label">' + label + '</span><span class="wl-event-val">' + value + "</span></div>";
   }
+
+  const SAFFIR_SIMPSON_MPH = [
+    ["Category 1", "74–95 mph"], ["Category 2", "96–110 mph"], ["Category 3", "111–129 mph"],
+    ["Category 4", "130–156 mph"], ["Category 5", "157+ mph"],
+  ];
 
   function renderMissionObserve(observe) {
     if (observe.kind === "storm") {
@@ -982,47 +990,131 @@
       return renderObserveRow(observe.warm.name, observe.warm.temperatureC + "°C") +
         renderObserveRow(observe.cool.name, observe.cool.temperatureC + "°C");
     }
+    if (observe.kind === "pressure") {
+      return observe.pressureInHg !== null
+        ? renderObserveRow("Pressure", observe.pressureInHg + " inHg") + renderObserveRow("Trend", observe.trend || "not enough history yet")
+        : renderObserveRow("Pressure", "No live reading available right now");
+    }
+    if (observe.kind === "thunderstorm-ingredients") {
+      return observe.capeJkg !== null
+        ? renderObserveRow("CAPE", observe.capeJkg + " J/kg") + renderObserveRow("Lifted Index", observe.liftedIndexC + " °C")
+        : renderObserveRow("CAPE", "No live reading available right now");
+    }
+    if (observe.kind === "tornado-ingredients") {
+      return observe.capeJkg !== null
+        ? renderObserveRow("CAPE", observe.capeJkg + " J/kg") + renderObserveRow("Storm Relative Helicity", observe.srhM2s2 + " m²/s²")
+        : renderObserveRow("CAPE / SRH", "No live reading available right now");
+    }
+    if (observe.kind === "temperature") {
+      return observe.temperatureF !== null
+        ? renderObserveRow("Temperature", observe.temperatureF + "°F")
+        : renderObserveRow("Temperature", "No live reading available right now");
+    }
+    if (observe.kind === "front-clues") {
+      return renderObserveRow("Temperature", observe.temperatureF !== null ? observe.temperatureF + "°F" : "n/a") +
+        renderObserveRow("Pressure trend", observe.pressureTrend || "not enough history yet");
+    }
+    if (observe.kind === "hurricane-scale-only") {
+      return '<div class="wl-mission-observe-row"><span class="wl-event-label">No active storms right now</span></div>' +
+        SAFFIR_SIMPSON_MPH.map(function (row) { return renderObserveRow(row[0], row[1]); }).join("");
+    }
     return "";
+  }
+
+  function renderMission(mission) {
+    if (mission.status === "unavailable") {
+      missionType.textContent = "";
+      missionTitle.textContent = "No mission available right now";
+      missionBriefing.textContent = mission.reason;
+      missionObserve.innerHTML = "";
+      missionQuestion.textContent = "";
+      missionRevealBtn.hidden = true;
+      missionRevealBlock.hidden = true;
+      return;
+    }
+    missionType.textContent = mission.missionType;
+    missionTitle.textContent = mission.title;
+    missionBriefing.textContent = mission.briefing;
+    missionObserve.innerHTML = renderMissionObserve(mission.observe);
+    missionQuestion.textContent = mission.question;
+    missionRevealBlock.hidden = true;
+    missionRevealBtn.hidden = false;
+    missionRevealBtn.onclick = function () {
+      missionReveal.textContent = mission.reveal;
+      missionRecap.textContent = mission.recap;
+      missionInvestigate.textContent = mission.investigateLabel;
+      missionInvestigate.href = mission.investigateLink;
+      missionRevealBlock.hidden = false;
+      missionRevealBtn.hidden = true;
+    };
   }
 
   function loadMission() {
     missionTitle.textContent = "Loading today's mission…";
     fetch("/api/mission")
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (mission) {
-        if (mission.status === "unavailable") {
-          missionType.textContent = "";
-          missionTitle.textContent = "No mission available right now";
-          missionBriefing.textContent = mission.reason;
-          missionObserve.innerHTML = "";
-          missionQuestion.textContent = "";
-          missionRevealBtn.hidden = true;
-          return;
-        }
-        missionType.textContent = mission.missionType;
-        missionTitle.textContent = mission.title;
-        missionBriefing.textContent = mission.briefing;
-        missionObserve.innerHTML = renderMissionObserve(mission.observe);
-        missionQuestion.textContent = mission.question;
-        missionRevealBlock.hidden = true;
-        missionRevealBtn.hidden = false;
-        missionRevealBtn.onclick = function () {
-          missionReveal.textContent = mission.reveal;
-          missionRecap.textContent = mission.recap;
-          missionInvestigate.textContent = mission.investigateLabel;
-          missionInvestigate.href = mission.investigateLink;
-          missionRevealBlock.hidden = false;
-          missionRevealBtn.hidden = true;
-        };
-      })
+      .then(function (res) { return res.json(); })
+      .then(renderMission)
       .catch(function () {
         missionType.textContent = "";
         missionTitle.textContent = "Couldn't load today's mission";
         missionBriefing.textContent = "Couldn't reach the Weather Data Engine.";
       });
   }
+
+  function loadGuidedMission(conceptId) {
+    missionTitle.textContent = "Loading this lesson…";
+    fetch("/api/mission/guided/" + conceptId)
+      .then(function (res) { return res.json(); })
+      .then(renderMission)
+      .catch(function () {
+        missionType.textContent = "";
+        missionTitle.textContent = "Couldn't load this lesson";
+        missionBriefing.textContent = "Couldn't reach the Weather Data Engine.";
+      });
+  }
+
+  function loadGuidedConceptList() {
+    missionConcepts.innerHTML = '<span class="wl-loading">Loading topics&hellip;</span>';
+    fetch("/api/mission/guided")
+      .then(function (res) { return res.json(); })
+      .then(function (concepts) {
+        missionConcepts.innerHTML = "";
+        concepts.forEach(function (concept, i) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "wl-mission-concept-btn" + (i === 0 ? " wl-mission-concept-btn-active" : "");
+          btn.textContent = concept.title;
+          btn.onclick = function () {
+            missionConcepts.querySelectorAll(".wl-mission-concept-btn").forEach(function (b) {
+              b.classList.remove("wl-mission-concept-btn-active");
+            });
+            btn.classList.add("wl-mission-concept-btn-active");
+            loadGuidedMission(concept.id);
+          };
+          missionConcepts.appendChild(btn);
+        });
+        if (concepts.length) loadGuidedMission(concepts[0].id);
+      })
+      .catch(function () {
+        missionConcepts.innerHTML = '<span class="wl-loading">Couldn\'t load topics.</span>';
+      });
+  }
+
+  missionTabs.querySelectorAll(".wl-mission-tab").forEach(function (tab) {
+    tab.onclick = function () {
+      missionTabs.querySelectorAll(".wl-mission-tab").forEach(function (t) {
+        t.classList.remove("wl-mission-tab-active");
+      });
+      tab.classList.add("wl-mission-tab-active");
+      if (tab.dataset.mode === "live") {
+        missionConcepts.hidden = true;
+        loadMission();
+      } else {
+        missionConcepts.hidden = false;
+        loadGuidedConceptList();
+      }
+    };
+  });
 
   loadMission();
 

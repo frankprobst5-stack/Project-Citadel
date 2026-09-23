@@ -1585,3 +1585,52 @@ build**, including both named follow-ons (Climate Lab, Skew-T viewer).
 The only work still explicitly open across the whole Weather Labs plan
 is Mission Mode's own Guided (concept lessons) and Historical (archived
 event replay) mission types.
+
+## Mission Mode: Guided missions — six real concept lessons (2026-09-23)
+
+Mission Mode's second real mission type, per the original nine-lab
+reframe: **Guided** (concepts -- fronts, thunderstorms, hurricanes,
+tornado environments, winter storms, pressure). New `guided_missions.py`
+holds six real lessons, each following the same locked briefing ->
+observe -> question -> reveal -> investigate-related -> recap pattern
+as Live missions.
+
+**A real, deliberate distinction from Live missions**: a Guided
+mission's teaching content is real, standard textbook meteorology (front
+types, CAPE/shear/rotation relationships, the real reason lower
+hurricane pressure means stronger winds, why snow vs. sleet vs. freezing
+rain depends on the whole vertical temperature profile) -- safe to state
+as fact the same way event_explorer.py's Saffir-Simpson boundaries
+already are, not something needing a live API check. But every
+"observe" step still reaches for a real, currently-live number from an
+already-built lab wherever one honestly fits, instead of a placeholder
+example: Pressure and Fronts pull today's real pressure/trend from the
+same NWS call Current Conditions uses; Thunderstorms and Tornado
+Environments pull real CAPE/Lifted Index/Storm Relative Helicity from
+Storm Environment; Hurricanes pulls the real strongest active storm from
+the Event Explorer when one exists (Polo, real Category 4, during
+testing) and falls back to the real, standard Saffir-Simpson mph
+thresholds with an honest "no active storms right now" note when none
+are active; Winter Storms uses today's real observed temperature,
+regardless of season, framed correctly rather than pretending a storm is
+happening.
+
+**Frontend**: added Live/Guided tabs to the existing Mission card and a
+concept-picker row for Guided mode, reusing the exact same render/reveal
+code Live missions already use -- Mission Mode's own "orchestrate, don't
+duplicate" principle applied to its own UI, not just its data.
+
+**A real UI bug caught during browser verification**: switching from
+Guided back to Live correctly changed the mission content but left the
+concept-picker row visible -- `el.hidden = true` was set correctly, but
+the `.wl-mission-concepts { display: flex }` class rule silently beat
+the browser's default `[hidden] { display: none }` UA style, since
+author styles always win over user-agent styles regardless of
+specificity. Fixed with an explicit `.wl-mission-concepts[hidden] {
+display: none }` override -- the same category of bug watched for on
+every other `hidden`-toggled element in the file, none of which had it
+since none of them declare their own `display` unconditionally.
+
+Only Historical missions (real archived event replay, needing real
+NCEI/NOMADS archive integration) remain as the last explicitly open item
+across the whole Weather Labs plan.

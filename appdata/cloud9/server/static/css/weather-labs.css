@@ -599,6 +599,64 @@ body {
   padding: 2px 8px;
 }
 
+.wl-mission-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wl-mission-tab {
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.wl-mission-tab-active {
+  background: var(--amber);
+  color: #201503;
+  border-color: var(--amber);
+}
+
+.wl-mission-concepts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wl-mission-concepts[hidden] {
+  display: none;
+}
+
+.wl-mission-concept-btn {
+  background: var(--panel-alt);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.wl-mission-concept-btn:hover {
+  border-color: var(--amber);
+  color: var(--text);
+}
+
+.wl-mission-concept-btn-active {
+  background: var(--amber);
+  color: #201503;
+  border-color: var(--amber);
+  font-weight: 600;
+}
+
 .wl-mission-title {
   font-size: 1.3rem;
   font-weight: 700;
