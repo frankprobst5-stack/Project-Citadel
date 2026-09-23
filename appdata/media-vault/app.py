@@ -54,7 +54,18 @@ VAULT_API_TOKEN = os.environ.get("VAULT_API_TOKEN", "")
 
 @app.before_request
 def _require_vault_token():
-    if request.method == "OPTIONS":
+    # Real bug found live (2026-09-23, Frank's own report plus a
+    # tester's): this ran unconditionally on every request, including
+    # plain page loads (`/`, `/videos`, `/mp3`, `/pdf`) and file
+    # streaming (`/files/...`) -- a normal browser navigation can never
+    # attach a custom header, so the Digital Media Vault's own pages
+    # 401'd immediately on load. The original tester's own threat model
+    # (see the comment above) was always specifically about the *API* --
+    # "/api/modules/install" and friends -- and the tester explicitly
+    # said the dashboard/pages being open on the LAN was fine. Scoping
+    # this to /api/ restores that original, agreed threat model instead
+    # of accidentally locking out the whole vault UI.
+    if request.method == "OPTIONS" or not request.path.startswith("/api/"):
         return None
     provided = request.headers.get("X-Vault-Token", "")
     if not VAULT_API_TOKEN or not hmac.compare_digest(provided, VAULT_API_TOKEN):
