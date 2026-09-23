@@ -1681,3 +1681,44 @@ Historical types. Real remaining future work, named honestly rather
 than pretended-away: wind barbs on the Skew-T chart, Pacific-basin
 coverage for Historical missions (Atlantic-only for now), and whatever
 Frank's own next real priority for Cloud9 turns out to be.
+
+## Wind barbs on the Skew-T chart — first real build (2026-09-23)
+
+The last named open item: real wind barbs, added to the Sounding Lab's
+Skew-T diagram in a dedicated column beside the temperature/dewpoint
+plot. No backend change -- the real wind speed/direction per level was
+already in `/api/sounding`'s response; this is purely a frontend
+addition, same shape as the Skew-T chart's own original build.
+
+**Verified the exact drawing convention before writing any code**,
+rather than trusting memory: a real wind barb's staff points toward the
+compass direction the wind is coming *from*; each triangular pennant =
+50 kt, each full barb = 10 kt, each half barb = 5 kt, with speed
+rounded to the nearest 5 kt for plotting -- all standard, but the one
+genuinely ambiguous detail (which side of the staff the barbs sit on)
+needed checking against a real source rather than guessing, since
+different phrasings of the rule read as contradictory out of context.
+Confirmed via a real meteorological reference: in the Northern
+Hemisphere, barbs sit on the side that is to the *left* when facing the
+direction the wind is blowing *toward* -- a direct consequence of Buys
+Ballot's law (low pressure to the left of the wind), not an arbitrary
+drawing choice. Derived the exact screen-coordinate formula from that
+rule and cross-checked it against a worked example (a "northeast wind")
+before trusting it. Northern-Hemisphere-only is a correct, not a lazy,
+simplification here -- the Sounding Lab only ever plots the family's
+own US-based home profile, never a Southern Hemisphere point.
+
+Verified live against real current profile data (9 real levels, wind
+5-41 mph): the rendered SVG's exact line/circle/polygon counts matched
+the barb decomposition computed by hand for every level, calm-wind
+(<2.5 kt) stations correctly fall back to an open circle with no staff,
+and no pennants appeared since no real level exceeded 50 kt today --
+confirmed the code path exists and is reachable, not just present.
+Barbs are drawn perpendicular to the staff rather than the slightly
+backswept style seen on professional charts -- a real, named
+simplification, not a claim of full fidelity.
+
+**This was the last item named as open work anywhere in the Weather
+Labs plan.** Every lab, every mission type, and every named follow-on
+from the original 2026-09-21 reframe now has a real, live-verified
+build.

@@ -692,14 +692,78 @@
   // scale (y), and temperature is "skewed" by a linear function of that
   // same height fraction (x), which is exactly what gives a Skew-T chart
   // its signature slanted isotherms -- the standard technique behind
-  // every real Skew-T chart, including MetPy's own SkewT class. No wind
-  // barbs in this first pass -- speed/direction is already in the table
-  // below; a real future addition, not attempted here.
-  const SKEWT_WIDTH = 440, SKEWT_HEIGHT = 460;
-  const SKEWT_MARGIN = { left: 34, right: 10, top: 10, bottom: 26 };
+  // every real Skew-T chart, including MetPy's own SkewT class.
+  const SKEWT_WIDTH = 500, SKEWT_HEIGHT = 460;
+  const SKEWT_MARGIN = { left: 34, right: 70, top: 10, bottom: 26 };
   const SKEWT_P_BOTTOM = 1050, SKEWT_P_TOP = 150;
   const SKEWT_T_MIN = -60, SKEWT_T_MAX = 40;
   const SKEWT_SKEW = 60;
+  const SKEWT_WIND_COL_X = SKEWT_WIDTH - 32;
+
+  // Real wind barb convention (Northern Hemisphere -- the only case this
+  // chart needs, since the Sounding Lab only ever plots the family's own
+  // US-based home profile): the staff points toward the compass
+  // direction the wind is coming FROM; barbs sit on the side that is to
+  // the LEFT when facing the direction the wind is blowing TOWARD
+  // (confirmed against real meteorological references, not assumed --
+  // this follows directly from Buys Ballot's law, the same real physics
+  // reason low pressure sits to the left of the wind in this
+  // hemisphere). Each triangular pennant = 50 kt, each full barb = 10
+  // kt, each half barb = 5 kt; speed is rounded to the nearest 5 kt for
+  // plotting, the same real convention used on every real station model.
+  // Barbs are drawn perpendicular to the staff rather than the
+  // slightly-backswept style on professional charts -- a real,
+  // deliberate simplification, not a claim of full fidelity.
+  function windBarbSvg(cx, cy, speedMph, directionDeg) {
+    if (speedMph === null || speedMph === undefined || directionDeg === null || directionDeg === undefined) {
+      return "";
+    }
+    const speedKt = speedMph / 1.15078;
+    if (speedKt < 2.5) {
+      return '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="none" stroke="var(--accent-bright)" stroke-width="1.5" />';
+    }
+    const rounded = Math.round(speedKt / 5) * 5;
+    let remaining = rounded;
+    const numPennants = Math.floor(remaining / 50);
+    remaining -= numPennants * 50;
+    const numFullBarbs = Math.floor(remaining / 10);
+    remaining -= numFullBarbs * 10;
+    const hasHalfBarb = remaining >= 5;
+
+    const rad = (directionDeg * Math.PI) / 180;
+    const dxStaff = Math.sin(rad), dyStaff = -Math.cos(rad);
+    const dxPerp = Math.cos(rad), dyPerp = Math.sin(rad);
+    const shaftLength = 26, spacing = 4, fullBarbLen = 9, halfBarbLen = 4.5, pennantAlong = 6, pennantWidth = 8;
+
+    function pointAt(d) {
+      return { x: cx + d * dxStaff, y: cy + d * dyStaff };
+    }
+
+    let svg = '<circle cx="' + cx + '" cy="' + cy + '" r="2" fill="var(--accent-bright)" />';
+    const tip = pointAt(shaftLength);
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + tip.x + '" y2="' + tip.y + '" stroke="var(--accent-bright)" stroke-width="1.5" />';
+
+    let d = shaftLength;
+    for (let i = 0; i < numPennants; i++) {
+      const outer = pointAt(d), inner = pointAt(d - pennantAlong);
+      const apex = { x: outer.x + pennantWidth * dxPerp, y: outer.y + pennantWidth * dyPerp };
+      svg += '<polygon points="' + outer.x + ',' + outer.y + ' ' + inner.x + ',' + inner.y + ' ' + apex.x + ',' + apex.y +
+        '" fill="var(--accent-bright)" />';
+      d -= pennantAlong;
+    }
+    for (let i = 0; i < numFullBarbs; i++) {
+      const base = pointAt(d);
+      const end = { x: base.x + fullBarbLen * dxPerp, y: base.y + fullBarbLen * dyPerp };
+      svg += '<line x1="' + base.x + '" y1="' + base.y + '" x2="' + end.x + '" y2="' + end.y + '" stroke="var(--accent-bright)" stroke-width="1.5" />';
+      d -= spacing;
+    }
+    if (hasHalfBarb) {
+      const base = pointAt(d);
+      const end = { x: base.x + halfBarbLen * dxPerp, y: base.y + halfBarbLen * dyPerp };
+      svg += '<line x1="' + base.x + '" y1="' + base.y + '" x2="' + end.x + '" y2="' + end.y + '" stroke="var(--accent-bright)" stroke-width="1.5" />';
+    }
+    return svg;
+  }
 
   function skewtHFrac(pressureMb) {
     const yBottom = Math.log(SKEWT_P_BOTTOM), yTop = Math.log(SKEWT_P_TOP);
@@ -756,6 +820,15 @@
     levels.forEach(function (lvl) {
       svg += '<circle cx="' + skewtX(lvl.temperatureC, lvl.pressureMb) + '" cy="' + skewtY(lvl.pressureMb) + '" r="2.5" fill="var(--red)" />';
       svg += '<circle cx="' + skewtX(lvl.dewpointC, lvl.pressureMb) + '" cy="' + skewtY(lvl.pressureMb) + '" r="2.5" fill="var(--green)" />';
+    });
+
+    // Wind barb column, separate from the T/Td plot area so the barbs
+    // never overlap the temperature traces.
+    svg += '<line x1="' + plotRight + '" y1="' + SKEWT_MARGIN.top + '" x2="' + plotRight + '" y2="' + (SKEWT_HEIGHT - SKEWT_MARGIN.bottom) +
+      '" stroke="var(--border-dim)" stroke-width="1" />';
+    svg += '<text x="' + SKEWT_WIND_COL_X + '" y="' + (SKEWT_MARGIN.top + 8) + '" text-anchor="middle" font-size="9" fill="var(--text-faint)">Wind</text>';
+    levels.forEach(function (lvl) {
+      svg += windBarbSvg(SKEWT_WIND_COL_X, skewtY(lvl.pressureMb), lvl.windSpeedMph, lvl.windDirectionDeg);
     });
 
     skewtSvg.innerHTML = svg;
