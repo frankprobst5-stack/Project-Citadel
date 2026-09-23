@@ -10,6 +10,7 @@ import global_lab
 import history_fact
 import journal
 import launcher
+import mission_mode
 import model_lab
 import notes_tools
 import planner
@@ -183,6 +184,11 @@ def global_lab_route():
 @app.route("/api/event-explorer")
 def event_explorer_route():
     return jsonify(event_explorer.get_active_storms())
+
+
+@app.route("/api/mission")
+def mission_route():
+    return jsonify(mission_mode.get_mission())
 
 
 @app.route("/api/weather/clouds")

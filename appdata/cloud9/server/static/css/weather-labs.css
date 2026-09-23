@@ -574,6 +574,127 @@ body {
   padding: 10px 0;
 }
 
+.wl-mission {
+  background: linear-gradient(180deg, #201503 0%, var(--panel-alt) 65%);
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.wl-mission-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.wl-mission-eyebrow {
+  color: var(--amber);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.wl-mission-type {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.wl-mission-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 4px 0 10px;
+}
+
+.wl-mission-text {
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.wl-mission-observe {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.wl-mission-observe-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+  padding: 3px 0;
+}
+
+.wl-mission-observe-row .wl-event-label {
+  color: var(--text-faint);
+}
+
+.wl-mission-observe-row .wl-event-val {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-mission-question {
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.wl-mission-reveal-btn {
+  background: var(--amber);
+  color: #201503;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wl-mission-reveal-btn:hover {
+  filter: brightness(1.1);
+}
+
+.wl-mission-reveal-block {
+  margin-top: 14px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 14px;
+}
+
+.wl-mission-recap {
+  color: var(--text-faint);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.wl-mission-investigate {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--accent-bright);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.wl-mission-investigate:hover {
+  text-decoration: underline;
+}
+
 .wl-radio-btn {
   position: fixed;
   bottom: 20px;

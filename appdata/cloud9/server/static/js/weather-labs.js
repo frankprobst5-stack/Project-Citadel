@@ -17,6 +17,16 @@
   const conditionIcon = document.getElementById("wl-condition-icon");
   const conditionTemp = document.getElementById("wl-condition-temp");
   const conditionDesc = document.getElementById("wl-condition-desc");
+  const missionType = document.getElementById("wl-mission-type");
+  const missionTitle = document.getElementById("wl-mission-title");
+  const missionBriefing = document.getElementById("wl-mission-briefing");
+  const missionObserve = document.getElementById("wl-mission-observe");
+  const missionQuestion = document.getElementById("wl-mission-question");
+  const missionRevealBtn = document.getElementById("wl-mission-reveal-btn");
+  const missionRevealBlock = document.getElementById("wl-mission-reveal-block");
+  const missionReveal = document.getElementById("wl-mission-reveal");
+  const missionRecap = document.getElementById("wl-mission-recap");
+  const missionInvestigate = document.getElementById("wl-mission-investigate");
 
   // Real keyword match against NWS's own free-text condition description,
   // to Frank's own hand-drawn icon set (static/img/weather-icons/) instead
@@ -873,6 +883,72 @@
   }
 
   loadEventExplorer();
+
+  // ---- Mission Mode: the capstone, orchestrating the labs above -----
+  function renderObserveRow(label, value) {
+    return '<div class="wl-mission-observe-row"><span class="wl-event-label">' + label + '</span><span class="wl-event-val">' + value + "</span></div>";
+  }
+
+  function renderMissionObserve(observe) {
+    if (observe.kind === "storm") {
+      return renderObserveRow("Storm", observe.name + (observe.category ? " (Cat " + observe.category + ")" : "")) +
+        renderObserveRow("Classification", observe.classificationLabel) +
+        renderObserveRow("Max wind", observe.windMph + " mph") +
+        renderObserveRow("Pressure", observe.pressureMb + " mb") +
+        renderObserveRow("Position", observe.lat.toFixed(1) + ", " + observe.lon.toFixed(1));
+    }
+    if (observe.kind === "cape") {
+      return renderObserveRow("CAPE", observe.value + " " + observe.unit) +
+        renderObserveRow("Product", observe.product) +
+        renderObserveRow("Valid time", formatTimestamp(observe.validTime));
+    }
+    if (observe.kind === "contrast") {
+      return renderObserveRow(observe.warm.name, observe.warm.temperatureC + "°C") +
+        renderObserveRow(observe.cool.name, observe.cool.temperatureC + "°C");
+    }
+    return "";
+  }
+
+  function loadMission() {
+    missionTitle.textContent = "Loading today's mission…";
+    fetch("/api/mission")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (mission) {
+        if (mission.status === "unavailable") {
+          missionType.textContent = "";
+          missionTitle.textContent = "No mission available right now";
+          missionBriefing.textContent = mission.reason;
+          missionObserve.innerHTML = "";
+          missionQuestion.textContent = "";
+          missionRevealBtn.hidden = true;
+          return;
+        }
+        missionType.textContent = mission.missionType;
+        missionTitle.textContent = mission.title;
+        missionBriefing.textContent = mission.briefing;
+        missionObserve.innerHTML = renderMissionObserve(mission.observe);
+        missionQuestion.textContent = mission.question;
+        missionRevealBlock.hidden = true;
+        missionRevealBtn.hidden = false;
+        missionRevealBtn.onclick = function () {
+          missionReveal.textContent = mission.reveal;
+          missionRecap.textContent = mission.recap;
+          missionInvestigate.textContent = mission.investigateLabel;
+          missionInvestigate.href = mission.investigateLink;
+          missionRevealBlock.hidden = false;
+          missionRevealBtn.hidden = true;
+        };
+      })
+      .catch(function () {
+        missionType.textContent = "";
+        missionTitle.textContent = "Couldn't load today's mission";
+        missionBriefing.textContent = "Couldn't reach the Weather Data Engine.";
+      });
+  }
+
+  loadMission();
 
   loadHistory().then(loadCurrent);
   loadHourly();

@@ -1446,3 +1446,56 @@ are real, planned follow-on integration work, not done here.
 
 Only Mission Mode (the capstone) remains from the original nine-lab
 reframe, plus the already-named Climate Lab and graphical Skew-T viewer.
+
+## Mission Mode — the capstone, first real build: Live missions (2026-09-23)
+
+The ninth and last lab from the reframe -- "the capstone, not a separate
+feature." `mission_mode.py` invents no new data: it picks whichever
+real thing already flowing through the other eight labs is most worth a
+student's attention right now, and wraps it in the locked briefing ->
+observe -> question -> reveal -> investigate-related -> recap
+interaction pattern, exactly as specified.
+
+**Real, live priority chain**, checked in order: an active real named
+storm first (most concrete, highest stakes) -> notable real local storm
+potential (home CAPE >= 500 J/kg, a real, standard SPC baseline for
+"instability worth watching") -> a real global temperature contrast
+(always available, the honest fallback). Verified live end-to-end
+against the exact real hurricane season already powering the Event
+Explorer: with Hurricane Polo (real Category 4, 150 mph, 927 mb) active,
+Mission Mode correctly picked "Is Polo a Threat?" over the other two
+mission types. Unit-tested the other two branches directly (simulated
+no active storms, simulated elevated home CAPE) to confirm each
+generates a coherent, correctly-worded mission before trusting the
+priority chain in production.
+
+**A real, deliberate honesty choice in the "reveal" text**: given a
+single pressure/wind snapshot, the honest answer to "is this storm
+getting stronger?" is that you genuinely can't tell from one reading --
+so the reveal teaches *why* meteorologists track multiple advisories
+over time instead of pretending the one live number implies a trend it
+doesn't support. Same reasoning already applied to the Model Lab's own
+cycle-pinning fix: never imply more certainty than the data actually
+gives.
+
+**Frontend**: a distinct amber-bordered "Mission Briefing" card at the
+very top of the page, above Current Conditions -- the capstone as the
+real entry point, not a footer afterthought. The reveal is a real
+click-to-reveal interaction (a "Reveal the Answer" button), not shown
+alongside the question, so a student has to actually think before
+seeing the teaching answer.
+
+**Not yet built**, named honestly: Guided missions (concept lessons --
+fronts, thunderstorms, hurricanes, tornado environments, winter storms,
+pressure) need real lesson content authored, not just orchestration of
+existing data; Historical missions (replaying a real archived event)
+need real NCEI/NOMADS archive integration, a genuinely bigger data-
+engineering lift than anything built so far. Both are real, planned
+follow-on work.
+
+**All nine labs from the 2026-09-21 reframe now have a first real
+build**: Surface/Radar/Satellite (pre-existing), Storm Environment,
+Sounding, Model, Global Weather, Weather Event Explorer, and now Mission
+Mode. Real remaining open items across the whole plan: Climate Lab
+(comparisons to NOAA's real climate normals), a graphical Skew-T/log-P
+viewer, and Mission Mode's own Guided/Historical mission types.
