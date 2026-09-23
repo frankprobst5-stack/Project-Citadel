@@ -18,6 +18,7 @@
       <span class="earth-lab-title">Earth Lab: Country Explorer</span>
     </div>
     <div class="earth-lab-hint">Click any country to learn about it</div>
+    <button type="button" class="earth-lab-mission-btn" id="earth-lab-mission-btn">🎯 Missions</button>
   </header>
 
   <main class="earth-lab-main">
@@ -26,6 +27,22 @@
     <aside class="earth-lab-panel" id="earth-lab-panel" hidden>
       <button class="earth-lab-panel-close" id="earth-lab-panel-close" aria-label="Close">✕</button>
       <div id="earth-lab-panel-body"></div>
+    </aside>
+
+    <aside class="earth-lab-mission-panel" id="earth-lab-mission-panel" hidden>
+      <button class="earth-lab-panel-close" id="earth-lab-mission-close" aria-label="Close">✕</button>
+      <div class="earth-lab-mission-eyebrow">Guided Mission</div>
+      <div class="earth-lab-mission-concepts" id="earth-lab-mission-concepts"></div>
+      <h2 class="earth-lab-mission-title" id="earth-lab-mission-title">Loading&hellip;</h2>
+      <p class="earth-lab-mission-text" id="earth-lab-mission-briefing"></p>
+      <div class="earth-lab-mission-observe" id="earth-lab-mission-observe"></div>
+      <p class="earth-lab-mission-question" id="earth-lab-mission-question"></p>
+      <button type="button" class="earth-lab-mission-reveal-btn" id="earth-lab-mission-reveal-btn" hidden>Reveal the Answer</button>
+      <div class="earth-lab-mission-reveal-block" id="earth-lab-mission-reveal-block" hidden>
+        <p class="earth-lab-mission-text" id="earth-lab-mission-reveal"></p>
+        <p class="earth-lab-mission-recap" id="earth-lab-mission-recap"></p>
+        <button type="button" class="earth-lab-mission-investigate" id="earth-lab-mission-investigate">Back to the map</button>
+      </div>
     </aside>
 
     <div class="earth-lab-empty" id="earth-lab-empty">

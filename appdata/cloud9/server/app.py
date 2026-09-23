@@ -8,6 +8,7 @@ import climate_lab
 import dictionary
 import earth_lab
 import event_explorer
+import geography_missions
 import global_lab
 import guided_missions
 import historical_missions
@@ -234,6 +235,16 @@ def earth_lab_country(alpha3):
         return jsonify({"error": "That country isn't in our atlas yet."}), 404
     except Exception:
         return jsonify({"error": "Couldn't reach the country database right now."}), 502
+
+
+@app.route("/api/earth-lab/mission")
+def earth_lab_mission_list_route():
+    return jsonify(geography_missions.list_concepts())
+
+
+@app.route("/api/earth-lab/mission/<concept_id>")
+def earth_lab_mission_route(concept_id):
+    return jsonify(geography_missions.get_geography_mission(concept_id))
 
 
 @app.route("/api/history-fact")

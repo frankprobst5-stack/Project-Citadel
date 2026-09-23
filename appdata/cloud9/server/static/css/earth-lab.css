@@ -48,6 +48,21 @@
   font-size: 0.95rem;
 }
 
+.earth-lab-mission-btn {
+  background: var(--earth-accent);
+  color: #241a08;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.earth-lab-mission-btn:hover {
+  filter: brightness(1.08);
+}
+
 .earth-lab-main {
   position: relative;
   flex: 1 1 auto;
@@ -166,6 +181,155 @@
   color: var(--text-dim);
   padding: 20px 0;
   text-align: center;
+}
+
+.earth-lab-mission-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  bottom: 20px;
+  width: 360px;
+  max-width: calc(100% - 40px);
+  background: linear-gradient(180deg, #241a08 0%, var(--panel) 60%);
+  border: 1px solid var(--earth-accent);
+  border-radius: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 600;
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+}
+
+.earth-lab-mission-eyebrow {
+  color: var(--earth-accent);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.earth-lab-mission-concepts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.earth-lab-mission-concept-btn {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.earth-lab-mission-concept-btn:hover {
+  border-color: var(--earth-accent);
+  color: var(--text);
+}
+
+.earth-lab-mission-concept-btn-active {
+  background: var(--earth-accent);
+  color: #241a08;
+  border-color: var(--earth-accent);
+  font-weight: 600;
+}
+
+.earth-lab-mission-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.earth-lab-mission-text {
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+}
+
+.earth-lab-mission-observe {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+
+.earth-lab-mission-observe-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.earth-lab-mission-observe-label {
+  color: var(--text-dim);
+}
+
+.earth-lab-mission-observe-val {
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.earth-lab-mission-question {
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+}
+
+.earth-lab-mission-reveal-btn {
+  background: var(--earth-accent);
+  color: #241a08;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.earth-lab-mission-reveal-btn:hover {
+  filter: brightness(1.08);
+}
+
+.earth-lab-mission-reveal-block {
+  margin-top: 12px;
+  border-top: 1px solid var(--panel-border);
+  padding-top: 12px;
+}
+
+.earth-lab-mission-recap {
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+}
+
+.earth-lab-mission-investigate {
+  display: inline-block;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--earth-accent);
+  background: transparent;
+  text-decoration: none;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.earth-lab-mission-investigate:hover {
+  border-color: var(--earth-accent);
 }
 
 /* Leaflet country fill/hover -- warm accent per Cloud9's own locked

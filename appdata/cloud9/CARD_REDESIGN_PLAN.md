@@ -1722,3 +1722,55 @@ simplification, not a claim of full fidelity.
 Labs plan.** Every lab, every mission type, and every named follow-on
 from the original 2026-09-21 reframe now has a real, live-verified
 build.
+
+## Guided Missions come to Earth Lab — the first non-weather subject (2026-09-23)
+
+Frank's own next real direction: extend the Guided Mission pattern
+(briefing -> observe -> question -> reveal -> investigate-related ->
+recap) beyond Weather Labs to other Cloud9 subjects. Earth Lab was the
+right first pick, not an arbitrary one -- of Cloud9's real subject-area
+backends, it already had the richest live, structured, per-item data
+(countries.dev via `earth_lab.get_country()`), unlike e.g. History
+Fact's single daily editorial blurb.
+
+**New `geography_missions.py`**, same real-data-first discipline as
+every Weather Labs Guided mission: four concepts (population density,
+hemispheres, land borders, time zones), each comparing two real,
+specific countries fetched live through the exact same
+`earth_lab.get_country()` call the map already uses -- no invented
+example numbers. Extended `get_country()` to also expose three real
+fields the countries.dev API already returns but Earth Lab wasn't
+using yet: `borders`, `timezones`, `populationDensity` (the API
+computes population density itself -- used directly rather than
+recomputed).
+
+**Country pairs were chosen for real, verified, dramatic contrast**,
+each checked live before writing any narrative text: Bangladesh (1,116
+people/km²) vs. Australia (3.34/km²) for density; Canada (60°N) vs.
+Argentina (34°S) for hemispheres; China (16 real land borders) vs.
+Iceland (0, a real island) for borders; USA (11 real time zones) vs.
+China (1, despite comparable east-west span) for time zones. The China
+time-zone fact -- a real 1949 political decision, not a physical
+necessity -- was independently verified against a real historical
+source before being stated as fact to kids, not assumed from memory.
+
+**A real bug caught before it shipped**: an Edit tool call meant to
+insert the two new mission routes after `earth_lab_country`'s existing
+error handling only matched its first `except` clause, silently
+orphaning the function's second `except Exception:` block after the
+newly-inserted routes -- a real Python syntax error, caught immediately
+by the dev server failing to start rather than by a passing test.
+Fixed by restoring the clause to where it belongs, verified with
+`ast.parse` before restarting.
+
+**Frontend**: Earth Lab's own Guided Mission panel, not a tab bolted
+onto Weather's Mission Mode -- a "🎯 Missions" button opens a left-side
+floating panel (mirroring the existing right-side country-info panel's
+positioning), reusing the same amber "Guided Mission" visual language
+Weather Labs established, restyled with Earth Lab's own existing accent
+color. The "investigate" action closes the panel rather than using a
+dead anchor link, since this is a single-viewport map app with no page
+to scroll to.
+
+This is the first Guided Mission set outside Weather Labs -- the same
+real pattern, proven portable to a second subject.

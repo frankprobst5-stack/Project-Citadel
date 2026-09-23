@@ -11,6 +11,111 @@
   const panelClose = document.getElementById("earth-lab-panel-close");
   const emptyHint = document.getElementById("earth-lab-empty");
 
+  const missionBtn = document.getElementById("earth-lab-mission-btn");
+  const missionPanel = document.getElementById("earth-lab-mission-panel");
+  const missionClose = document.getElementById("earth-lab-mission-close");
+  const missionConcepts = document.getElementById("earth-lab-mission-concepts");
+  const missionTitle = document.getElementById("earth-lab-mission-title");
+  const missionBriefing = document.getElementById("earth-lab-mission-briefing");
+  const missionObserve = document.getElementById("earth-lab-mission-observe");
+  const missionQuestion = document.getElementById("earth-lab-mission-question");
+  const missionRevealBtn = document.getElementById("earth-lab-mission-reveal-btn");
+  const missionRevealBlock = document.getElementById("earth-lab-mission-reveal-block");
+  const missionReveal = document.getElementById("earth-lab-mission-reveal");
+  const missionRecap = document.getElementById("earth-lab-mission-recap");
+  const missionInvestigate = document.getElementById("earth-lab-mission-investigate");
+
+  function renderMissionObserveRow(label, value) {
+    return '<div class="earth-lab-mission-observe-row"><span class="earth-lab-mission-observe-label">' + label +
+      '</span><span class="earth-lab-mission-observe-val">' + value + "</span></div>";
+  }
+
+  function renderMissionObserve(observe) {
+    if (observe.kind === "country-pair") {
+      return renderMissionObserveRow(observe.a.name, observe.a.value + (observe.unit ? " " + observe.unit : "")) +
+        renderMissionObserveRow(observe.b.name, observe.b.value + (observe.unit ? " " + observe.unit : ""));
+    }
+    return "";
+  }
+
+  function renderMission(mission) {
+    if (mission.status === "unavailable") {
+      missionTitle.textContent = "No mission available right now";
+      missionBriefing.textContent = mission.reason;
+      missionObserve.innerHTML = "";
+      missionQuestion.textContent = "";
+      missionRevealBtn.hidden = true;
+      missionRevealBlock.hidden = true;
+      return;
+    }
+    missionTitle.textContent = mission.title;
+    missionBriefing.textContent = mission.briefing;
+    missionObserve.innerHTML = renderMissionObserve(mission.observe);
+    missionQuestion.textContent = mission.question;
+    missionRevealBlock.hidden = true;
+    missionRevealBtn.hidden = false;
+    missionRevealBtn.onclick = function () {
+      missionReveal.textContent = mission.reveal;
+      missionRecap.textContent = mission.recap;
+      missionInvestigate.textContent = mission.investigateLabel || "Back to the map";
+      missionInvestigate.onclick = function () {
+        missionPanel.hidden = true;
+      };
+      missionRevealBlock.hidden = false;
+      missionRevealBtn.hidden = true;
+    };
+  }
+
+  function loadMission(conceptId) {
+    missionTitle.textContent = "Loading this lesson…";
+    fetch("/api/earth-lab/mission/" + conceptId)
+      .then(function (res) { return res.json(); })
+      .then(renderMission)
+      .catch(function () {
+        missionTitle.textContent = "Couldn't load this lesson";
+        missionBriefing.textContent = "Couldn't reach the real country data source.";
+      });
+  }
+
+  function loadMissionConceptList() {
+    missionConcepts.innerHTML = '<span class="earth-lab-panel-loading">Loading topics…</span>';
+    fetch("/api/earth-lab/mission")
+      .then(function (res) { return res.json(); })
+      .then(function (concepts) {
+        missionConcepts.innerHTML = "";
+        concepts.forEach(function (concept, i) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "earth-lab-mission-concept-btn" + (i === 0 ? " earth-lab-mission-concept-btn-active" : "");
+          btn.textContent = concept.title;
+          btn.onclick = function () {
+            missionConcepts.querySelectorAll(".earth-lab-mission-concept-btn").forEach(function (b) {
+              b.classList.remove("earth-lab-mission-concept-btn-active");
+            });
+            btn.classList.add("earth-lab-mission-concept-btn-active");
+            loadMission(concept.id);
+          };
+          missionConcepts.appendChild(btn);
+        });
+        if (concepts.length) loadMission(concepts[0].id);
+      })
+      .catch(function () {
+        missionConcepts.innerHTML = '<span class="earth-lab-panel-error">Couldn\'t load topics.</span>';
+      });
+  }
+
+  let missionsLoaded = false;
+  missionBtn.addEventListener("click", function () {
+    missionPanel.hidden = false;
+    if (!missionsLoaded) {
+      missionsLoaded = true;
+      loadMissionConceptList();
+    }
+  });
+  missionClose.addEventListener("click", function () {
+    missionPanel.hidden = true;
+  });
+
   let selectedLayer = null;
 
   function closePanel() {

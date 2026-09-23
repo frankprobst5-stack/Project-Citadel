@@ -42,6 +42,9 @@ def get_country(alpha3):
         ],
         "latlng": data.get("latlng"),
         "alpha3": data.get("alpha3Code") or alpha3,
+        "borders": data.get("borders") or [],
+        "timezones": data.get("timezones") or [],
+        "populationDensity": data.get("populationDensity"),
     }
 
     tags = ["geography", "earth_lab"]
