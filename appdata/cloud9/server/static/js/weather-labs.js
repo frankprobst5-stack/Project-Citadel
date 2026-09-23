@@ -774,6 +774,45 @@
 
   loadModelLab();
 
+  // ---- Global Weather Lab: the same engine, anywhere on Earth -------
+  const globalTable = document.getElementById("wl-global-table");
+  const globalSource = document.getElementById("wl-global-source");
+
+  function loadGlobalLab() {
+    globalTable.innerHTML = "<tr><td class=\"wl-loading\">Loading model data&hellip;</td></tr>";
+    globalSource.textContent = "";
+    fetch("/api/global-lab")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        const points = data.points || [];
+        if (!points.length) {
+          globalTable.innerHTML = "<tr><td class=\"wl-loading\">" + (data.reason || "No data right now.") + "</td></tr>";
+          return;
+        }
+        globalTable.innerHTML =
+          "<tr><th>Location</th><th>Hemisphere</th><th>Temp</th><th>CAPE</th><th>Wind</th></tr>" +
+          points.map(function (p) {
+            if (p.status === "unavailable") {
+              return "<tr><td>" + p.name + "</td><td>" + p.hemisphere + "</td><td colspan=\"3\">Unavailable — " + p.reason + "</td></tr>";
+            }
+            return "<tr><td>" + p.name + "</td><td>" + p.hemisphere + "</td><td>" + p.temperatureC + "°C</td><td>" +
+              p.cape + " J/kg</td><td>" + p.windSpeedMph + " mph " + compassDirection(p.windDirectionDeg) + "</td></tr>";
+          }).join("");
+        const withData = points.find(function (p) { return p.status !== "unavailable"; });
+        if (withData) {
+          globalSource.textContent = "Source: " + withData.source + ", " + withData.product +
+            (data.stale ? " (showing the last successful fetch, " + data.ageHours + "h ago)" : "");
+        }
+      })
+      .catch(function () {
+        globalTable.innerHTML = "<tr><td class=\"wl-loading\">Couldn't reach the Weather Data Engine.</td></tr>";
+      });
+  }
+
+  loadGlobalLab();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

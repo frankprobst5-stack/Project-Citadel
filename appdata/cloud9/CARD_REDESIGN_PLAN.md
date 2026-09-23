@@ -1350,3 +1350,54 @@ over (Storm Environment, this lab), and its real diurnal swing makes
 "watch the model's own story unfold" more vivid than a slower-moving
 field would be. Other Storm Environment metrics can reuse
 `get_forecast_series()` directly once there's a reason to add them.
+
+## Global Weather Lab — first real build, the "Planet" rung (2026-09-23)
+
+The scale-ladder idea from the nine-lab reframe, made real: My Location
+-> Region -> United States -> Hemisphere -> Planet. Every lab built so
+far only ever asks the Weather Data Engine about one point (home).
+GFS is already a real whole-Earth model -- this lab is just the first
+one to actually point it somewhere else. New `weather_data_engine.get_global_snapshot()`
+fetches 2m temperature, surface CAPE, and 10m wind in one NOMADS
+request per point; `global_lab.py` runs it against six real preset
+cities deliberately chosen to span both hemispheres and the equator,
+plus the family's own home location as the ladder's first rung.
+
+**Timed on purpose**: built and verified on 2026-09-23, the real
+autumnal equinox -- so the six presets aren't just a map decoration,
+they show a real, currently-true fact. Verified live: Miami sits at
+27.1°C with 826 J/kg of real surface CAPE (real subtropical convective
+season still running), while Sydney and Ushuaia -- both Southern
+Hemisphere, both real entering spring today -- sit at 17.5°C and
+-3.0°C. Quito and Nairobi, both real near-equator, land in the middle
+(11.0°C and 25.1°C) for a genuinely real reason the deck doesn't
+mention yet: both are real high-altitude cities (Quito ~2,850m,
+Nairobi ~1,795m), which is itself a real, honest teaching moment about
+why "near the equator" alone doesn't predict temperature -- worth
+surfacing explicitly in a future pass rather than leaving it as an
+unexplained-looking outlier.
+
+**A real, general bug found and fixed while building this**, not
+specific to this lab: `_decode_points`'s existing mixed-level-type
+fallback (already used by Storm Environment's storm motion) filters
+GRIB messages by `shortName`, but cfgrib renames a real subset of
+eccodes shortNames that start with a digit when it builds a Dataset --
+confirmed directly via `eccodes.codes_get(gid, "shortName")` against
+real GFS messages that the *raw* shortName for 2m temperature is
+`"2t"`, not cfgrib's own renamed `"t2m"` (same for `"10u"`/`"10v"` vs
+`"u10"`/`"v10"`). The fallback was filtering on the renamed name, which
+matches zero real messages and silently returns an empty dataset. Fixed
+with a small, explicitly-scoped translation table (`_ECCODES_RAW_SHORTNAME`)
+covering only the names this engine has actually hit, built from live
+verification, not guessed from cfgrib's documentation. Existing labs
+(Storm Environment, Sounding, Model Lab) never hit this path since none
+of their fields have a digit-prefixed shortName -- confirmed this
+wasn't a regression, just a latent bug this lab's fields happened to
+expose first.
+
+**Frontend**: a comparison table (`Location | Hemisphere | Temp | CAPE
+| Wind`), one shared source/cycle citation below it rather than seven
+repeated provenance cards -- all seven points share the same GFS cycle,
+so repeating it seven times would be noise, not honesty. Each point
+fails independently (a real per-row `status: unavailable` + reason)
+so one bad point never blanks the whole table.

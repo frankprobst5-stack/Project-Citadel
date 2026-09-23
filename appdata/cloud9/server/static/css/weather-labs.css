@@ -382,7 +382,8 @@ body {
   font-style: italic;
 }
 
-.wl-sounding-table-wrap {
+.wl-sounding-table-wrap,
+.wl-global-table-wrap {
   overflow-x: auto;
   margin-top: 14px;
 }

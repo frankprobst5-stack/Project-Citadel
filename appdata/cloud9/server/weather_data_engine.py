@@ -103,6 +103,21 @@ def _fetch_grib_subset(fields, lat, lon, box_degrees=1.5, forecast_hour=0):
     raise LookupError(f"No published GFS cycle had usable data: {last_error}")
 
 
+# cfgrib renames a handful of real GRIB shortNames that start with a
+# digit into valid Python identifiers when it builds a Dataset (e.g. the
+# real eccodes shortName "10u" becomes cfgrib's "u10") -- confirmed
+# directly via eccodes.codes_get(gid, "shortName") against real GFS
+# messages, not guessed. filter_by_keys filters on the RAW eccodes
+# shortName, so the fallback below needs this reverse mapping or it
+# silently matches zero messages. Only lists names this engine has
+# actually hit.
+_ECCODES_RAW_SHORTNAME = {
+    "t2m": "2t",
+    "u10": "10u",
+    "v10": "10v",
+}
+
+
 def _decode_points(grib_bytes, var_keys, lat, lon):
     """Real decode + nearest-grid-point extraction for one or more
     variables from the same downloaded subset. cfgrib needs a real file
@@ -123,9 +138,10 @@ def _decode_points(grib_bytes, var_keys, lat, lon):
             if var_key not in ds.data_vars:
                 # Real fallback for the mixed-level-type case: reopen
                 # scoped to just this variable's own GRIB messages.
+                raw_short_name = _ECCODES_RAW_SHORTNAME.get(var_key, var_key)
                 ds = xr.open_dataset(
                     f.name, engine="cfgrib",
-                    backend_kwargs={"filter_by_keys": {"shortName": var_key}, "indexpath": ""},
+                    backend_kwargs={"filter_by_keys": {"shortName": raw_short_name}, "indexpath": ""},
                 )
             point = ds[var_key].sel(latitude=lat, longitude=lon_grid, method="nearest")
             value = float(point.values)
@@ -297,3 +313,43 @@ def get_forecast_series(name, variable, var_key, level_param, unit, lat, lon, fo
         except (ValueError, requests.RequestException) as exc:
             last_error = exc
     raise LookupError(f"No published GFS cycle had every requested lead time: {last_error}")
+
+
+def get_global_snapshot(lat, lon):
+    """Global Weather Lab's real data: 2m temperature, surface CAPE, and
+    10m wind for any point on Earth, in one NOMADS request. Real proof
+    the engine is genuinely global by construction -- GFS is a whole-
+    planet model, unlike the NWS API storm_environment/sounding also
+    lean on for US-only current-conditions products. Confirmed live
+    that t2m/cape (heightAboveGround=2/surface) and u10/v10
+    (heightAboveGround=10) don't merge into one cfgrib Dataset -- same
+    mixed-level-type situation as storm motion -- so this relies on
+    `_decode_points`'s existing per-variable fallback decode, not a new
+    code path."""
+    fields = [
+        ("TMP", "lev_2_m_above_ground"),
+        ("CAPE", "lev_surface"),
+        ("UGRD", "lev_10_m_above_ground"),
+        ("VGRD", "lev_10_m_above_ground"),
+    ]
+    grib_bytes, cycle, fhour = _fetch_grib_subset(fields, lat, lon)
+    points = _decode_points(grib_bytes, ["t2m", "cape", "u10", "v10"], lat, lon)
+    temp_k, valid_time = points["t2m"]
+    cape_jkg, _ = points["cape"]
+    u, _ = points["u10"]
+    v, _ = points["v10"]
+    speed_mph = round(((u**2 + v**2) ** 0.5) * 2.23694, 1)
+    direction_deg = round((270 - math.degrees(math.atan2(v, u))) % 360)
+    return {
+        "temperatureC": round(temp_k - 273.15, 1),
+        "cape": round(cape_jkg, 1),
+        "windSpeedMph": speed_mph,
+        "windDirectionDeg": direction_deg,
+        "source": "NOAA/NCEP",
+        "product": _product_label(cycle, fhour),
+        "type": "model",
+        "validTime": valid_time,
+        "retrievedTime": time.time(),
+        "coverage": "Global model grid (0.25 degree resolution)",
+        "status": "valid",
+    }
