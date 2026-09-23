@@ -56,34 +56,49 @@ def _candidate_cycles(max_tries=4):
     return candidates
 
 
-def _fetch_grib_subset(fields, lat, lon, box_degrees=1.5):
+def _fetch_grib_one_cycle(fields, lat, lon, cycle, forecast_hour, box_degrees=1.5):
+    """One real NOMADS GRIB Filter request against one specific, already-
+    chosen cycle -- no retry/fallback here, that's `_fetch_grib_subset`'s
+    job for a single value, and `get_forecast_series`'s own job when it
+    needs one cycle held fixed across several forecast hours. Raises
+    ValueError if the response isn't real GRIB2 data."""
+    params = {
+        "dir": f"/gfs.{cycle.strftime('%Y%m%d')}/{cycle.strftime('%H')}/atmos",
+        "file": f"gfs.t{cycle.strftime('%H')}z.pgrb2.0p25.f{forecast_hour:03d}",
+        "subregion": "",
+        "toplat": lat + box_degrees,
+        "bottomlat": lat - box_degrees,
+        "leftlon": lon - box_degrees + 360 if lon < 0 else lon - box_degrees,
+        "rightlon": lon + box_degrees + 360 if lon < 0 else lon + box_degrees,
+    }
+    for variable, level_param in fields:
+        params[f"var_{variable}"] = "on"
+        params[level_param] = "on"
+    resp = requests.get(NOMADS_FILTER_URL, params=params, headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    if resp.content[:4] != b"GRIB" or len(resp.content) <= 100:
+        raise ValueError(f"Response for cycle {cycle} f{forecast_hour:03d} wasn't real GRIB2 data")
+    return resp.content
+
+
+def _fetch_grib_subset(fields, lat, lon, box_degrees=1.5, forecast_hour=0):
     """Real NOMADS GRIB Filter fetch, trying recent GFS cycles until one
     actually has data (see `_candidate_cycles`). `fields` is a list of
     (variable, level_param) tuples -- multiple fields in one request
     (e.g. storm motion's U/V components) is real, supported NOMADS
-    filter behavior, not a workaround. Returns (grib_bytes,
-    cycle_datetime, forecast_hour) or raises if every candidate failed."""
+    filter behavior, not a workaround. `forecast_hour` selects a real
+    forecast lead time from the same cycle (0 = the analysis itself,
+    verified live that later hours -- e.g. f012 -- return real, distinct
+    values, not a copy of f000) -- the Model Lab's whole point: the
+    model's own atmosphere at a future time, not a live observation.
+    Returns (grib_bytes, cycle_datetime, forecast_hour) or raises if
+    every candidate failed."""
     last_error = None
     for cycle in _candidate_cycles():
-        params = {
-            "dir": f"/gfs.{cycle.strftime('%Y%m%d')}/{cycle.strftime('%H')}/atmos",
-            "file": f"gfs.t{cycle.strftime('%H')}z.pgrb2.0p25.f000",
-            "subregion": "",
-            "toplat": lat + box_degrees,
-            "bottomlat": lat - box_degrees,
-            "leftlon": lon - box_degrees + 360 if lon < 0 else lon - box_degrees,
-            "rightlon": lon + box_degrees + 360 if lon < 0 else lon + box_degrees,
-        }
-        for variable, level_param in fields:
-            params[f"var_{variable}"] = "on"
-            params[level_param] = "on"
         try:
-            resp = requests.get(NOMADS_FILTER_URL, params=params, headers=HEADERS, timeout=30)
-            resp.raise_for_status()
-            if resp.content[:4] == b"GRIB" and len(resp.content) > 100:
-                return resp.content, cycle, 0
-            last_error = ValueError(f"Response for cycle {cycle} wasn't real GRIB2 data")
-        except requests.RequestException as exc:
+            content = _fetch_grib_one_cycle(fields, lat, lon, cycle, forecast_hour, box_degrees)
+            return content, cycle, forecast_hour
+        except (requests.RequestException, ValueError) as exc:
             last_error = exc
     raise LookupError(f"No published GFS cycle had usable data: {last_error}")
 
@@ -190,13 +205,13 @@ def _product_label(cycle, fhour):
     return f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle, f{fhour:03d}"
 
 
-def get_gridded_value(name, variable, var_key, level_param, unit, lat, lon, product_type="model"):
+def get_gridded_value(name, variable, var_key, level_param, unit, lat, lon, product_type="model", forecast_hour=0):
     """The real, locked schema every Weather Data Engine value returns --
     what it is, where it came from, whether it was observed or
     calculated, when it's valid, and whether it's actually usable right
     now. Never fabricates a value: raises up to the caller (which decides
     the honest UNAVAILABLE/cache-fallback behavior) rather than guessing."""
-    grib_bytes, cycle, fhour = _fetch_grib_subset([(variable, level_param)], lat, lon)
+    grib_bytes, cycle, fhour = _fetch_grib_subset([(variable, level_param)], lat, lon, forecast_hour=forecast_hour)
     value, valid_time = _decode_points(grib_bytes, [var_key], lat, lon)[var_key]
     return {
         "name": name,
@@ -237,3 +252,48 @@ def get_gridded_vector(name, variable_u, variable_v, var_key_u, var_key_v, level
         "coverage": "Global model grid (0.25 degree resolution)",
         "status": "valid",
     }
+
+
+def get_forecast_series(name, variable, var_key, level_param, unit, lat, lon, forecast_hours, product_type="model"):
+    """Model Lab's real data: the SAME model cycle's own predicted
+    atmosphere at several real lead times -- "what does the model think
+    happens at +6h, +12h, +24h," not several different runs. Verified
+    live that later lead times genuinely carry distinct valid_times and
+    values, not a copy of f000 (e.g. real CAPE going 0 -> 0 -> 148 -> 0
+    J/kg across f000/f006/f012/f024 for a real point, tracking real
+    afternoon convective heating).
+
+    Deliberately tries one whole cycle across every requested lead time
+    before falling back to an older cycle -- a naive per-call retry
+    could silently stitch together two different cycles if a later lead
+    time simply hasn't published yet for the newest one, which would
+    make this "the model's own forecast" claim false.
+    """
+    last_error = None
+    for cycle in _candidate_cycles():
+        try:
+            points = []
+            for fhour in forecast_hours:
+                grib_bytes = _fetch_grib_one_cycle(
+                    [(variable, level_param)], lat, lon, cycle, fhour
+                )
+                value, valid_time = _decode_points(grib_bytes, [var_key], lat, lon)[var_key]
+                points.append({
+                    "forecastHour": fhour,
+                    "value": round(value, 1),
+                    "validTime": valid_time,
+                })
+            return {
+                "name": name,
+                "unit": unit,
+                "points": points,
+                "source": "NOAA/NCEP",
+                "product": f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle",
+                "type": product_type,
+                "retrievedTime": time.time(),
+                "coverage": "Global model grid (0.25 degree resolution)",
+                "status": "valid",
+            }
+        except (ValueError, requests.RequestException) as exc:
+            last_error = exc
+    raise LookupError(f"No published GFS cycle had every requested lead time: {last_error}")

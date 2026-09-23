@@ -1300,3 +1300,53 @@ than left unmentioned.
   Verified the real Docker build succeeds and both cfgrib and metpy
   import correctly at runtime inside the actual container, not just a
   local venv.
+
+## Model Lab — first real build, and the real "will this storm happen?" lesson (2026-09-23)
+
+The lab that directly matches Frank's own worked example from the
+nine-lab reframe above: not "what's the weather now," but "what does
+the model itself think happens next, and how does that story unfold
+across its own forecast." Built on the same Weather Data Engine, no new
+data source -- the engine already knows how to talk to GFS, this lab
+just asks it for the same field at several real lead times instead of
+one.
+
+**A real bug caught before it shipped**: the first draft of
+`weather_data_engine.get_forecast_series()` looped over
+`_candidate_cycles()` and called the existing `_fetch_grib_subset()`
+once per forecast hour inside that loop -- except `_fetch_grib_subset()`
+already runs its own independent `_candidate_cycles()` search every
+time it's called. Nothing actually pinned one cycle across the whole
+series: if the newest cycle happened to be missing one particular lead
+time (a real, common situation -- later forecast hours publish later
+than earlier ones) while an older cycle had it, the two calls could
+silently stitch together two different model runs into one "forecast,"
+which would have made the whole lesson (one atmosphere's own predicted
+story) actively wrong. Fixed by extracting a new no-retry
+`_fetch_grib_one_cycle()` that `get_forecast_series()` calls directly
+against one chosen cycle for every requested lead time, falling back to
+the next older cycle only if *that whole cycle* can't serve every
+requested hour -- never mixing cycles within one series.
+
+**Verified live**: a real 6-point CAPE series (+0h/+6h/+12h/+24h/+48h/
++72h) for a real Oklahoma point, all six points confirmed from the
+*same* GFS cycle ("2026-09-23 12Z"): 0.0 -> 520.0 -> 34.0 -> 0.0 -> 0.0
+-> 0.0 J/kg -- a real, physically sensible single-afternoon convective
+buildup and decay, not six arbitrary numbers.
+
+**Frontend**: a real bar chart (`#wl-model-chart`), each bar labeled
+with its forecast hour and real valid time, plus a provenance card
+underneath naming the exact source cycle -- same six-part honesty
+pattern as every other lab. Found and fixed a real narrow-viewport
+layout bug during browser verification: six labeled columns don't fit
+this dashboard's actual ~280px-wide layout without their time labels
+overlapping, so the chart got the same fix already used for the
+Sounding Lab's level table -- a horizontally-scrolling wrapper with a
+fixed minimum width per column, rather than squeezing everything to
+fit.
+
+Scoped to CAPE for this first pass -- same metric already proven twice
+over (Storm Environment, this lab), and its real diurnal swing makes
+"watch the model's own story unfold" more vivid than a slower-moving
+field would be. Other Storm Environment metrics can reuse
+`get_forecast_series()` directly once there's a reason to add them.

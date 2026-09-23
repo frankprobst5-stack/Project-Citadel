@@ -8,6 +8,7 @@ import earth_lab
 import history_fact
 import journal
 import launcher
+import model_lab
 import notes_tools
 import planner
 import school_library
@@ -165,6 +166,11 @@ def storm_environment_route():
 @app.route("/api/sounding")
 def sounding_route():
     return jsonify(sounding.get_sounding())
+
+
+@app.route("/api/model-lab/cape")
+def model_lab_cape_route():
+    return jsonify(model_lab.get_cape_forecast())
 
 
 @app.route("/api/weather/clouds")

@@ -724,6 +724,56 @@
 
   loadSounding();
 
+  // ---- Model Lab: one real GFS cycle's own forecast, watched forward --
+  const modelChart = document.getElementById("wl-model-chart");
+  const modelProvenance = document.getElementById("wl-model-provenance");
+
+  function formatShortTime(iso) {
+    if (!iso) return "";
+    return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric" });
+  }
+
+  function loadModelLab() {
+    modelChart.innerHTML = '<div class="wl-loading">Loading model data&hellip;</div>';
+    modelProvenance.innerHTML = "";
+    fetch("/api/model-lab/cape")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.status === "unavailable") {
+          modelChart.innerHTML = "";
+          modelProvenance.appendChild(renderProvenanceCard({ name: "Model Lab", status: "unavailable", reason: data.reason }));
+          return;
+        }
+        const points = data.points || [];
+        const maxValue = Math.max(1, ...points.map(function (p) { return p.value; }));
+        modelChart.innerHTML = "";
+        points.forEach(function (p) {
+          const col = document.createElement("div");
+          col.className = "wl-model-bar-col";
+          const heightPct = Math.max(2, (p.value / maxValue) * 100);
+          col.innerHTML =
+            '<div class="wl-model-bar-value">' + p.value + "</div>" +
+            '<div class="wl-model-bar" style="height:' + heightPct + '%"></div>' +
+            '<div class="wl-model-bar-label">+' + p.forecastHour + "h</div>" +
+            '<div class="wl-model-bar-time">' + formatShortTime(p.validTime) + "</div>";
+          modelChart.appendChild(col);
+        });
+        modelProvenance.appendChild(renderProvenanceCard({
+          name: "Forecast cycle", value: "NOAA GFS 0.25°", unit: "",
+          source: data.source, product: data.product, type: data.type,
+          validTime: points.length ? points[0].validTime : null, coverage: data.coverage,
+          stale: data.stale, ageHours: data.ageHours,
+        }));
+      })
+      .catch(function () {
+        modelChart.innerHTML = '<div class="wl-loading">Couldn\'t reach the Weather Data Engine.</div>';
+      });
+  }
+
+  loadModelLab();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

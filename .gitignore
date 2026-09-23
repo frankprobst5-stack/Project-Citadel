@@ -66,6 +66,10 @@ appdata/cloud9/data/scratchpad.json
 appdata/cloud9/data/writing_paper.json
 appdata/cloud9/data/videos.json
 appdata/cloud9/server/static/videos/
+# Real runtime SQLite caches (weather/storm/sounding/model-lab/school
+# library/interactivity), same reasoning as the JSON data files above --
+# regenerated on first real use, never source.
+appdata/cloud9/data/*.db
 
 # Personal SDR channel configs — reveals real county/location names, not
 # generic sample data. Never belongs in a public repo.
