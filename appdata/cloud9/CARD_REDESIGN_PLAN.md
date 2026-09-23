@@ -1499,3 +1499,45 @@ Sounding, Model, Global Weather, Weather Event Explorer, and now Mission
 Mode. Real remaining open items across the whole plan: Climate Lab
 (comparisons to NOAA's real climate normals), a graphical Skew-T/log-P
 viewer, and Mission Mode's own Guided/Historical mission types.
+
+## Climate Lab — first real build, "is today normal?" (2026-09-23)
+
+Real answer to a real question, using NOAA/NCEI's own public, keyless
+1991-2020 U.S. Climate Normals (daily) service -- confirmed live before
+writing code, same standing rule as every other lab. Two distinct real
+lookups, deliberately cached on different schedules: which station is
+nearest and what its 30-year normal high/low/average is for today's
+calendar date barely change day to day (cached 24h); today's actual
+observed temperature changes continuously, so it's always fetched fresh
+via the same real NWS current-conditions call the Current Conditions
+deck already uses -- caching that one would mean showing a stale "right
+now" number next to a live-looking comparison.
+
+**A real bug found immediately on first live test**: the nearest
+station by raw distance turned out to be a real precipitation-only COOP
+station with no temperature normals at all -- a genuine, common real-
+world situation, not an edge case worth ignoring. Fixed by trying real
+candidate stations nearest-first and skipping any that don't actually
+report `DLY-TMAX-NORMAL`/`DLY-TMIN-NORMAL`/`DLY-TAVG-NORMAL`, rather
+than trusting the single closest result. Also confirmed live that
+NCEI's real search API parameter is `bbox` (not the more obvious
+`boundingBox` guessed first, and not documented outside NCEI's own
+Search Service API user docs).
+
+Verified live for real, current Oklahoma City weather: today's real
+observed temperature (84.2°F) against the real 1991-2020 normal average
+(70.1°F) for September 23 -- a real +14.1°F, correctly labeled "much
+warmer than normal," nearest station USW00013967 (the real Will Rogers
+World Airport station), 7.4 real miles away.
+
+**A real UI bug caught during browser verification**: a long
+comparison label ("much warmer than normal (+14.1°F)") wrapped to
+several lines inside a 999px-radius pill, rendering as an ugly blob
+instead of a chip -- fixed by using a normal 6px border-radius for this
+specific badge, since unlike short fixed-length badges elsewhere (CAT
+4, MODEL), this one's text length varies with the real comparison
+result and can't be assumed to fit on one line.
+
+Remaining open items across the whole plan: a graphical Skew-T/log-P
+viewer, and Mission Mode's own Guided (concept lessons) and Historical
+(archived event replay) mission types.

@@ -950,6 +950,42 @@
 
   loadMission();
 
+  // ---- Climate Lab: is today normal? ---------------------------------
+  const climateCard = document.getElementById("wl-climate-card");
+
+  function loadClimateLab() {
+    climateCard.innerHTML = '<div class="wl-loading">Loading climate normals&hellip;</div>';
+    fetch("/api/climate-lab")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.status === "unavailable") {
+          climateCard.innerHTML = '<div class="wl-event-empty">Unavailable — ' + data.reason + "</div>";
+          return;
+        }
+        const labelClass = data.diffF >= 3 ? "wl-climate-label-warm" : data.diffF <= -3 ? "wl-climate-label-cool" : "wl-climate-label-normal";
+        const sign = data.diffF > 0 ? "+" : "";
+        climateCard.innerHTML =
+          '<div class="wl-climate-top">' +
+          '<span class="wl-climate-observed">' + data.observedF + "°F</span>" +
+          '<span class="wl-climate-label ' + labelClass + '">' + data.comparisonLabel + " (" + sign + data.diffF + "°F)</span>" +
+          "</div>" +
+          '<div class="wl-climate-normals">' +
+          '<div class="wl-climate-normal-item"><div class="wl-climate-normal-value">' + data.normal.lowF + "°F</div><div class=\"wl-climate-normal-caption\">Normal Low</div></div>" +
+          '<div class="wl-climate-normal-item"><div class="wl-climate-normal-value">' + data.normal.avgF + "°F</div><div class=\"wl-climate-normal-caption\">Normal Avg</div></div>" +
+          '<div class="wl-climate-normal-item"><div class="wl-climate-normal-value">' + data.normal.highF + "°F</div><div class=\"wl-climate-normal-caption\">Normal High</div></div>" +
+          "</div>" +
+          '<div class="wl-climate-footer">Source: ' + data.source + ", " + data.product + ". Nearest normals station: " +
+          data.station.stationId + " (" + data.station.distanceMiles + " mi away).</div>";
+      })
+      .catch(function () {
+        climateCard.innerHTML = '<div class="wl-loading">Couldn\'t reach NOAA\'s climate normals archive.</div>';
+      });
+  }
+
+  loadClimateLab();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

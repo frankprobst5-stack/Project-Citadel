@@ -3,6 +3,7 @@ import json
 from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 
 import ai
+import climate_lab
 import dictionary
 import earth_lab
 import event_explorer
@@ -189,6 +190,11 @@ def event_explorer_route():
 @app.route("/api/mission")
 def mission_route():
     return jsonify(mission_mode.get_mission())
+
+
+@app.route("/api/climate-lab")
+def climate_lab_route():
+    return jsonify(climate_lab.get_today_vs_normal())
 
 
 @app.route("/api/weather/clouds")
