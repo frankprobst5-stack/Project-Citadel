@@ -1018,6 +1018,13 @@
       return '<div class="wl-mission-observe-row"><span class="wl-event-label">No active storms right now</span></div>' +
         SAFFIR_SIMPSON_MPH.map(function (row) { return renderObserveRow(row[0], row[1]); }).join("");
     }
+    if (observe.kind === "historical-storm") {
+      return renderObserveRow("Storm", observe.name + " (" + observe.year + ")") +
+        renderObserveRow("Formed", observe.formationDate) +
+        renderObserveRow("Peak intensity", observe.peakWindKt + " kt / " + observe.peakPressureMb + " mb (" + observe.peakDate + ")") +
+        renderObserveRow("On this date", observe.todayStatus + ", " + observe.todayWindKt + " kt / " + observe.todayPressureMb + " mb") +
+        renderObserveRow("Dissipated", observe.dissipationDate);
+    }
     return "";
   }
 
@@ -1100,6 +1107,18 @@
       });
   }
 
+  function loadHistoricalMission() {
+    missionTitle.textContent = "Loading this day in history…";
+    fetch("/api/mission/historical")
+      .then(function (res) { return res.json(); })
+      .then(renderMission)
+      .catch(function () {
+        missionType.textContent = "";
+        missionTitle.textContent = "Couldn't load this day in history";
+        missionBriefing.textContent = "Couldn't reach the National Hurricane Center's historical archive.";
+      });
+  }
+
   missionTabs.querySelectorAll(".wl-mission-tab").forEach(function (tab) {
     tab.onclick = function () {
       missionTabs.querySelectorAll(".wl-mission-tab").forEach(function (t) {
@@ -1109,9 +1128,12 @@
       if (tab.dataset.mode === "live") {
         missionConcepts.hidden = true;
         loadMission();
-      } else {
+      } else if (tab.dataset.mode === "guided") {
         missionConcepts.hidden = false;
         loadGuidedConceptList();
+      } else {
+        missionConcepts.hidden = true;
+        loadHistoricalMission();
       }
     };
   });

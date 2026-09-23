@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 from flask import Flask, Response, jsonify, render_template, request, stream_with_context
 
@@ -9,6 +10,7 @@ import earth_lab
 import event_explorer
 import global_lab
 import guided_missions
+import historical_missions
 import history_fact
 import journal
 import launcher
@@ -201,6 +203,12 @@ def guided_missions_list_route():
 @app.route("/api/mission/guided/<concept_id>")
 def guided_mission_route(concept_id):
     return jsonify(guided_missions.get_guided_mission(concept_id))
+
+
+@app.route("/api/mission/historical")
+def historical_mission_route():
+    today = date.today()
+    return jsonify(historical_missions.get_historical_mission(today.month, today.day))
 
 
 @app.route("/api/climate-lab")

@@ -1634,3 +1634,50 @@ since none of them declare their own `display` unconditionally.
 Only Historical missions (real archived event replay, needing real
 NCEI/NOMADS archive integration) remain as the last explicitly open item
 across the whole Weather Labs plan.
+
+## Mission Mode: Historical missions — real archived events, done (2026-09-23)
+
+The third and last Mission Mode type, and the final open item across
+the entire Weather Labs plan: **Historical** (replaying a real archived
+event with real archived data). Source is the National Hurricane
+Center's own real, public HURDAT2 best-track database -- a plain-text
+file covering 1851-present, no key needed, confirmed live (including
+scraping NHC's own real directory listing to find the current
+filename, since it embeds a revision date the same way the Event
+Explorer's cone-image filenames do) before writing any code.
+
+**The featured storm is picked dynamically, not hand-curated**: every
+storm in the whole real archive is checked for a documented entry on
+today's real calendar month-day, and the most intense one (lowest real
+central pressure) becomes the mission -- new real content most days
+instead of a fixed, memorized list. This also sidesteps a real honesty
+risk: a hand-written blurb about a famous storm would tempt citing
+facts (death tolls, exact landfall towns) that aren't in HURDAT2's own
+columns. Every claim in the mission text -- formation date, peak
+intensity, whether "rapid intensification" happened -- is computed
+directly from HURDAT2's real position/wind/pressure numbers, including
+using NHC's own real published definition of rapid intensification
+(>=35kt wind gain in 24 hours) rather than eyeballing it.
+
+**Verified live for real**: today's real pick was Hurricane Rita
+(2005) -- peaked at 895 mb / 155 kt, with a real documented 35 kt wind
+jump between two entries exactly 24 hours apart, correctly flagged as
+rapid intensification. Confirmed the reveal text correctly falls back
+to an honest "this storm didn't undergo a documented rapid
+intensification episode" for storms where no such 24-hour jump exists
+in the record, rather than forcing every mission into the same
+narrative shape.
+
+**Frontend**: a third Historical tab alongside Live and Guided, reusing
+the exact same render/reveal infrastructure as the other two mission
+types -- no new UI pattern, just a new real data source feeding it.
+
+**This closes out the entire original nine-lab reframe plus Mission
+Mode's own three mission types.** Every item named in the 2026-09-21
+reframe now has a real, live-verified build: Surface/Radar/Satellite,
+Storm Environment, Sounding (+ Skew-T viewer), Model, Global Weather,
+Weather Event Explorer, Climate Lab, and Mission Mode's Live/Guided/
+Historical types. Real remaining future work, named honestly rather
+than pretended-away: wind barbs on the Skew-T chart, Pacific-basin
+coverage for Historical missions (Atlantic-only for now), and whatever
+Frank's own next real priority for Cloud9 turns out to be.
