@@ -12,6 +12,7 @@ import notes_tools
 import planner
 import school_library
 import settings
+import sounding
 import storm_environment
 import verses
 import videos
@@ -159,6 +160,11 @@ def weather_history():
 @app.route("/api/storm-environment")
 def storm_environment_route():
     return jsonify(storm_environment.get_all())
+
+
+@app.route("/api/sounding")
+def sounding_route():
+    return jsonify(sounding.get_sounding())
 
 
 @app.route("/api/weather/clouds")

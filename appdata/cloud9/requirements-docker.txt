@@ -21,3 +21,8 @@ redis==5.0.8
 # extra apt package (e.g. libeccodes-dev) is needed in the Dockerfile.
 cfgrib==0.9.15.1
 xarray==2026.7.0
+# Sounding Lab's real K-index/Total Totals/Showalter Index calculations
+# (sounding.py) -- MetPy is the real, standard open-source Python
+# meteorology library (github.com/Unidata/MetPy), used instead of
+# hand-rolling moist-adiabatic parcel-lifting physics.
+metpy==1.7.1

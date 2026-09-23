@@ -37,15 +37,18 @@ services:
       # too now that vault-api requires it on every request.
       - VAULT_API_TOKEN=${VAULT_API_TOKEN:-}
     # Real memory cap, raised 2026-09-21 from the original 256m --
-    # Weather Labs' new Storm Environment lab pulls in xarray/cfgrib to
-    # decode real GRIB2 model data (the Weather Data Engine, see
-    # CARD_REDESIGN_PLAN.md), and measured directly: importing those
-    # libraries plus decoding one real subset already peaks at ~157MB
-    # RSS in a short-lived test process, before Flask's own baseline or
-    # a larger regional subset. Learned this exact lesson already this
-    # week with Kolibri's own mem_limit (see that service's comment) --
-    # raising it now instead of waiting for the same failure mode here.
-    mem_limit: 512m
+    # Real memory cap, raised again 2026-09-23 (512m -> 1024m) after
+    # adding the Sounding Lab: MetPy pulls in scipy/pandas/pint on top of
+    # xarray/cfgrib for real K-index/Total Totals/Showalter Index physics
+    # (sounding.py) -- measured the actual running Flask worker's RSS
+    # after one real multi-level profile fetch+compute at ~296MB, before
+    # any other feature's own peak (School Library's 21k+ record sync,
+    # etc.) potentially overlapping it. 512m (itself already a raise from
+    # the original 256m for xarray/cfgrib alone -- see git history) no
+    # longer has real safety margin. Learned this same lesson with
+    # Kolibri's own mem_limit days earlier -- raising proactively again
+    # instead of waiting for a live OOM.
+    mem_limit: 1024m
     networks:
       - citadel-net
     # depends_on: [ollama] removed 2026-09-16 -- same real reason as

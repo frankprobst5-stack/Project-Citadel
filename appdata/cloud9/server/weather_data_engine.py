@@ -119,6 +119,73 @@ def _decode_points(grib_bytes, var_keys, lat, lon):
         return results
 
 
+STANDARD_LEVELS_MB = (1000, 925, 850, 700, 500, 400, 300, 250, 200)
+
+
+def _decode_profile(grib_bytes, lat, lon):
+    """Real decode of a multi-level fetch (TMP/RH/UGRD/VGRD across the
+    standard pressure levels) into one vertical profile at the nearest
+    grid point. Unlike `_decode_points`, this is a single cfgrib Dataset
+    open -- confirmed live that same-level-type fields (all isobaricInhPa
+    here) merge cleanly, unlike storm motion's mixed level types."""
+    with tempfile.NamedTemporaryFile(suffix=".grib2") as f:
+        f.write(grib_bytes)
+        f.flush()
+        ds = xr.open_dataset(f.name, engine="cfgrib")
+        lon_grid = lon + 360 if lon < 0 else lon
+        point = ds.sel(latitude=lat, longitude=lon_grid, method="nearest")
+        levels = [float(p) for p in point["isobaricInhPa"].values]
+        temps_c = [float(v) - 273.15 for v in point["t"].values]
+        rh_pct = [float(v) for v in point["r"].values]
+        u_ms = [float(v) for v in point["u"].values]
+        v_ms = [float(v) for v in point["v"].values]
+        valid_time = str(point.coords["valid_time"].values) if "valid_time" in point.coords else None
+        return levels, temps_c, rh_pct, u_ms, v_ms, valid_time
+
+
+def get_pressure_profile(lat, lon, levels_mb=STANDARD_LEVELS_MB):
+    """Real vertical profile (temperature, relative humidity, wind) across
+    the standard pressure levels -- the Sounding Lab's own data, and the
+    real source for K-index/Total Totals/Showalter (none of which are
+    direct GFS output fields -- confirmed absent from the real .idx
+    inventory; they're computed from exactly this kind of profile)."""
+    fields = []
+    for lvl in levels_mb:
+        lev_param = f"lev_{lvl}_mb"
+        fields.append(("TMP", lev_param))
+        fields.append(("RH", lev_param))
+        fields.append(("UGRD", lev_param))
+        fields.append(("VGRD", lev_param))
+
+    grib_bytes, cycle, fhour = _fetch_grib_subset(fields, lat, lon)
+    levels, temps_c, rh_pct, u_ms, v_ms, valid_time = _decode_profile(grib_bytes, lat, lon)
+
+    profile = []
+    for i in range(len(levels)):
+        speed_mph = round(((u_ms[i] ** 2 + v_ms[i] ** 2) ** 0.5) * 2.23694, 1)
+        direction_deg = round((270 - math.degrees(math.atan2(v_ms[i], u_ms[i]))) % 360)
+        profile.append({
+            "pressureMb": levels[i],
+            "temperatureC": round(temps_c[i], 1),
+            "relativeHumidityPct": round(rh_pct[i], 1),
+            "windSpeedMph": speed_mph,
+            "windDirectionDeg": direction_deg,
+        })
+    # Standard sounding convention: surface/highest-pressure first.
+    profile.sort(key=lambda p: -p["pressureMb"])
+
+    return {
+        "levels": profile,
+        "source": "NOAA/NCEP",
+        "product": _product_label(cycle, fhour),
+        "type": "model",
+        "validTime": valid_time,
+        "retrievedTime": time.time(),
+        "coverage": "Global model grid (0.25 degree resolution)",
+        "status": "valid",
+    }
+
+
 def _product_label(cycle, fhour):
     return f"GFS 0.25deg, {cycle.strftime('%Y-%m-%d %H')}Z cycle, f{fhour:03d}"
 

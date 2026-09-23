@@ -1251,3 +1251,52 @@ deck via one combined `/api/storm-environment` endpoint (six cache
 entries, one round trip) — `MODEL` badge, value, source, exact GFS
 cycle, valid time, and coverage, all shown together for every metric,
 not just CAPE.
+
+## Sounding Lab — first real build, and real K-index/Total Totals/Showalter (2026-09-23)
+
+The lab named in the nine-lab reframe above as "where CAPE's number
+actually comes from" is real now: `server/weather_data_engine.py`
+gained `get_pressure_profile()`, fetching real GFS temperature/relative
+humidity/wind at all nine standard pressure levels (1000 down to
+200mb) in one NOMADS request, decoded into one real vertical profile at
+the nearest grid point.
+
+**Real physics, not hand-rolled**: K-index, Total Totals, and Showalter
+Index all need real moist-adiabatic parcel-lifting thermodynamics, not
+simple arithmetic (Showalter especially — lifting a parcel dry-
+adiabatically to its LCL, then moist-adiabatically to 500mb). Used
+**MetPy** (`github.com/Unidata/MetPy`), the real, standard open-source
+Python meteorology library, instead of reimplementing that physics --
+same "orchestrate, don't rebuild" reasoning already applied to Kolibri/
+media-vault's real APIs elsewhere in this project, just applied to a
+physics library instead of a web API. Verified live for a real Oklahoma
+City profile: K-index 22.1°C, Total Totals 40°C, Showalter Index 4.6°C
+— all real, physically sensible values, rendered with the same
+provenance-card pattern as Storm Environment (labeled `analysis`, since
+they're computed from real analysis-time profile data, not a raw
+observation or forecast).
+
+**A real profile table**, not just the three indices: all nine levels
+(temperature, dewpoint, wind) render in a real table, confirmed showing
+correct atmospheric structure (18.6°C at the surface cooling to -54.9°C
+at 200mb). A full graphical Skew-T/log-P viewer is real future work on
+top of this same data, not yet built — named honestly in the UI rather
+than left unmentioned.
+
+**Two real infrastructure things found while building this**:
+- A real cfgrib/eccodes crash-on-interpreter-exit (`corrupted size vs.
+  prev_size while consolidating`) — confirmed live it's isolated to
+  actual process termination, not normal operation (explicit `del` +
+  `gc.collect()` survive fine; only real interpreter exit triggers it).
+  Not something to chase further -- a known category of native-library
+  cleanup issue, harmless for a long-running Flask worker that doesn't
+  exit between requests.
+- MetPy's own dependency weight (scipy/pandas/pint on top of xarray/
+  cfgrib) meant Cloud9's container needed more memory again -- measured
+  the real running Flask worker's RSS after one real profile fetch+
+  compute at ~296MB. Raised `modules/education/compose.fragment.yml`'s
+  cloud9 `mem_limit` from 512m to 1024m, the same proactive-not-reactive
+  approach already used for this exact service twice this week.
+  Verified the real Docker build succeeds and both cfgrib and metpy
+  import correctly at runtime inside the actual container, not just a
+  local venv.

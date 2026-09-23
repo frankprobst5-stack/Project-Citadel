@@ -673,6 +673,57 @@
 
   loadStormEnvironment();
 
+  // ---- Sounding Lab: the atmosphere by altitude ----------------------
+  const soundingIndices = document.getElementById("wl-sounding-indices");
+  const soundingTable = document.getElementById("wl-sounding-table");
+
+  function loadSounding() {
+    soundingIndices.innerHTML = '<div class="wl-loading">Loading model data&hellip;</div>';
+    soundingTable.innerHTML = "";
+    fetch("/api/sounding")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        soundingIndices.innerHTML = "";
+        if (data.status === "unavailable") {
+          soundingIndices.appendChild(renderProvenanceCard({ name: "Sounding Lab", status: "unavailable", reason: data.reason }));
+          return;
+        }
+        const idx = data.indices || {};
+        [
+          { name: "K-Index", value: idx.kIndex, unit: "°C" },
+          { name: "Total Totals", value: idx.totalTotals, unit: "°C" },
+          { name: "Showalter Index", value: idx.showalterIndex, unit: "°C" },
+        ].forEach(function (metric) {
+          if (metric.value === undefined || metric.value === null) {
+            soundingIndices.appendChild(renderProvenanceCard({
+              name: metric.name, status: "unavailable",
+              reason: "Couldn't compute this from the current profile.",
+            }));
+            return;
+          }
+          soundingIndices.appendChild(renderProvenanceCard({
+            name: metric.name, value: metric.value, unit: metric.unit,
+            source: data.source, product: data.product, type: "analysis",
+            validTime: data.validTime, coverage: data.coverage, stale: data.stale, ageHours: data.ageHours,
+          }));
+        });
+
+        soundingTable.innerHTML =
+          "<tr><th>Pressure</th><th>Temp</th><th>Dewpoint</th><th>Wind</th></tr>" +
+          data.levels.map(function (lvl) {
+            return "<tr><td>" + lvl.pressureMb + " mb</td><td>" + lvl.temperatureC + "°C</td><td>" +
+              lvl.dewpointC + "°C</td><td>" + lvl.windSpeedMph + " mph " + compassDirection(lvl.windDirectionDeg) + "</td></tr>";
+          }).join("");
+      })
+      .catch(function () {
+        soundingIndices.innerHTML = '<div class="wl-loading">Couldn\'t reach the Weather Data Engine.</div>';
+      });
+  }
+
+  loadSounding();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

@@ -382,6 +382,40 @@ body {
   font-style: italic;
 }
 
+.wl-sounding-table-wrap {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+
+.wl-sounding-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-sounding-table th,
+.wl-sounding-table td {
+  padding: 6px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border-dim);
+  white-space: nowrap;
+}
+
+.wl-sounding-table th:first-child,
+.wl-sounding-table td:first-child {
+  text-align: left;
+  color: var(--text-faint);
+}
+
+.wl-sounding-table th {
+  color: var(--text-faint);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
 .wl-radio-btn {
   position: fixed;
   bottom: 20px;
