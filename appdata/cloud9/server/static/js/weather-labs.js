@@ -686,6 +686,80 @@
   // ---- Sounding Lab: the atmosphere by altitude ----------------------
   const soundingIndices = document.getElementById("wl-sounding-indices");
   const soundingTable = document.getElementById("wl-sounding-table");
+  const skewtSvg = document.getElementById("wl-skewt-svg");
+
+  // Real Skew-T/log-P construction: pressure maps to height on a log
+  // scale (y), and temperature is "skewed" by a linear function of that
+  // same height fraction (x), which is exactly what gives a Skew-T chart
+  // its signature slanted isotherms -- the standard technique behind
+  // every real Skew-T chart, including MetPy's own SkewT class. No wind
+  // barbs in this first pass -- speed/direction is already in the table
+  // below; a real future addition, not attempted here.
+  const SKEWT_WIDTH = 440, SKEWT_HEIGHT = 460;
+  const SKEWT_MARGIN = { left: 34, right: 10, top: 10, bottom: 26 };
+  const SKEWT_P_BOTTOM = 1050, SKEWT_P_TOP = 150;
+  const SKEWT_T_MIN = -60, SKEWT_T_MAX = 40;
+  const SKEWT_SKEW = 60;
+
+  function skewtHFrac(pressureMb) {
+    const yBottom = Math.log(SKEWT_P_BOTTOM), yTop = Math.log(SKEWT_P_TOP);
+    return (yBottom - Math.log(pressureMb)) / (yBottom - yTop);
+  }
+
+  function skewtY(pressureMb) {
+    const plotH = SKEWT_HEIGHT - SKEWT_MARGIN.top - SKEWT_MARGIN.bottom;
+    return SKEWT_MARGIN.top + (1 - skewtHFrac(pressureMb)) * plotH;
+  }
+
+  function skewtX(tempC, pressureMb) {
+    const plotW = SKEWT_WIDTH - SKEWT_MARGIN.left - SKEWT_MARGIN.right;
+    const skewedT = tempC + SKEWT_SKEW * skewtHFrac(pressureMb);
+    const frac = (skewedT - SKEWT_T_MIN) / (SKEWT_T_MAX - SKEWT_T_MIN);
+    return SKEWT_MARGIN.left + frac * plotW;
+  }
+
+  function renderSkewT(levels) {
+    if (!levels || !levels.length) {
+      skewtSvg.innerHTML = "";
+      return;
+    }
+    const plotLeft = SKEWT_MARGIN.left, plotRight = SKEWT_WIDTH - SKEWT_MARGIN.right;
+    let svg = "";
+
+    // Isobars (horizontal, real standard pressure levels) with labels.
+    [1000, 850, 700, 500, 400, 300, 200].forEach(function (p) {
+      const y = skewtY(p);
+      svg += '<line x1="' + plotLeft + '" y1="' + y + '" x2="' + plotRight + '" y2="' + y + '" stroke="var(--border-dim)" stroke-width="1" />';
+      svg += '<text x="' + (plotLeft - 4) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="var(--text-faint)">' + p + "</text>";
+    });
+
+    // Isotherms (slanted, every 10°C) -- straight lines are exact here
+    // since the skew is linear in height fraction.
+    for (let t = SKEWT_T_MIN; t <= SKEWT_T_MAX; t += 10) {
+      const x1 = skewtX(t, SKEWT_P_BOTTOM), y1 = skewtY(SKEWT_P_BOTTOM);
+      const x2 = skewtX(t, SKEWT_P_TOP), y2 = skewtY(SKEWT_P_TOP);
+      svg += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="var(--border-dim)" stroke-width="1" />';
+      if (t % 20 === 0) {
+        svg += '<text x="' + x1 + '" y="' + (y1 + 14) + '" text-anchor="middle" font-size="9" fill="var(--text-faint)">' + t + "&deg;</text>";
+      }
+    }
+
+    function tracePoints(field) {
+      return levels.map(function (lvl) {
+        return skewtX(lvl[field], lvl.pressureMb) + "," + skewtY(lvl.pressureMb);
+      }).join(" ");
+    }
+
+    svg += '<polyline points="' + tracePoints("dewpointC") + '" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="5,4" />';
+    svg += '<polyline points="' + tracePoints("temperatureC") + '" fill="none" stroke="var(--red)" stroke-width="2" />';
+
+    levels.forEach(function (lvl) {
+      svg += '<circle cx="' + skewtX(lvl.temperatureC, lvl.pressureMb) + '" cy="' + skewtY(lvl.pressureMb) + '" r="2.5" fill="var(--red)" />';
+      svg += '<circle cx="' + skewtX(lvl.dewpointC, lvl.pressureMb) + '" cy="' + skewtY(lvl.pressureMb) + '" r="2.5" fill="var(--green)" />';
+    });
+
+    skewtSvg.innerHTML = svg;
+  }
 
   function loadSounding() {
     soundingIndices.innerHTML = '<div class="wl-loading">Loading model data&hellip;</div>';
@@ -698,8 +772,10 @@
         soundingIndices.innerHTML = "";
         if (data.status === "unavailable") {
           soundingIndices.appendChild(renderProvenanceCard({ name: "Sounding Lab", status: "unavailable", reason: data.reason }));
+          skewtSvg.innerHTML = "";
           return;
         }
+        renderSkewT(data.levels);
         const idx = data.indices || {};
         [
           { name: "K-Index", value: idx.kIndex, unit: "°C" },

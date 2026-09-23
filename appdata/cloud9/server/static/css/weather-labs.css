@@ -87,14 +87,6 @@ body {
   padding: 18px 22px;
 }
 
-.wl-deck-soon {
-  box-shadow:
-    0 0 0 1px var(--border),
-    0 0 0 3px var(--border-dim),
-    0 4px 15px rgba(0, 0, 0, 0.5);
-  opacity: 0.85;
-}
-
 .wl-deck-header {
   display: flex;
   align-items: center;
@@ -770,6 +762,45 @@ body {
   border-top: 1px solid var(--border-dim);
   padding-top: 10px;
 }
+
+.wl-skewt-wrap {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.wl-skewt {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wl-skewt-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.wl-skewt-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.wl-skewt-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.wl-skewt-swatch-temp { background: var(--red); }
+.wl-skewt-swatch-dewpoint { background: var(--green); border-top: 1px dashed var(--green); }
 
 .wl-radio-btn {
   position: fixed;

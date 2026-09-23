@@ -1541,3 +1541,47 @@ result and can't be assumed to fit on one line.
 Remaining open items across the whole plan: a graphical Skew-T/log-P
 viewer, and Mission Mode's own Guided (concept lessons) and Historical
 (archived event replay) mission types.
+
+## Skew-T/log-P viewer — first real build (2026-09-23)
+
+The last named open item from the Sounding Lab's own build note. No
+backend change at all -- this is a pure frontend addition, drawing a
+real Skew-T/log-P chart from data the Sounding Lab's own `/api/sounding`
+endpoint already returns (pressure, temperature, dewpoint per real
+level). Matches the "orchestrate what's already there" reasoning behind
+Mission Mode's own build: the real data pipeline was already complete,
+this is a new way of looking at it.
+
+**Real, standard construction, not a novel invention**: pressure maps to
+height on a log scale; temperature is skewed by a linear function of
+that same height fraction, which is exactly what gives a Skew-T chart
+its signature slanted isotherms -- the same technique behind every real
+Skew-T implementation, including MetPy's own `SkewT` class (already a
+dependency here for the Sounding Lab's indices). Rendered as inline SVG,
+built client-side in JavaScript directly from the already-fetched real
+profile -- isobars and isotherms as background gridlines, the real
+temperature and dewpoint traces as solid/dashed lines connecting the
+real per-level values.
+
+**Confirmed live, not assumed**: CSS custom properties (`var(--red)`,
+`var(--border-dim)`, etc.) resolve correctly inside inline SVG
+presentation attributes in this browser -- checked via computed style
+inspection rather than trusting it would just work, since SVG's support
+for `var()` in presentation attributes has historically been
+inconsistent across engines.
+
+No wind barbs in this first pass -- speed and direction are already in
+the table below the chart, and a real barb-drawing routine (correctly
+handling the real 5/10/50-knot barb-and-flag convention) is a
+meaningfully bigger, precision-sensitive addition, named honestly as
+real future work rather than attempted here.
+
+Also removed the now-stale "Skew-T Viewer -- planned next" placeholder
+deck and its now-fully-unused `.wl-deck-soon` CSS rule (confirmed no
+remaining references anywhere in the app before deleting).
+
+**Every open item from the original nine-lab reframe now has a real
+build**, including both named follow-ons (Climate Lab, Skew-T viewer).
+The only work still explicitly open across the whole Weather Labs plan
+is Mission Mode's own Guided (concept lessons) and Historical (archived
+event replay) mission types.

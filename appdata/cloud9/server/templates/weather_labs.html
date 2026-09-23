@@ -114,7 +114,14 @@
       <div class="wl-deck-header">
         <span class="wl-deck-title">Sounding Lab</span>
       </div>
-      <div class="wl-deck-note">The atmosphere by altitude, not just at the surface — this is where CAPE and friends actually come from.</div>
+      <div class="wl-deck-note">The atmosphere by altitude, not just at the surface — this is where CAPE and friends actually come from. This is a real Skew-T/log-P diagram, the same chart type meteorologists use: pressure (height) runs up the chart on a log scale, and temperature lines are drawn on a slant so warm, moist layers stand out clearly.</div>
+      <div class="wl-skewt-wrap">
+        <svg class="wl-skewt" id="wl-skewt-svg" viewBox="0 0 440 460"></svg>
+        <div class="wl-skewt-legend">
+          <span class="wl-skewt-legend-item"><span class="wl-skewt-swatch wl-skewt-swatch-temp"></span>Temperature</span>
+          <span class="wl-skewt-legend-item"><span class="wl-skewt-swatch wl-skewt-swatch-dewpoint"></span>Dewpoint</span>
+        </div>
+      </div>
       <div class="wl-storm-grid" id="wl-sounding-indices">
         <div class="wl-loading">Loading model data&hellip;</div>
       </div>
@@ -165,11 +172,6 @@
       <div class="wl-climate-card" id="wl-climate-card">
         <div class="wl-loading">Loading climate normals&hellip;</div>
       </div>
-    </section>
-
-    <section class="wl-deck wl-deck-soon">
-      <div class="wl-deck-header"><span class="wl-deck-title">Skew-T Viewer</span></div>
-      <div class="wl-deck-note">Planned next — a real graphical Skew-T/log-P viewer as a richer view of the Sounding Lab's data above, which already reflects real profile levels.</div>
     </section>
 
   </main>
