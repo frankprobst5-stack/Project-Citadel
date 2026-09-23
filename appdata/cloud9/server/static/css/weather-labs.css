@@ -474,6 +474,106 @@ body {
   white-space: nowrap;
 }
 
+.wl-event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.wl-event-card {
+  background: var(--panel-alt);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.wl-event-cone-img {
+  display: block;
+  width: 100%;
+  background: #fff;
+}
+
+.wl-event-body {
+  padding: 14px 16px;
+}
+
+.wl-event-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wl-event-category {
+  display: inline-block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}
+
+.wl-event-basin {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.wl-event-stats {
+  margin-top: 10px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 8px;
+}
+
+.wl-event-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 3px 0;
+}
+
+.wl-event-row .wl-event-label {
+  color: var(--text-faint);
+}
+
+.wl-event-row .wl-event-val {
+  color: var(--text-dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-event-links {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wl-event-links a {
+  font-size: 0.78rem;
+  color: var(--accent-bright);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.wl-event-links a:hover {
+  text-decoration: underline;
+}
+
+.wl-event-empty {
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 10px 0;
+}
+
 .wl-radio-btn {
   position: fixed;
   bottom: 20px;

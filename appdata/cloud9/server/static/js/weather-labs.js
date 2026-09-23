@@ -813,6 +813,67 @@
 
   loadGlobalLab();
 
+  // ---- Weather Event Explorer: one real named event, all in one place -
+  const eventGrid = document.getElementById("wl-event-grid");
+
+  function renderStormCard(storm) {
+    const card = document.createElement("div");
+    card.className = "wl-event-card";
+    const categoryBadge = storm.category ? '<span class="wl-event-category">CAT ' + storm.category + "</span>" : "";
+    const image = storm.coneImageUrl
+      ? '<img class="wl-event-cone-img" src="' + storm.coneImageUrl + '" alt="5-day forecast cone for ' + storm.name + '">'
+      : "";
+    const movement = storm.movementDirectionDeg !== null && storm.movementSpeedMph !== null
+      ? storm.movementSpeedMph + " mph toward the " + compassDirection(storm.movementDirectionDeg)
+      : "Not available";
+    const links = [];
+    if (storm.advisoryUrl) links.push('<a href="' + storm.advisoryUrl + '" target="_blank" rel="noopener">Public advisory</a>');
+    if (storm.forecastDiscussionUrl) links.push('<a href="' + storm.forecastDiscussionUrl + '" target="_blank" rel="noopener">Forecast discussion</a>');
+    card.innerHTML =
+      image +
+      '<div class="wl-event-body">' +
+      '<div class="wl-event-name">' + storm.name + categoryBadge + "</div>" +
+      '<div class="wl-event-basin">' + storm.classificationLabel + " — " + storm.basin + "</div>" +
+      '<div class="wl-event-stats">' +
+      '<div class="wl-event-row"><span class="wl-event-label">Max wind</span><span class="wl-event-val">' + storm.windMph + " mph</span></div>" +
+      '<div class="wl-event-row"><span class="wl-event-label">Pressure</span><span class="wl-event-val">' + storm.pressureMb + " mb</span></div>" +
+      '<div class="wl-event-row"><span class="wl-event-label">Position</span><span class="wl-event-val">' + storm.lat.toFixed(1) + ", " + storm.lon.toFixed(1) + "</span></div>" +
+      '<div class="wl-event-row"><span class="wl-event-label">Movement</span><span class="wl-event-val">' + movement + "</span></div>" +
+      '<div class="wl-event-row"><span class="wl-event-label">Last update</span><span class="wl-event-val">' + formatTimestamp(storm.lastUpdate) + "</span></div>" +
+      "</div>" +
+      '<div class="wl-event-links">' + links.join("") + "</div>" +
+      "</div>";
+    return card;
+  }
+
+  function loadEventExplorer() {
+    eventGrid.innerHTML = '<div class="wl-loading">Loading storm data&hellip;</div>';
+    fetch("/api/event-explorer")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.status === "unavailable") {
+          eventGrid.innerHTML = '<div class="wl-event-empty">Unavailable — ' + data.reason + "</div>";
+          return;
+        }
+        const storms = data.storms || [];
+        if (!storms.length) {
+          eventGrid.innerHTML = '<div class="wl-event-empty">No active tropical cyclones in the Atlantic or Eastern/Central Pacific right now — check back during hurricane season (June–November Atlantic, May–November Pacific).</div>';
+          return;
+        }
+        eventGrid.innerHTML = "";
+        storms.forEach(function (storm) {
+          eventGrid.appendChild(renderStormCard(storm));
+        });
+      })
+      .catch(function () {
+        eventGrid.innerHTML = '<div class="wl-loading">Couldn\'t reach the National Hurricane Center.</div>';
+      });
+  }
+
+  loadEventExplorer();
+
   loadHistory().then(loadCurrent);
   loadHourly();
   loadDaily();

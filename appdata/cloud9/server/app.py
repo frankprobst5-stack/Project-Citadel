@@ -5,6 +5,7 @@ from flask import Flask, Response, jsonify, render_template, request, stream_wit
 import ai
 import dictionary
 import earth_lab
+import event_explorer
 import global_lab
 import history_fact
 import journal
@@ -177,6 +178,11 @@ def model_lab_cape_route():
 @app.route("/api/global-lab")
 def global_lab_route():
     return jsonify(global_lab.get_all())
+
+
+@app.route("/api/event-explorer")
+def event_explorer_route():
+    return jsonify(event_explorer.get_active_storms())
 
 
 @app.route("/api/weather/clouds")

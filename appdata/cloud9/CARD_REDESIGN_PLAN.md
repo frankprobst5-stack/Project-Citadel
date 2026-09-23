@@ -1401,3 +1401,48 @@ repeated provenance cards -- all seven points share the same GFS cycle,
 so repeating it seven times would be noise, not honesty. Each point
 fails independently (a real per-row `status: unavailable` + reason)
 so one bad point never blanks the whole table.
+
+## Weather Event Explorer — first real build, live during a real active hurricane season (2026-09-23)
+
+The eighth of the nine labs: "one real named event, everything about it
+in one place." Source is the National Hurricane Center's own real,
+public `CurrentStorms.json` feed -- no key needed, verified live before
+writing any code (this session's standing rule). Built `event_explorer.py`
+around it: real classification codes (TD/TS/HU/etc, from NHC's own
+glossary), a real Saffir-Simpson category computed from wind speed for
+hurricanes, and a real best-effort scrape of NHC's own graphics page for
+each storm's actual 5-day forecast cone PNG (the image URL embeds a
+per-update timestamp, so it can't be hardcoded -- confirmed live that a
+changed page layout degrades to no image, never a broken card).
+
+**Verified live against a real, currently active hurricane season**:
+three real systems were active while building this --
+**Polo**, a real Category 4 hurricane (150 mph, 927 mb) in the Eastern
+Pacific; **Odalys**, a real Category 1 hurricane (75 mph, 989 mb); and
+**Fifteen-E**, a real Tropical Depression that hadn't yet reached
+Tropical Storm strength -- a genuine, live example of NHC's real
+naming rule (storms are only named at 34+ kt) rather than something
+that had to be explained hypothetically.
+
+**A real, honest distinction encoded in the schema**: an empty
+`activeStorms` list is treated as a real, valid answer ("no active
+tropical cyclones right now"), never conflated with `status:
+unavailable` (an actual fetch failure) -- the same never-fabricate,
+never-hide-a-real-answer discipline as every other lab's schema.
+NHC's own current position/intensity is itself a meteorologist-produced
+analysis (folding in recon, satellite, and radar), not one raw sensor
+reading, so it's labeled `type: "analysis"`, matching the Sounding
+Lab's own reasoning for the same choice.
+
+**Not yet built** (named honestly rather than silently skipped, matching
+this project's own culture): the vision's full "pulling satellite,
+radar, pressure, wind, water vapor, forecast, alerts, history, and
+geography into one place" -- this first pass covers pressure, wind,
+position/movement, and a direct link to NHC's own real forecast
+discussion and public advisory text. Tying a storm's real position into
+Earth Lab's geography view, filtering NWS alerts to the areas a storm
+actually threatens, and a This-Day-in-History comparison to past storms
+are real, planned follow-on integration work, not done here.
+
+Only Mission Mode (the capstone) remains from the original nine-lab
+reframe, plus the already-named Climate Lab and graphical Skew-T viewer.
