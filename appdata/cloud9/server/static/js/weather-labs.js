@@ -587,9 +587,19 @@
     if (radarMap || typeof L === "undefined") return;
     radarMap = L.map(radarMapEl, { zoomControl: true, minZoom: 3, maxZoom: 10 }).setView([39.5, -98.35], 4);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>, &copy; OpenStreetMap contributors',
-      subdomains: "abcd",
+    // Real, free-forever OpenStreetMap standard tiles -- no API key,
+    // full national (and global) coverage, unlike CARTO's free tier
+    // (confirmed live: it now watermarks tiles "API KEY REQUIRED"
+    // instead of serving them, so it's swapped out here) or Citadel's
+    // own self-hosted comms_base.pmtiles (real, but confirmed via its
+    // own real header metadata to cover only the western ~2/3 of the
+    // continental US -- min_lon -127.09, max_lon -87.86 -- not a fit
+    // for a national radar view without a real, separate full-US/
+    // planet basemap build, named as real future work). CSS darkens
+    // the naturally light OSM tiles to match this deck's NASA theme.
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      className: "wl-radar-basemap-dark",
     }).addTo(radarMap);
 
     radarReflectivityLayer = L.tileLayer(nexradTileUrl("nexrad-n0q"), {

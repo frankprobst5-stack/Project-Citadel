@@ -2007,3 +2007,45 @@ toggle panel correctly showing all five real layers with the intended
 defaults, and toggling each layer on/off working. No new backend code
 needed -- this was a pure frontend upgrade over already-real, already-
 public data.
+
+## Real bug fix: CARTO basemap swapped for a genuinely free one (2026-09-24)
+
+Frank caught this live: the new Radar map's dark basemap was showing an
+"API KEY REQUIRED" watermark baked directly into the tile images. Real
+finding: CARTO's free anonymous basemap tier now requires domain
+registration and returns a valid-looking, watermarked PNG instead of
+failing outright -- which is exactly why an earlier `curl` check of one
+tile returned a normal 200 with real image content-type and looked
+fine; the watermark is inside the pixels, not in the HTTP status.
+
+**Frank also asked directly why this wasn't using Citadel's own real
+map server** -- a fair, informed question this session should have
+weighed the first time. Investigated properly this time: Citadel does
+have a real, working, self-hosted map stack (MapLibre GL + PMTiles,
+already proven in `appdata/cockpit/map.html`, with CORS already enabled
+on cockpit's nginx specifically so other apps like WayStation can read
+it cross-origin). But its actual basemap file, `comms_base.pmtiles`,
+was checked against its own real header metadata (via the `pmtiles`
+Python library, not assumed) and only covers the western ~2/3 of the
+continental US (min_lon -127.09, max_lon -87.86) -- built for a
+regional/tactical use case, not a national one. Using it as-is would
+leave the whole eastern half of the country's radar view sitting on a
+blank basemap, which is worse than what Frank was asking to fix.
+
+**Real fix for now**: swapped CARTO for OpenStreetMap's standard tile
+server -- free forever, no key, ever, genuine full national (and
+global) coverage, no watermark. Applied a CSS filter (invert + hue-
+rotate + reduced brightness/contrast/saturation, a standard technique
+for dark-skinning a basemap not designed with one) so it still matches
+the deck's NASA dark theme instead of introducing a bright white map.
+Verified live: real dark basemap, real state lines, real NEXRAD
+reflectivity, no watermark anywhere.
+
+**Real follow-on work, named honestly rather than silently dropped**:
+building or downloading a genuine full-national (or full-planet)
+self-hosted PMTiles basemap -- e.g. via Protomaps' own public build
+service -- would let Weather Labs' radar map (and potentially other
+Citadel maps) run on fully self-hosted tiles with zero external
+dependency, matching the ecosystem's own "self-hosted first"
+philosophy exactly the way Frank was picturing. Not done here: it's a
+real, separate, multi-gigabyte undertaking, not a quick swap.

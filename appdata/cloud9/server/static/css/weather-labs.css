@@ -292,6 +292,14 @@ body {
   font-family: inherit;
 }
 
+/* OpenStreetMap's standard tiles are naturally light -- this inverts +
+   hue-rotates them to a dark navy look matching the rest of the deck,
+   a standard, widely-used technique for dark-skinning a raster basemap
+   that was never designed with a dark palette. */
+.wl-radar-basemap-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+
 .wl-radar-map .leaflet-control-layers {
   background: var(--panel-alt);
   border: 1px solid var(--border);
