@@ -6,7 +6,7 @@
   const hourlyStrip = document.getElementById("wl-hourly-strip");
   const dailyList = document.getElementById("wl-daily-list");
   const alertsList = document.getElementById("wl-alerts-list");
-  const radarImg = document.getElementById("wl-radar-img");
+  const radarMapEl = document.getElementById("wl-radar-map");
   const radarRefresh = document.getElementById("wl-radar-refresh");
   const satelliteImg = document.getElementById("wl-satellite-img");
   const satelliteRefresh = document.getElementById("wl-satellite-refresh");
@@ -565,6 +565,69 @@
       });
   }
 
+  // Real, live, national radar mosaic -- Iowa Environmental Mesonet's
+  // own public, keyless tile/WMS re-serving of NOAA's real NEXRAD
+  // network (confirmed live before building this: real XYZ tiles at
+  // /cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png, 5-minute
+  // cache matching the real mosaic's own update cadence, plus a real
+  // WMS warnings-polygon layer at /cgi-bin/wms/us/wwa.cgi). Same real
+  // data radar.weather.gov itself shows, not a Cloud9-specific fetch --
+  // Leaflet (already used by Earth Lab) just makes it pannable/
+  // zoomable/layered instead of one static looping image.
+  let radarMap = null;
+  let radarReflectivityLayer = null;
+  let radarEchoTopsLayer = null;
+  const RADAR_REFRESH_MS = 5 * 60 * 1000;
+
+  function nexradTileUrl(product) {
+    return "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/" + product + "-900913/{z}/{x}/{y}.png?_=" + Date.now();
+  }
+
+  function initRadarMap() {
+    if (radarMap || typeof L === "undefined") return;
+    radarMap = L.map(radarMapEl, { zoomControl: true, minZoom: 3, maxZoom: 10 }).setView([39.5, -98.35], 4);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>, &copy; OpenStreetMap contributors',
+      subdomains: "abcd",
+    }).addTo(radarMap);
+
+    radarReflectivityLayer = L.tileLayer(nexradTileUrl("nexrad-n0q"), {
+      attribution: "Radar: Iowa Environmental Mesonet / NOAA NEXRAD",
+      opacity: 0.75,
+    }).addTo(radarMap);
+
+    radarEchoTopsLayer = L.tileLayer(nexradTileUrl("nexrad-eet"), { opacity: 0.75 });
+
+    const statesLayer = L.tileLayer("https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/usstates-900913/{z}/{x}/{y}.png", { opacity: 0.6 }).addTo(radarMap);
+    const countiesLayer = L.tileLayer("https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/uscounties-900913/{z}/{x}/{y}.png", { opacity: 0.4 });
+
+    const warningsLayer = L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/us/wwa.cgi", {
+      layers: "warnings_p",
+      format: "image/png",
+      transparent: true,
+      attribution: "Warnings: NWS / Iowa Environmental Mesonet",
+    }).addTo(radarMap);
+
+    L.control.layers(
+      {},
+      {
+        "Base Reflectivity": radarReflectivityLayer,
+        "Echo Tops": radarEchoTopsLayer,
+        "NWS Warnings": warningsLayer,
+        "State Lines": statesLayer,
+        "County Lines": countiesLayer,
+      },
+      { collapsed: true }
+    ).addTo(radarMap);
+  }
+
+  function refreshRadarLayers() {
+    if (!radarMap) return;
+    if (radarReflectivityLayer) radarReflectivityLayer.setUrl(nexradTileUrl("nexrad-n0q"));
+    if (radarEchoTopsLayer) radarEchoTopsLayer.setUrl(nexradTileUrl("nexrad-eet"));
+  }
+
   function refreshRadar() {
     fetch("/api/settings")
       .then(function (res) {
@@ -579,13 +642,18 @@
             window.open(config.weather_radio_url, "_blank", "noopener");
           };
         }
-        if (config.radar_station) {
-          radarImg.src = "https://radar.weather.gov/ridge/standard/" + config.radar_station + "_loop.gif?t=" + Date.now();
-        } else {
-          radarImg.alt = "No radar station set yet - add a location in Settings.";
+        initRadarMap();
+        if (config.lat && config.lon && radarMap) {
+          if (window.__wlHomeMarker) radarMap.removeLayer(window.__wlHomeMarker);
+          window.__wlHomeMarker = L.marker([config.lat, config.lon])
+            .addTo(radarMap)
+            .bindPopup(config.location_label || "Home");
         }
+        refreshRadarLayers();
       });
   }
+
+  setInterval(refreshRadarLayers, RADAR_REFRESH_MS);
 
   // Real, live, keyless NOAA STAR/NESDIS GOES-19 GeoColor imagery --
   // verified live before building this (GOES16's own URL now 301s to

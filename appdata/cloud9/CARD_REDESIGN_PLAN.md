@@ -1965,3 +1965,45 @@ correctly, times table study/quiz modes both work with correct scoring,
 addition/subtraction challenges generate correct problems at all three
 difficulties and both operations, and the GeoGebra sandbox loads and
 renders a real interactive graphing calculator.
+
+## Real interactive national radar, replacing the static loop (2026-09-24)
+
+Frank's own request: upgrade the Radar deck's basic looping regional
+GIF into something like radar.weather.gov -- live, national, layered,
+pannable, zoomable. Asked whether Citadel had a real built-in map
+server to use; checked and confirmed it doesn't (WayStation's own
+map.html uses local pmtiles for a specific offline case, not a general
+shared tile service), so this uses the same real, external approach
+Earth Lab's own map already established.
+
+**Real, verified data source**: the Iowa Environmental Mesonet's public,
+keyless re-serving of NOAA's actual NEXRAD network -- the same real
+national radar mosaic radar.weather.gov itself is built on, not a
+Cloud9-specific product. Confirmed live before writing any code: real
+XYZ tiles for base reflectivity (`nexrad-n0q-900913`) and echo tops
+(`nexrad-eet-900913`) on a real 5-minute cache matching the mosaic's own
+update cadence, plus a real WMS layer for NWS warning polygons
+(`warnings_p` on `/cgi-bin/wms/us/wwa.cgi`) and real county/state
+boundary tile layers.
+
+**Built as a real Leaflet map** (same library Earth Lab already uses,
+loaded the same way), replacing the single `<img>` loop entirely:
+CARTO's free dark basemap tiles (matching Weather Labs' own NASA dark
+theme), a default CONUS-wide view with the family's real home location
+marked, a real layer control (Base Reflectivity and Warnings on by
+default, Echo Tops and County Lines available as toggles, matching
+radar.weather.gov's own layered structure), and a real 5-minute
+auto-refresh that reloads the live tile layers to match how often the
+underlying mosaic itself actually updates.
+
+**Kept the existing settings/radio logic intact** while replacing only
+the radar-rendering half of the old `refreshRadar()` function -- the
+family's location label and weather-radio button wiring needed to
+survive the rewrite unchanged.
+
+Verified live: real current NEXRAD reflectivity rendered nationally,
+the home marker placed correctly from real settings data, the layer
+toggle panel correctly showing all five real layers with the intended
+defaults, and toggling each layer on/off working. No new backend code
+needed -- this was a pure frontend upgrade over already-real, already-
+public data.
