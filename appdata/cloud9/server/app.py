@@ -229,6 +229,11 @@ def earth_lab_page():
     return render_template("earth_lab.html")
 
 
+@app.route("/math-lab")
+def math_lab_page():
+    return render_template("math_lab.html")
+
+
 @app.route("/api/earth-lab/country/<alpha3>")
 def earth_lab_country(alpha3):
     try:

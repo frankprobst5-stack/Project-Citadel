@@ -109,6 +109,19 @@
     {
       "cards": [
         {
+          "id": "math_lab",
+          "title": "Math Lab",
+          "subtitle": "Times tables, challenges & a math sandbox",
+          "icon": "🔢",
+          "accent": "#a06fff",
+          "status": "active",
+          "link": "/math-lab"
+        }
+      ]
+    },
+    {
+      "cards": [
+        {
           "id": "kolibri",
           "title": "School Library",
           "subtitle": "Videos & exercises",

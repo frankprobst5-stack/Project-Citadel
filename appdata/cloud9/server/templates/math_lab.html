@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Math Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/math-lab.css') }}">
+</head>
+<body>
+  <header class="ml-topbar">
+    <a class="ml-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="ml-heading">
+      <span class="ml-icon">&#128290;</span>
+      <span class="ml-title">Math Lab</span>
+    </div>
+  </header>
+
+  <main class="ml-main">
+
+    <section class="ml-deck" id="ml-deck-times-table">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Times Table Chart</span>
+      </div>
+      <div class="ml-deck-note">Study the whole chart, then switch to Quiz Mode to test yourself. Real memorization works best with both: seeing the pattern first, then recalling it without looking.</div>
+      <div class="ml-times-controls">
+        <button type="button" class="ml-mode-btn ml-mode-btn-active" data-mode="study" id="ml-times-study-btn">Study Mode</button>
+        <button type="button" class="ml-mode-btn" data-mode="quiz" id="ml-times-quiz-btn">Quiz Mode</button>
+        <div class="ml-times-quiz-stats" id="ml-times-quiz-stats" hidden>
+          <span>Score: <strong id="ml-times-score">0</strong></span>
+          <span>Streak: <strong id="ml-times-streak">0</strong></span>
+        </div>
+      </div>
+      <div class="ml-times-table-wrap">
+        <table class="ml-times-table" id="ml-times-table"></table>
+      </div>
+      <div class="ml-times-quiz-panel" id="ml-times-quiz-panel" hidden>
+        <div class="ml-times-quiz-question" id="ml-times-quiz-question"></div>
+        <form class="ml-times-quiz-form" id="ml-times-quiz-form">
+          <input type="number" id="ml-times-quiz-input" autocomplete="off" placeholder="?">
+          <button type="submit">Check</button>
+        </form>
+        <div class="ml-times-quiz-feedback" id="ml-times-quiz-feedback"></div>
+      </div>
+    </section>
+
+    <section class="ml-deck" id="ml-deck-challenges">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Addition &amp; Subtraction Challenges</span>
+      </div>
+      <div class="ml-deck-note">Pick a difficulty and an operation, then race through as many problems as you can in 60 seconds.</div>
+      <div class="ml-challenge-controls">
+        <div class="ml-challenge-control-group">
+          <span class="ml-challenge-control-label">Difficulty</span>
+          <div class="ml-challenge-btn-row" id="ml-difficulty-row">
+            <button type="button" class="ml-mode-btn ml-mode-btn-active" data-difficulty="easy">Easy (1&ndash;10)</button>
+            <button type="button" class="ml-mode-btn" data-difficulty="medium">Medium (1&ndash;50)</button>
+            <button type="button" class="ml-mode-btn" data-difficulty="hard">Hard (1&ndash;100)</button>
+          </div>
+        </div>
+        <div class="ml-challenge-control-group">
+          <span class="ml-challenge-control-label">Operation</span>
+          <div class="ml-challenge-btn-row" id="ml-operation-row">
+            <button type="button" class="ml-mode-btn ml-mode-btn-active" data-operation="add">Addition</button>
+            <button type="button" class="ml-mode-btn" data-operation="subtract">Subtraction</button>
+            <button type="button" class="ml-mode-btn" data-operation="mixed">Mixed</button>
+          </div>
+        </div>
+      </div>
+      <div class="ml-challenge-panel">
+        <div class="ml-challenge-stats" id="ml-challenge-stats">
+          <span>Time: <strong id="ml-challenge-timer">60</strong>s</span>
+          <span>Correct: <strong id="ml-challenge-correct">0</strong></span>
+          <span>Best streak: <strong id="ml-challenge-best-streak">0</strong></span>
+        </div>
+        <button type="button" class="ml-start-btn" id="ml-challenge-start-btn">Start Challenge</button>
+        <div class="ml-challenge-question-wrap" id="ml-challenge-question-wrap" hidden>
+          <div class="ml-challenge-question" id="ml-challenge-question"></div>
+          <form class="ml-challenge-form" id="ml-challenge-form">
+            <input type="number" id="ml-challenge-input" autocomplete="off" placeholder="?" autofocus>
+            <button type="submit">Check</button>
+          </form>
+        </div>
+        <div class="ml-challenge-result" id="ml-challenge-result" hidden></div>
+      </div>
+    </section>
+
+    <section class="ml-deck" id="ml-deck-sandbox">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Math Sandbox</span>
+      </div>
+      <div class="ml-deck-note">A real graphing calculator, geometry tool, and algebra workspace, all in one &mdash; powered by <a href="https://www.geogebra.org/" target="_blank" rel="noopener">GeoGebra</a>, real open-source math software used by millions of students. Plot a function, draw a shape, or just explore.</div>
+      <div id="ml-sandbox-container" class="ml-sandbox-container"></div>
+    </section>
+
+  </main>
+
+  <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+  <script src="{{ url_for('static', filename='js/math-lab.js') }}"></script>
+</body>
+</html>

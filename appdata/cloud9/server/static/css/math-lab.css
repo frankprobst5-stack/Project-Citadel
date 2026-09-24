@@ -1,0 +1,295 @@
+:root {
+  --math-accent: #a06fff;
+  --math-accent-dim: #4a2e7a;
+  --math-green: #6fe0a1;
+  --math-red: #ff6f7a;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ml-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.ml-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ml-back:hover {
+  border-color: var(--math-accent);
+  color: var(--text);
+}
+
+.ml-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ml-icon { font-size: 1.5rem; }
+
+.ml-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ml-deck {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+
+.ml-deck-header {
+  margin-bottom: 10px;
+}
+
+.ml-deck-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--math-accent);
+}
+
+.ml-deck-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.ml-deck-note a {
+  color: var(--math-accent);
+}
+
+/* Shared mode/option toggle buttons */
+.ml-mode-btn {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ml-mode-btn:hover {
+  border-color: var(--math-accent);
+  color: var(--text);
+}
+
+.ml-mode-btn-active {
+  background: var(--math-accent);
+  color: #1b0f33;
+  border-color: var(--math-accent);
+}
+
+/* Times table */
+.ml-times-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ml-times-quiz-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.ml-times-quiz-stats[hidden] {
+  display: none;
+}
+
+.ml-times-table-wrap {
+  overflow-x: auto;
+}
+
+.ml-times-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-times-table th,
+.ml-times-table td {
+  border: 1px solid var(--panel-border);
+  text-align: center;
+  padding: 6px 4px;
+  min-width: 30px;
+  font-size: 0.82rem;
+}
+
+.ml-times-table th {
+  background: var(--bg);
+  color: var(--math-accent);
+  font-weight: 700;
+}
+
+.ml-times-table td {
+  color: var(--text);
+  cursor: default;
+}
+
+.ml-times-table td.ml-times-hidden {
+  color: transparent;
+  background: var(--bg);
+  cursor: pointer;
+  transition: color 0.1s;
+}
+
+.ml-times-table td.ml-times-hidden:hover {
+  background: var(--math-accent-dim);
+}
+
+.ml-times-table td.ml-times-revealed {
+  color: var(--math-accent);
+}
+
+.ml-times-quiz-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--panel-border);
+  text-align: center;
+}
+
+.ml-times-quiz-question {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.ml-times-quiz-form {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ml-times-quiz-form input,
+.ml-challenge-form input {
+  width: 90px;
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.ml-times-quiz-form button,
+.ml-challenge-form button,
+.ml-start-btn {
+  background: var(--math-accent);
+  color: #1b0f33;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ml-times-quiz-feedback {
+  margin-top: 10px;
+  font-weight: 600;
+  min-height: 1.4em;
+}
+
+.ml-feedback-correct { color: var(--math-green); }
+.ml-feedback-incorrect { color: var(--math-red); }
+
+/* Challenges */
+.ml-challenge-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ml-challenge-control-label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.ml-challenge-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ml-challenge-panel {
+  text-align: center;
+  border-top: 1px solid var(--panel-border);
+  padding-top: 16px;
+}
+
+.ml-challenge-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.ml-challenge-question-wrap {
+  margin-top: 14px;
+}
+
+.ml-challenge-question {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.ml-challenge-form {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.ml-challenge-result {
+  margin-top: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--math-accent);
+}
+
+/* Sandbox */
+.ml-sandbox-container {
+  width: 100%;
+  height: 520px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}

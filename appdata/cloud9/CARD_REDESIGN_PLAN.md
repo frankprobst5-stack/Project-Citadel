@@ -1906,3 +1906,62 @@ already handles `value`+`unit` generically.
 
 Geography now has 6 real Guided Mission concepts, the most of any
 subject.
+
+## Math Lab — a new subject card, from Frank's own real request (2026-09-24)
+
+Frank asked directly for a math card: a times table chart to study and
+memorize, addition/subtraction challenges, and "any kind of math tools
+and challenges... maybe a sandbox?" -- explicitly asking whether
+there's real open source software worth using rather than hand-rolling
+everything.
+
+**Real research done before building anything**: checked whether a
+genuine open-source math sandbox exists and is self-hostable/embeddable
+rather than assuming. **GeoGebra** is real, open source (GPL + CC-BY-
+NC-SA, non-commercial -- fine for a personal homeschool tool), used by
+over 100 million real students, and offers a real public embed script
+(`https://www.geogebra.org/apps/deployggb.js`, confirmed live and
+reachable) as well as a real self-hostable "Math Apps Bundle" for fully
+offline use (confirmed live: a real ~33MB zip, updated 2026-09-16).
+Matches this project's own "orchestrate excellent resources instead of
+poorly recreating them" principle (already applied to Kolibri, Ollama,
+NOAA/NHC/Wikimedia) -- a hand-built graphing calculator would have been
+strictly worse and taken far longer to build.
+
+**Scoped like Earth Lab's own online/offline precedent**: Earth Lab's
+map already depends on Leaflet's public CDN under normal operation, so
+using GeoGebra's public CDN (not the self-hosted bundle) for v1 is
+consistent, not a new compromise -- self-hosting it is named honestly
+as real future work if fully-offline math sandbox access ever matters
+more than it does today.
+
+**New `/math-lab` page**, added as its own dashboard card (`math_lab`
+in `cards.json`, alongside Weather Labs/Earth Lab's own top-level
+cards) with three real, hand-built decks:
+- **Times Table Chart**: a real interactive 1-12 grid with Study Mode
+  (everything visible) and Quiz Mode (values hidden, click-to-reveal,
+  plus a real random-multiplication quiz with live score/streak
+  tracking).
+- **Addition & Subtraction Challenges**: three real difficulty tiers
+  (1-10 / 1-50 / 1-100), addition/subtraction/mixed operation modes, a
+  real 60-second timed round with live correct-count and best-streak
+  tracking. Subtraction never produces a negative result (the larger
+  number is always placed first).
+- **Math Sandbox**: a real, full GeoGebra Classic instance (graphing,
+  geometry, algebra, spreadsheet) embedded live.
+
+**A real bug caught and fixed live, the same category as Mission
+Mode's own earlier one**: the times-table quiz stats row used
+`display: flex` unconditionally, which silently beat the browser's
+default `[hidden]` behavior -- Score/Streak stayed visible in Study
+Mode when they should have been hidden. Fixed with the same explicit
+`[hidden]` override pattern already established, and checked every
+other new `hidden`-toggled element in this build for the same risk
+before moving on (none of the others declare their own `display`
+unconditionally).
+
+Verified live end-to-end: dashboard card renders and navigates
+correctly, times table study/quiz modes both work with correct scoring,
+addition/subtraction challenges generate correct problems at all three
+difficulties and both operations, and the GeoGebra sandbox loads and
+renders a real interactive graphing calculator.
