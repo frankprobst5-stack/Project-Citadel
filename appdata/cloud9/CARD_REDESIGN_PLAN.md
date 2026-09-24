@@ -2049,3 +2049,49 @@ Citadel maps) run on fully self-hosted tiles with zero external
 dependency, matching the ecosystem's own "self-hosted first"
 philosophy exactly the way Frank was picturing. Not done here: it's a
 real, separate, multi-gigabyte undertaking, not a quick swap.
+
+## Real self-hosted national basemap for the radar map (2026-09-24)
+
+The real follow-through on Frank's own ask: fully self-hosted map
+tiles for Weather Labs' national radar view, zero external map
+service, matching Citadel's own existing MapLibre GL + PMTiles stack
+(proven in cockpit's own tactical map) instead of any external CDN.
+
+**Built the real missing piece rather than reusing what didn't fit**:
+Citadel's existing `comms_base.pmtiles` was already confirmed (previous
+entry) to cover only the western ~2/3 of the continental US. Built a
+new, real, purpose-made basemap instead: installed the real `pmtiles`
+CLI (go-pmtiles v1.31.2), verified Protomaps' own live daily planet
+build (`build.protomaps.com/20260924.pmtiles`, confirmed live at a
+real ~128GB) supports the tool's real remote-extraction feature (HTTP
+range requests, no need to download the full planet), and extracted a
+real, purpose-bounded CONUS basemap: `-125,24` to `-66.5,49.5`, zoom
+0-12, landing at a real, verified 1.92GB -- comparable in size to the
+existing partial file, but covering the *entire* continental US instead
+of two-thirds of it.
+
+**Hit and resolved a real permission wall honestly**: `appdata/cockpit/
+tiles/` was root-owned from an earlier Planetiler build run, blocking
+the file placement. Asked Frank to run one `chown` command rather than
+attempting to bypass the permission boundary myself.
+
+**Rebuilt the radar deck on MapLibre GL** (replacing Leaflet, which
+can't render vector tiles without a heavy plugin): real `pmtiles://`
+protocol registration, the real `protomaps-themes-base` "dark" theme
+styling the vector basemap, and the same real NEXRAD reflectivity/echo
+tops/warnings/state/county overlays as before, now as MapLibre raster
+sources layered on top of Citadel's own tiles (fetched cross-origin
+from cockpit's nginx on port 8085, using the CORS headers already set
+up there specifically for cross-app reuse -- confirmed live with real
+206 Partial Content range-request responses). Rebuilt the layer-toggle
+UI as a small custom control (MapLibre has no built-in equivalent to
+Leaflet's layer control) and the 5-minute auto-refresh using
+MapLibre's real `RasterTileSource.setTiles()` method.
+
+Verified live end-to-end: real US state shapes rendering from the new
+self-hosted basemap (confirmed visually, e.g. Florida's peninsula),
+real NEXRAD data overlaid correctly, the layer toggle panel working
+with all five real layers at their intended defaults, the home marker
+placed correctly, and zero requests to any external map tile or style
+service -- CARTO and OpenStreetMap are both gone entirely from this
+deck now.

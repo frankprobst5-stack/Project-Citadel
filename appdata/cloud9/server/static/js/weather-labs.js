@@ -7,6 +7,7 @@
   const dailyList = document.getElementById("wl-daily-list");
   const alertsList = document.getElementById("wl-alerts-list");
   const radarMapEl = document.getElementById("wl-radar-map");
+  const radarLayerToggleEl = document.getElementById("wl-radar-layer-toggle");
   const radarRefresh = document.getElementById("wl-radar-refresh");
   const satelliteImg = document.getElementById("wl-satellite-img");
   const satelliteRefresh = document.getElementById("wl-satellite-refresh");
@@ -567,75 +568,110 @@
 
   // Real, live, national radar mosaic -- Iowa Environmental Mesonet's
   // own public, keyless tile/WMS re-serving of NOAA's real NEXRAD
-  // network (confirmed live before building this: real XYZ tiles at
-  // /cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png, 5-minute
-  // cache matching the real mosaic's own update cadence, plus a real
-  // WMS warnings-polygon layer at /cgi-bin/wms/us/wwa.cgi). Same real
-  // data radar.weather.gov itself shows, not a Cloud9-specific fetch --
-  // Leaflet (already used by Earth Lab) just makes it pannable/
-  // zoomable/layered instead of one static looping image.
+  // network, the same real data radar.weather.gov itself shows. The
+  // base map underneath is Citadel's own real, self-hosted stack
+  // (MapLibre GL + PMTiles, the same one already proven in cockpit's
+  // tactical map, with CORS already enabled on cockpit's nginx
+  // specifically for cross-app reuse like this) -- no external map
+  // service, no API key, ever. The basemap file itself
+  // (us_basemap.pmtiles) was built specifically for this: extracted
+  // via the real `pmtiles` CLI from Protomaps' own live daily planet
+  // build (build.protomaps.com), bounded to the continental US
+  // (-125,24 to -66.5,49.5, z0-12) -- Citadel's existing
+  // comms_base.pmtiles was checked first and confirmed via its own
+  // real header metadata to cover only the western ~2/3 of the
+  // country, not a fit for a national view.
   let radarMap = null;
-  let radarReflectivityLayer = null;
-  let radarEchoTopsLayer = null;
   const RADAR_REFRESH_MS = 5 * 60 * 1000;
+  const RADAR_LAYERS = [
+    { id: "radar-reflectivity", source: "radar-reflectivity-src", label: "Base Reflectivity", defaultOn: true, opacity: 0.75 },
+    { id: "radar-echo-tops", source: "radar-echo-tops-src", label: "Echo Tops", defaultOn: false, opacity: 0.75 },
+    { id: "radar-warnings", source: "radar-warnings-src", label: "NWS Warnings", defaultOn: true, opacity: 1 },
+    { id: "radar-states", source: "radar-states-src", label: "State Lines", defaultOn: true, opacity: 0.6 },
+    { id: "radar-counties", source: "radar-counties-src", label: "County Lines", defaultOn: false, opacity: 0.4 },
+  ];
 
   function nexradTileUrl(product) {
-    return "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/" + product + "-900913/{z}/{x}/{y}.png?_=" + Date.now();
+    return "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/" + product + "-900913/{z}/{x}/{y}.png";
+  }
+
+  function buildRadarLayerToggle() {
+    radarLayerToggleEl.innerHTML = RADAR_LAYERS.map(function (l) {
+      return '<label class="wl-radar-layer-item"><input type="checkbox" data-layer="' + l.id + '"' + (l.defaultOn ? " checked" : "") + "> " + l.label + "</label>";
+    }).join("");
+    radarLayerToggleEl.hidden = false;
+    radarLayerToggleEl.querySelectorAll("input[type=checkbox]").forEach(function (input) {
+      input.addEventListener("change", function () {
+        radarMap.setLayoutProperty(input.dataset.layer, "visibility", input.checked ? "visible" : "none");
+      });
+    });
   }
 
   function initRadarMap() {
-    if (radarMap || typeof L === "undefined") return;
-    radarMap = L.map(radarMapEl, { zoomControl: true, minZoom: 3, maxZoom: 10 }).setView([39.5, -98.35], 4);
+    if (radarMap || typeof maplibregl === "undefined" || typeof pmtiles === "undefined") return;
 
-    // Real, free-forever OpenStreetMap standard tiles -- no API key,
-    // full national (and global) coverage, unlike CARTO's free tier
-    // (confirmed live: it now watermarks tiles "API KEY REQUIRED"
-    // instead of serving them, so it's swapped out here) or Citadel's
-    // own self-hosted comms_base.pmtiles (real, but confirmed via its
-    // own real header metadata to cover only the western ~2/3 of the
-    // continental US -- min_lon -127.09, max_lon -87.86 -- not a fit
-    // for a national radar view without a real, separate full-US/
-    // planet basemap build, named as real future work). CSS darkens
-    // the naturally light OSM tiles to match this deck's NASA theme.
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      className: "wl-radar-basemap-dark",
-    }).addTo(radarMap);
+    const pmtilesProtocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", pmtilesProtocol.tile);
+    const basemapUrl = "http://" + location.hostname + ":8085/tiles/us_basemap.pmtiles";
+    pmtilesProtocol.add(new pmtiles.PMTiles(basemapUrl));
 
-    radarReflectivityLayer = L.tileLayer(nexradTileUrl("nexrad-n0q"), {
-      attribution: "Radar: Iowa Environmental Mesonet / NOAA NEXRAD",
-      opacity: 0.75,
-    }).addTo(radarMap);
+    const baseLayers = protomaps_themes_base.default("basemap", "dark");
+    const overlayLayers = RADAR_LAYERS.map(function (l) {
+      return {
+        id: l.id,
+        type: "raster",
+        source: l.source,
+        paint: { "raster-opacity": l.opacity },
+        layout: { visibility: l.defaultOn ? "visible" : "none" },
+      };
+    });
 
-    radarEchoTopsLayer = L.tileLayer(nexradTileUrl("nexrad-eet"), { opacity: 0.75 });
-
-    const statesLayer = L.tileLayer("https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/usstates-900913/{z}/{x}/{y}.png", { opacity: 0.6 }).addTo(radarMap);
-    const countiesLayer = L.tileLayer("https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/uscounties-900913/{z}/{x}/{y}.png", { opacity: 0.4 });
-
-    const warningsLayer = L.tileLayer.wms("https://mesonet.agron.iastate.edu/cgi-bin/wms/us/wwa.cgi", {
-      layers: "warnings_p",
-      format: "image/png",
-      transparent: true,
-      attribution: "Warnings: NWS / Iowa Environmental Mesonet",
-    }).addTo(radarMap);
-
-    L.control.layers(
-      {},
-      {
-        "Base Reflectivity": radarReflectivityLayer,
-        "Echo Tops": radarEchoTopsLayer,
-        "NWS Warnings": warningsLayer,
-        "State Lines": statesLayer,
-        "County Lines": countiesLayer,
+    radarMap = new maplibregl.Map({
+      container: radarMapEl,
+      style: {
+        version: 8,
+        glyphs: "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+        sources: {
+          basemap: {
+            type: "vector",
+            url: "pmtiles://" + basemapUrl,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+          },
+          "radar-reflectivity-src": { type: "raster", tiles: [nexradTileUrl("nexrad-n0q")], tileSize: 256, attribution: "Radar: Iowa Environmental Mesonet / NOAA NEXRAD" },
+          "radar-echo-tops-src": { type: "raster", tiles: [nexradTileUrl("nexrad-eet")], tileSize: 256 },
+          "radar-states-src": { type: "raster", tiles: ["https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/usstates-900913/{z}/{x}/{y}.png"], tileSize: 256 },
+          "radar-counties-src": { type: "raster", tiles: ["https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/uscounties-900913/{z}/{x}/{y}.png"], tileSize: 256 },
+          "radar-warnings-src": {
+            type: "raster",
+            tiles: [
+              "https://mesonet.agron.iastate.edu/cgi-bin/wms/us/wwa.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=warnings_p&SRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}",
+            ],
+            tileSize: 256,
+            attribution: "Warnings: NWS / Iowa Environmental Mesonet",
+          },
+        },
+        layers: baseLayers.concat(overlayLayers),
       },
-      { collapsed: true }
-    ).addTo(radarMap);
+      center: [-98.35, 39.5],
+      zoom: 3,
+      minZoom: 2,
+      maxZoom: 10,
+      attributionControl: { compact: true },
+    });
+
+    radarMap.addControl(new maplibregl.NavigationControl(), "top-left");
+    radarMap.on("load", buildRadarLayerToggle);
+    radarMap.on("error", function (e) {
+      console.error("Radar map error:", e && e.error);
+    });
   }
 
   function refreshRadarLayers() {
-    if (!radarMap) return;
-    if (radarReflectivityLayer) radarReflectivityLayer.setUrl(nexradTileUrl("nexrad-n0q"));
-    if (radarEchoTopsLayer) radarEchoTopsLayer.setUrl(nexradTileUrl("nexrad-eet"));
+    if (!radarMap || !radarMap.isStyleLoaded()) return;
+    const reflectivitySource = radarMap.getSource("radar-reflectivity-src");
+    const echoTopsSource = radarMap.getSource("radar-echo-tops-src");
+    if (reflectivitySource && reflectivitySource.setTiles) reflectivitySource.setTiles([nexradTileUrl("nexrad-n0q") + "?_=" + Date.now()]);
+    if (echoTopsSource && echoTopsSource.setTiles) echoTopsSource.setTiles([nexradTileUrl("nexrad-eet") + "?_=" + Date.now()]);
   }
 
   function refreshRadar() {
@@ -654,13 +690,21 @@
         }
         initRadarMap();
         if (config.lat && config.lon && radarMap) {
-          if (window.__wlHomeMarker) radarMap.removeLayer(window.__wlHomeMarker);
-          window.__wlHomeMarker = L.marker([config.lat, config.lon])
-            .addTo(radarMap)
-            .bindPopup(config.location_label || "Home");
+          radarMap.once("load", function () { placeHomeMarker(config); });
+          if (radarMap.isStyleLoaded()) placeHomeMarker(config);
+        } else {
+          refreshRadarLayers();
         }
-        refreshRadarLayers();
       });
+  }
+
+  function placeHomeMarker(config) {
+    if (window.__wlHomeMarker) window.__wlHomeMarker.remove();
+    window.__wlHomeMarker = new maplibregl.Marker({ color: "#008dff" })
+      .setLngLat([config.lon, config.lat])
+      .setPopup(new maplibregl.Popup().setText(config.location_label || "Home"))
+      .addTo(radarMap);
+    refreshRadarLayers();
   }
 
   setInterval(refreshRadarLayers, RADAR_REFRESH_MS);

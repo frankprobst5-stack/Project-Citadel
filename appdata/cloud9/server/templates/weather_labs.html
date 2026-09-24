@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Weather Labs - Cloud9</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/weather-labs.css') }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
 </head>
 <body>
   <header class="wl-topbar">
@@ -86,8 +86,9 @@
         <span class="wl-deck-title">Radar</span>
         <button type="button" class="wl-refresh-btn" id="wl-radar-refresh">Refresh</button>
       </div>
-      <div class="wl-deck-note">Real, live national radar reflectivity (NOAA/Iowa Environmental Mesonet), covering the whole continental US &mdash; pan, zoom, and toggle layers just like <a href="https://radar.weather.gov/" target="_blank" rel="noopener">radar.weather.gov</a>. Refreshes automatically every 5 minutes, matching how often the real mosaic itself updates.</div>
+      <div class="wl-deck-note">Real, live national radar reflectivity (NOAA/Iowa Environmental Mesonet), covering the whole continental US &mdash; pan, zoom, and toggle layers just like <a href="https://radar.weather.gov/" target="_blank" rel="noopener">radar.weather.gov</a>. The base map itself is self-hosted right here on Citadel &mdash; no external map service, no API key. Refreshes automatically every 5 minutes, matching how often the real mosaic itself updates.</div>
       <div id="wl-radar-map" class="wl-radar-map"></div>
+      <div class="wl-radar-layer-toggle" id="wl-radar-layer-toggle" hidden></div>
     </section>
 
     <section class="wl-deck" id="wl-deck-satellite">
@@ -201,7 +202,9 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/protomaps-themes-base@3.1.0/dist/protomaps-themes-base.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
   <script src="{{ url_for('static', filename='js/weather-labs.js') }}"></script>
 </body>
 </html>

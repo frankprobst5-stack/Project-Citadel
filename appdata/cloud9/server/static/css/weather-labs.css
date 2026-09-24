@@ -287,46 +287,64 @@ body {
   background: var(--bg);
 }
 
-.wl-radar-map .leaflet-container {
+.wl-radar-map .maplibregl-map {
   background: var(--bg);
   font-family: inherit;
+  border-radius: 6px;
 }
 
-/* OpenStreetMap's standard tiles are naturally light -- this inverts +
-   hue-rotates them to a dark navy look matching the rest of the deck,
-   a standard, widely-used technique for dark-skinning a raster basemap
-   that was never designed with a dark palette. */
-.wl-radar-basemap-dark {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+.wl-radar-map .maplibregl-ctrl-attrib {
+  background: rgba(7, 26, 44, 0.8) !important;
+  color: var(--text-faint) !important;
 }
 
-.wl-radar-map .leaflet-control-layers {
-  background: var(--panel-alt);
+.wl-radar-map .maplibregl-ctrl-attrib a {
+  color: var(--accent-bright) !important;
+}
+
+.wl-radar-map .maplibregl-ctrl-group {
+  background: var(--panel-alt) !important;
   border: 1px solid var(--border);
-  color: var(--text);
 }
 
-.wl-radar-map .leaflet-control-layers-toggle {
+.wl-radar-map .maplibregl-ctrl-group button {
+  background: var(--panel-alt);
+}
+
+.wl-radar-map .maplibregl-ctrl-group button:hover {
+  background: var(--border);
+}
+
+.wl-radar-map .maplibregl-ctrl-icon {
   filter: invert(1);
 }
 
-.wl-radar-map .leaflet-control-attribution {
-  background: rgba(7, 26, 44, 0.8);
-  color: var(--text-faint);
-}
-
-.wl-radar-map .leaflet-control-attribution a {
-  color: var(--accent-bright);
-}
-
-.wl-radar-map .leaflet-control-zoom a {
+.wl-radar-layer-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
   background: var(--panel-alt);
-  color: var(--text);
-  border-color: var(--border);
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
 }
 
-.wl-radar-map .leaflet-control-zoom a:hover {
-  background: var(--border);
+.wl-radar-layer-toggle[hidden] {
+  display: none;
+}
+
+.wl-radar-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.wl-radar-layer-item input {
+  accent-color: var(--accent-bright);
 }
 
 .wl-cloud-grid {
