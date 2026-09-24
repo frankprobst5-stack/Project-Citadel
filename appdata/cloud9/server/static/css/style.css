@@ -199,7 +199,7 @@ body {
   padding-top: 8px;
 }
 
-.history-mission-btn {
+.cloud9-mission-btn {
   display: block;
   width: 100%;
   background: #e8a23f;
@@ -213,24 +213,24 @@ body {
   margin-top: 12px;
 }
 
-.history-mission-btn:hover {
+.cloud9-mission-btn:hover {
   filter: brightness(1.08);
 }
 
-.history-mission-panel {
+.cloud9-mission-panel {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--panel-border);
 }
 
-.history-mission-concepts {
+.cloud9-mission-concepts {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 14px;
 }
 
-.history-mission-concept-btn {
+.cloud9-mission-concept-btn {
   background: var(--bg);
   color: var(--text-dim);
   border: 1px solid var(--panel-border);
@@ -240,33 +240,33 @@ body {
   cursor: pointer;
 }
 
-.history-mission-concept-btn:hover {
+.cloud9-mission-concept-btn:hover {
   border-color: #e8a23f;
   color: var(--text);
 }
 
-.history-mission-concept-btn-active {
+.cloud9-mission-concept-btn-active {
   background: #e8a23f;
   color: #241a08;
   border-color: #e8a23f;
   font-weight: 600;
 }
 
-.history-mission-title {
+.cloud9-mission-title {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
   margin: 0 0 10px;
 }
 
-.history-mission-text {
+.cloud9-mission-text {
   color: var(--text-dim);
   line-height: 1.5;
   margin: 0 0 12px;
   font-size: 0.92rem;
 }
 
-.history-mission-observe {
+.cloud9-mission-observe {
   background: var(--bg);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
@@ -275,21 +275,21 @@ body {
   font-size: 0.88rem;
 }
 
-.history-mission-observe-item {
+.cloud9-mission-observe-item {
   padding: 6px 0;
 }
 
-.history-mission-observe-item + .history-mission-observe-item {
+.cloud9-mission-observe-item + .cloud9-mission-observe-item {
   border-top: 1px solid var(--panel-border);
 }
 
-.history-mission-observe-year {
+.cloud9-mission-observe-tag {
   color: #e8a23f;
   font-weight: 700;
   margin-right: 6px;
 }
 
-.history-mission-question {
+.cloud9-mission-question {
   color: var(--text);
   font-weight: 600;
   line-height: 1.5;
@@ -297,7 +297,7 @@ body {
   font-size: 0.92rem;
 }
 
-.history-mission-reveal-btn {
+.cloud9-mission-reveal-btn {
   background: #e8a23f;
   color: #241a08;
   border: none;
@@ -308,17 +308,17 @@ body {
   cursor: pointer;
 }
 
-.history-mission-reveal-btn:hover {
+.cloud9-mission-reveal-btn:hover {
   filter: brightness(1.08);
 }
 
-.history-mission-reveal-block {
+.cloud9-mission-reveal-block {
   margin-top: 12px;
   border-top: 1px solid var(--panel-border);
   padding-top: 12px;
 }
 
-.history-mission-recap {
+.cloud9-mission-recap {
   color: var(--text-dim);
   font-style: italic;
   line-height: 1.5;

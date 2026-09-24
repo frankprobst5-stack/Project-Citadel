@@ -1832,3 +1832,53 @@ Geography's structured per-country facts, and History's real live
 editorial feed -- the same pedagogical pattern, proven to fit whatever
 real data a subject actually has, not just the shape it was designed
 around originally.
+
+## Guided Missions come to Language — the fourth subject (2026-09-24)
+
+The fourth Guided Mission set, after Weather Labs, Earth Lab, and
+History. Source is WordNet, the same real, bundled, offline lexical
+database dictionary.py already uses -- a genuinely different real-data
+shape from the other three: no live API, no network dependency, no
+"unavailable" state to design around, since the corpus already lives on
+the host (see the Dockerfile's own note on `data/nltk_data`).
+
+**New `language_missions.py`**, four concepts: synonyms (real WordNet
+synonym sets, e.g. "brave" sharing its exact sense with audacious,
+dauntless, fearless, hardy, intrepid, unfearing), antonyms (real
+lemma-level antonym pairs, e.g. strong/weak), word ladders (real
+hypernym chains -- poodle climbs 14 real steps through dog, canine,
+carnivore, placental, mammal, vertebrate, chordate, animal, all the way
+to the single broadest category, "entity"), and parts of speech (real
+words like "run" that carry entirely separate noun and verb senses --
+16 and 41 respectively). Every number and every word list is a live
+WordNet lookup, verified before writing any narrative text, never
+recalled from memory.
+
+**A real bug caught before shipping**: the first draft's word-ladder
+reveal read backward -- `hypernym_paths()` returns broadest-first
+(entity ... poodle), but the mission's own framing ("keep climbing up
+from poodle") needs narrow-to-broad, and the unreversed chain also
+produced a recap that started and ended on the same word ("Poodle → ...
+→ poodle"). Fixed by reversing the chain once, computed correctly, with
+the fix verified against the real WordNet output before moving on.
+
+**A real refactor along the way**: the mission UI CSS/JS built for
+History (`.history-mission-*`) was about to get a second, copy-pasted
+consumer here, so it was renamed to a subject-agnostic
+`.cloud9-mission-*` first -- one shared component now backs both
+subjects' mission panels instead of two near-identical copies, and was
+verified live afterward that History's own panel still renders
+correctly under the renamed classes before trusting the change.
+
+**Frontend lives inside the existing Dictionary modal** (reachable from
+the Tools menu), the same real home dictionary.py's own word lookup
+already has -- a "Guided Missions" button expands the same concept-
+picker/briefing/observe/question/reveal/recap flow inline, exactly
+matching History's own pattern now that both share one real component.
+
+Four subjects now have real Guided Missions, each built on a distinct
+real data shape: Weather's live sensors, Geography's structured
+per-country facts, History's live editorial feed, and Language's local
+bundled lexical database -- the pattern has now been proven to fit a
+genuinely offline, non-networked real data source too, not just live
+APIs.

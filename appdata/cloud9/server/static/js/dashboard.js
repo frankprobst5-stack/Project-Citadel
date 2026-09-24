@@ -77,7 +77,7 @@
   function renderHistoryMissionObserve(observe) {
     if (observe.kind === "history-pair") {
       return [observe.a, observe.b].map(function (item) {
-        return '<div class="history-mission-observe-item"><span class="history-mission-observe-year">' + item.year +
+        return '<div class="cloud9-mission-observe-item"><span class="cloud9-mission-observe-tag">' + item.year +
           "</span>" + item.text + "</div>";
       }).join("");
     }
@@ -129,13 +129,13 @@
         concepts.forEach(function (concept, i) {
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "history-mission-concept-btn" + (i === 0 ? " history-mission-concept-btn-active" : "");
+          btn.className = "cloud9-mission-concept-btn" + (i === 0 ? " cloud9-mission-concept-btn-active" : "");
           btn.textContent = concept.title;
           btn.onclick = function () {
-            historyMissionConcepts.querySelectorAll(".history-mission-concept-btn").forEach(function (b) {
-              b.classList.remove("history-mission-concept-btn-active");
+            historyMissionConcepts.querySelectorAll(".cloud9-mission-concept-btn").forEach(function (b) {
+              b.classList.remove("cloud9-mission-concept-btn-active");
             });
-            btn.classList.add("history-mission-concept-btn-active");
+            btn.classList.add("cloud9-mission-concept-btn-active");
             loadHistoryMission(concept.id);
           };
           historyMissionConcepts.appendChild(btn);
@@ -1195,6 +1195,109 @@
 
   dictionaryClose.addEventListener("click", function () {
     dictionaryOverlay.hidden = true;
+  });
+
+  // --- Dictionary: Guided Missions (language) ---
+  const languageMissionBtn = document.getElementById("language-mission-btn");
+  const languageMissionPanel = document.getElementById("language-mission-panel");
+  const languageMissionConcepts = document.getElementById("language-mission-concepts");
+  const languageMissionTitle = document.getElementById("language-mission-title");
+  const languageMissionBriefing = document.getElementById("language-mission-briefing");
+  const languageMissionObserve = document.getElementById("language-mission-observe");
+  const languageMissionQuestion = document.getElementById("language-mission-question");
+  const languageMissionRevealBtn = document.getElementById("language-mission-reveal-btn");
+  const languageMissionRevealBlock = document.getElementById("language-mission-reveal-block");
+  const languageMissionReveal = document.getElementById("language-mission-reveal");
+  const languageMissionRecap = document.getElementById("language-mission-recap");
+
+  function renderLanguageMissionObserve(observe) {
+    if (observe.kind === "word-facts") {
+      return '<div class="cloud9-mission-observe-item"><span class="cloud9-mission-observe-tag">' + observe.word + "</span>" + observe.label + "</div>" +
+        observe.items.map(function (item) {
+          return '<div class="cloud9-mission-observe-item">' + item + "</div>";
+        }).join("");
+    }
+    if (observe.kind === "word-ladder") {
+      return observe.chain.map(function (step, i) {
+        return '<div class="cloud9-mission-observe-item">' + (i === 0 ? '<span class="cloud9-mission-observe-tag">' + step + "</span>" : "↳ " + step) + "</div>";
+      }).join("");
+    }
+    if (observe.kind === "parts-of-speech") {
+      return '<div class="cloud9-mission-observe-item"><span class="cloud9-mission-observe-tag">' + observe.word +
+        "</span>" + observe.nounCount + " noun senses, " + observe.verbCount + " verb senses</div>";
+    }
+    return "";
+  }
+
+  function renderLanguageMission(mission) {
+    if (mission.status === "unavailable") {
+      languageMissionTitle.textContent = "No mission available right now";
+      languageMissionBriefing.textContent = mission.reason;
+      languageMissionObserve.innerHTML = "";
+      languageMissionQuestion.textContent = "";
+      languageMissionRevealBtn.hidden = true;
+      languageMissionRevealBlock.hidden = true;
+      return;
+    }
+    languageMissionTitle.textContent = mission.title;
+    languageMissionBriefing.textContent = mission.briefing;
+    languageMissionObserve.innerHTML = renderLanguageMissionObserve(mission.observe);
+    languageMissionQuestion.textContent = mission.question;
+    languageMissionRevealBlock.hidden = true;
+    languageMissionRevealBtn.hidden = false;
+    languageMissionRevealBtn.onclick = function () {
+      languageMissionReveal.textContent = mission.reveal;
+      languageMissionRecap.textContent = mission.recap;
+      languageMissionRevealBlock.hidden = false;
+      languageMissionRevealBtn.hidden = true;
+    };
+  }
+
+  function loadLanguageMission(conceptId) {
+    languageMissionTitle.textContent = "Loading this lesson…";
+    fetch("/api/language-mission/" + conceptId)
+      .then(function (res) { return res.json(); })
+      .then(renderLanguageMission)
+      .catch(function () {
+        languageMissionTitle.textContent = "Couldn't load this lesson";
+        languageMissionBriefing.textContent = "Couldn't reach the dictionary right now.";
+      });
+  }
+
+  let languageMissionsLoaded = false;
+  function loadLanguageMissionConceptList() {
+    languageMissionConcepts.innerHTML = '<span class="history-stale-note">Loading topics…</span>';
+    fetch("/api/language-mission")
+      .then(function (res) { return res.json(); })
+      .then(function (concepts) {
+        languageMissionConcepts.innerHTML = "";
+        concepts.forEach(function (concept, i) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "cloud9-mission-concept-btn" + (i === 0 ? " cloud9-mission-concept-btn-active" : "");
+          btn.textContent = concept.title;
+          btn.onclick = function () {
+            languageMissionConcepts.querySelectorAll(".cloud9-mission-concept-btn").forEach(function (b) {
+              b.classList.remove("cloud9-mission-concept-btn-active");
+            });
+            btn.classList.add("cloud9-mission-concept-btn-active");
+            loadLanguageMission(concept.id);
+          };
+          languageMissionConcepts.appendChild(btn);
+        });
+        if (concepts.length) loadLanguageMission(concepts[0].id);
+      })
+      .catch(function () {
+        languageMissionConcepts.innerHTML = '<span class="history-stale-note">Couldn\'t load topics.</span>';
+      });
+  }
+
+  languageMissionBtn.addEventListener("click", function () {
+    languageMissionPanel.hidden = !languageMissionPanel.hidden;
+    if (!languageMissionPanel.hidden && !languageMissionsLoaded) {
+      languageMissionsLoaded = true;
+      loadLanguageMissionConceptList();
+    }
   });
   dictionaryOverlay.addEventListener("click", function (e) {
     if (e.target === dictionaryOverlay) dictionaryOverlay.hidden = true;

@@ -15,6 +15,7 @@ import historical_missions
 import history_fact
 import history_missions
 import journal
+import language_missions
 import launcher
 import mission_mode
 import model_lab
@@ -362,6 +363,16 @@ def put_writing_paper():
 @app.route("/api/dictionary/<word>")
 def dictionary_lookup(word):
     return jsonify(dictionary.lookup(word))
+
+
+@app.route("/api/language-mission")
+def language_mission_list_route():
+    return jsonify(language_missions.list_concepts())
+
+
+@app.route("/api/language-mission/<concept_id>")
+def language_mission_route(concept_id):
+    return jsonify(language_missions.get_language_mission(concept_id))
 
 
 @app.route("/api/journal", methods=["GET"])
