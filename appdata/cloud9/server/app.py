@@ -13,6 +13,7 @@ import global_lab
 import guided_missions
 import historical_missions
 import history_fact
+import history_missions
 import journal
 import launcher
 import mission_mode
@@ -253,6 +254,16 @@ def history_fact_route():
         return jsonify(history_fact.get_today_fact())
     except Exception:
         return jsonify({"error": "Couldn't reach Wikipedia right now, and nothing is cached yet."}), 502
+
+
+@app.route("/api/history-mission")
+def history_mission_list_route():
+    return jsonify(history_missions.list_concepts())
+
+
+@app.route("/api/history-mission/<concept_id>")
+def history_mission_route(concept_id):
+    return jsonify(history_missions.get_history_mission(concept_id))
 
 
 @app.route("/school-library")

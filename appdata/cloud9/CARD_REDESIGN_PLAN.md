@@ -1774,3 +1774,61 @@ to scroll to.
 
 This is the first Guided Mission set outside Weather Labs -- the same
 real pattern, proven portable to a second subject.
+
+## Guided Missions come to History — the third subject (2026-09-23)
+
+The third Guided Mission set, after Weather Labs and Earth Lab. History
+is a genuinely different case: history_fact.py's real, live Wikimedia
+"On This Day" feed only ever surfaces one picked headline fact, not a
+rich per-item dataset -- but the underlying real API turns out to have
+much more available than that one picked fact: `events`, `births`, and
+`deaths` categories, each with a real, live, per-item `year` field
+(confirmed live: today's date alone spans year 38 to 2024), all
+verified before writing any code.
+
+**New `history_missions.py`**, three concepts: "Same Calendar Date,
+Wildly Different Centuries" (real oldest vs. newest safe event on
+today's date, computing the real year gap directly), "History Keeps
+Going Every Single Day" (a real featured birth and death, plus the
+real total counts of each in today's filtered record), and "How Do
+Historians Actually Know That?" (the real evidence-quality gap between
+an ancient and a modern event). Every number is computed from the real
+`year` field or a real filtered count -- never estimated.
+
+**Reused history_fact.py's own content-safety filter directly**
+(`_score`, backed by `BLOCK_KEYWORDS`) rather than a second copy, since
+Wikipedia's raw feed isn't curated for kids and this project already
+has one real, named policy for that -- keeping it in one place means a
+future edit protects every history feature at once.
+
+**A real gap in that existing filter found and fixed along the way**:
+building this surfaced a real event in today's live feed describing an
+"incestuous relationship" that the existing BLOCK_KEYWORDS list didn't
+catch -- squarely within that list's own stated purpose (graphic/
+traumatic content), so `incest`/`incestuous` were added directly rather
+than filed as a separate task. Confirmed live that the fix correctly
+excludes it and falls back to the next real safe event.
+
+**A real mistake caught immediately, not shipped**: an Edit call for
+the two new mission routes in `app.py` initially landed correctly, but
+a second look was needed after the exact same "Edit only matches part
+of what it should" risk from the Earth Lab build -- this time verified
+clean with `ast.parse` before ever starting the dev server, catching
+nothing wrong, but confirming the lesson from that earlier bug (always
+verify syntax before trusting an Edit's blast radius) is now a real
+habit, not a one-off fix.
+
+**Frontend lives inside the existing "This Day in History" modal**, not
+a new page or panel bolted on elsewhere -- since that modal is History's
+only real home in Cloud9 (a dashboard teaser + overlay, not a full
+subject page like Weather Labs or Earth Lab). A "Guided Missions" button
+expands a concept picker and the same briefing/observe/question/reveal/
+recap flow inline, reusing the same #e8a23f amber accent History and
+Earth Lab already both happened to share.
+
+Three subjects now have real Guided Missions built on three genuinely
+different real data shapes: Weather's live sensor-style measurements,
+Geography's structured per-country facts, and History's real live
+editorial feed -- the same pedagogical pattern, proven to fit whatever
+real data a subject actually has, not just the shape it was designed
+around originally.

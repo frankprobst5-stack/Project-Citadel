@@ -61,6 +61,100 @@
     })
     .catch(function () {});
 
+  // --- This Day in History: Guided Missions ---
+  const historyMissionBtn = document.getElementById("history-mission-btn");
+  const historyMissionPanel = document.getElementById("history-mission-panel");
+  const historyMissionConcepts = document.getElementById("history-mission-concepts");
+  const historyMissionTitle = document.getElementById("history-mission-title");
+  const historyMissionBriefing = document.getElementById("history-mission-briefing");
+  const historyMissionObserve = document.getElementById("history-mission-observe");
+  const historyMissionQuestion = document.getElementById("history-mission-question");
+  const historyMissionRevealBtn = document.getElementById("history-mission-reveal-btn");
+  const historyMissionRevealBlock = document.getElementById("history-mission-reveal-block");
+  const historyMissionReveal = document.getElementById("history-mission-reveal");
+  const historyMissionRecap = document.getElementById("history-mission-recap");
+
+  function renderHistoryMissionObserve(observe) {
+    if (observe.kind === "history-pair") {
+      return [observe.a, observe.b].map(function (item) {
+        return '<div class="history-mission-observe-item"><span class="history-mission-observe-year">' + item.year +
+          "</span>" + item.text + "</div>";
+      }).join("");
+    }
+    return "";
+  }
+
+  function renderHistoryMission(mission) {
+    if (mission.status === "unavailable") {
+      historyMissionTitle.textContent = "No mission available right now";
+      historyMissionBriefing.textContent = mission.reason;
+      historyMissionObserve.innerHTML = "";
+      historyMissionQuestion.textContent = "";
+      historyMissionRevealBtn.hidden = true;
+      historyMissionRevealBlock.hidden = true;
+      return;
+    }
+    historyMissionTitle.textContent = mission.title;
+    historyMissionBriefing.textContent = mission.briefing;
+    historyMissionObserve.innerHTML = renderHistoryMissionObserve(mission.observe);
+    historyMissionQuestion.textContent = mission.question;
+    historyMissionRevealBlock.hidden = true;
+    historyMissionRevealBtn.hidden = false;
+    historyMissionRevealBtn.onclick = function () {
+      historyMissionReveal.textContent = mission.reveal;
+      historyMissionRecap.textContent = mission.recap;
+      historyMissionRevealBlock.hidden = false;
+      historyMissionRevealBtn.hidden = true;
+    };
+  }
+
+  function loadHistoryMission(conceptId) {
+    historyMissionTitle.textContent = "Loading this lesson…";
+    fetch("/api/history-mission/" + conceptId)
+      .then(function (res) { return res.json(); })
+      .then(renderHistoryMission)
+      .catch(function () {
+        historyMissionTitle.textContent = "Couldn't load this lesson";
+        historyMissionBriefing.textContent = "Couldn't reach Wikimedia's history archive.";
+      });
+  }
+
+  let historyMissionsLoaded = false;
+  function loadHistoryMissionConceptList() {
+    historyMissionConcepts.innerHTML = '<span class="history-stale-note">Loading topics…</span>';
+    fetch("/api/history-mission")
+      .then(function (res) { return res.json(); })
+      .then(function (concepts) {
+        historyMissionConcepts.innerHTML = "";
+        concepts.forEach(function (concept, i) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "history-mission-concept-btn" + (i === 0 ? " history-mission-concept-btn-active" : "");
+          btn.textContent = concept.title;
+          btn.onclick = function () {
+            historyMissionConcepts.querySelectorAll(".history-mission-concept-btn").forEach(function (b) {
+              b.classList.remove("history-mission-concept-btn-active");
+            });
+            btn.classList.add("history-mission-concept-btn-active");
+            loadHistoryMission(concept.id);
+          };
+          historyMissionConcepts.appendChild(btn);
+        });
+        if (concepts.length) loadHistoryMission(concepts[0].id);
+      })
+      .catch(function () {
+        historyMissionConcepts.innerHTML = '<span class="history-stale-note">Couldn\'t load topics.</span>';
+      });
+  }
+
+  historyMissionBtn.addEventListener("click", function () {
+    historyMissionPanel.hidden = !historyMissionPanel.hidden;
+    if (!historyMissionPanel.hidden && !historyMissionsLoaded) {
+      historyMissionsLoaded = true;
+      loadHistoryMissionConceptList();
+    }
+  });
+
   const overlay = document.getElementById("chat-overlay");
   const messagesEl = document.getElementById("chat-messages");
   const form = document.getElementById("chat-form");

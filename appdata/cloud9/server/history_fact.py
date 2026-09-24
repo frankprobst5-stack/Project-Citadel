@@ -30,7 +30,7 @@ HEADERS = {"User-Agent": "Cloud9 This Day in History (kids learning dashboard)"}
 
 BLOCK_KEYWORDS = [
     "massacre", "genocide", "terroris", "mass shooting", "school shooting",
-    "rape", "raped", "torture", "tortured", "beheading", "beheaded",
+    "rape", "raped", "incest", "incestuous", "torture", "tortured", "beheading", "beheaded",
     "mutilat", "suicide bomb", "child abuse", "sexual assault",
     "ethnic cleansing", "concentration camp", "gas chamber",
     "lynch", "hostage", "hijack", "kidnap", "genital",

@@ -199,6 +199,133 @@ body {
   padding-top: 8px;
 }
 
+.history-mission-btn {
+  display: block;
+  width: 100%;
+  background: #e8a23f;
+  color: #241a08;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.history-mission-btn:hover {
+  filter: brightness(1.08);
+}
+
+.history-mission-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.history-mission-concepts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.history-mission-concept-btn {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.history-mission-concept-btn:hover {
+  border-color: #e8a23f;
+  color: var(--text);
+}
+
+.history-mission-concept-btn-active {
+  background: #e8a23f;
+  color: #241a08;
+  border-color: #e8a23f;
+  font-weight: 600;
+}
+
+.history-mission-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.history-mission-text {
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+}
+
+.history-mission-observe {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+
+.history-mission-observe-item {
+  padding: 6px 0;
+}
+
+.history-mission-observe-item + .history-mission-observe-item {
+  border-top: 1px solid var(--panel-border);
+}
+
+.history-mission-observe-year {
+  color: #e8a23f;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.history-mission-question {
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+}
+
+.history-mission-reveal-btn {
+  background: #e8a23f;
+  color: #241a08;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-mission-reveal-btn:hover {
+  filter: brightness(1.08);
+}
+
+.history-mission-reveal-block {
+  margin-top: 12px;
+  border-top: 1px solid var(--panel-border);
+  padding-top: 12px;
+}
+
+.history-mission-recap {
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
 .card {
   --accent: #6fd3ff;
   position: relative;
