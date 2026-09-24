@@ -169,11 +169,82 @@ def _time_zones_mission():
     }
 
 
+def _currencies_mission():
+    a, b = _safe_country("ECU"), _safe_country("USA")
+    if not a or not b:
+        return None
+    a_currency, b_currency = a["currencies"][0], b["currencies"][0]
+    return {
+        "missionType": "Guided",
+        "concept": "currencies",
+        "title": "Whose Money Is It, Really?",
+        "briefing": (
+            "Most countries have their own currency, printed and controlled by their own "
+            "government. But that's not actually a rule -- some countries use someone else's "
+            "money entirely."
+        ),
+        "observe": {
+            "kind": "country-pair", "metric": "currency", "unit": "",
+            "a": {"name": a["name"], "value": a_currency},
+            "b": {"name": b["name"], "value": b_currency},
+        },
+        "question": f"{a['name']}'s official real currency is the {a_currency}. The real currency of {b['name']} is the exact same one. Since {a['name']} isn't part of {b['name']}, why do you think they share the exact same money?",
+        "reveal": (
+            f"{a['name']} made a real, deliberate choice in 2000 to adopt the {b_currency} as its "
+            f"own official currency (a real process called \"dollarization\") after its own "
+            f"previous currency lost most of its value -- it gave up printing its own money in "
+            f"exchange for real economic stability. A shared currency doesn't always mean shared "
+            f"government; sometimes it means one country decided another country's money was more "
+            f"trustworthy than its own."
+        ),
+        "investigateLink": "#earth-lab-map",
+        "investigateLabel": "Find other countries that share a currency",
+        "recap": f"{a['name']} and {b['name']} both use the real {a_currency} -- one printed it, the other adopted it.",
+        "source": "countries.dev",
+    }
+
+
+def _languages_mission():
+    a, b = _safe_country("CHE"), _safe_country("JPN")
+    if not a or not b:
+        return None
+    return {
+        "missionType": "Guided",
+        "concept": "languages",
+        "title": "How Many Languages Does One Country Speak?",
+        "briefing": (
+            "Some countries run entirely on one shared language. Others officially operate in "
+            "several at once -- government documents, road signs, and schools all in more than "
+            "one real language."
+        ),
+        "observe": {
+            "kind": "country-pair", "metric": "languages", "unit": "official languages",
+            "a": {"name": a["name"], "value": len(a["languages"]), "list": a["languages"]},
+            "b": {"name": b["name"], "value": len(b["languages"]), "list": b["languages"]},
+        },
+        "question": f"{a['name']} has {len(a['languages'])} real official languages ({', '.join(a['languages'])}). {b['name']} has {len(b['languages'])} ({', '.join(b['languages'])}). Why might one small country need so many official languages while another gets by with just one?",
+        "reveal": (
+            f"{a['name']}'s real {len(a['languages'])} languages reflect its actual regions -- "
+            f"different areas of the country have spoken German, French, Italian, or Romansh for "
+            f"centuries, and the country's government recognizes all of them rather than forcing "
+            f"one on everyone. {b['name']}'s single official language reflects a much more "
+            f"linguistically uniform population. Neither approach is more \"normal\" -- it just "
+            f"depends on a country's real history of who settled where."
+        ),
+        "investigateLink": "#earth-lab-map",
+        "investigateLabel": "Find a country with several official languages",
+        "recap": f"{a['name']}: {len(a['languages'])} real official languages. {b['name']}: {len(b['languages'])}.",
+        "source": "countries.dev",
+    }
+
+
 CONCEPTS = {
     "population-density": ("How Crowded Is a Country, Really?", _population_density_mission),
     "hemispheres": ("Which Half of the Planet?", _hemispheres_mission),
     "borders": ("How Many Neighbors Does a Country Have?", _borders_mission),
     "time-zones": ("Why Doesn't Every Country Have One Clock?", _time_zones_mission),
+    "currencies": ("Whose Money Is It, Really?", _currencies_mission),
+    "languages": ("How Many Languages Does One Country Speak?", _languages_mission),
 }
 
 

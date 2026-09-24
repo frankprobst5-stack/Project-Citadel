@@ -1882,3 +1882,27 @@ per-country facts, History's live editorial feed, and Language's local
 bundled lexical database -- the pattern has now been proven to fit a
 genuinely offline, non-networked real data source too, not just live
 APIs.
+
+## Two more real Geography concepts: currencies and languages (2026-09-24)
+
+Frank's own choice after the four-subject milestone: rather than start a
+fifth, thinner-fit subject (School Library's content catalog, or the
+opt-in Verses feature), grow Geography -- it already had unused real
+fields sitting in `earth_lab.get_country()`'s own return dict
+(`currencies`, `languages`) from the wind-barbs-era extension, so this
+needed zero new data-fetching work.
+
+**"Whose Money Is It, Really?"**: Ecuador vs. the USA, both using the
+real United States dollar -- a real, verified 2000 "dollarization"
+fact (Ecuador adopted the USD after its own currency collapsed), not a
+coincidence of shared currency the way the Euro would be.
+**"How Many Languages Does One Country Speak?"**: Switzerland's real 4
+official languages (German, French, Italian, Romansh) vs. Japan's 1.
+
+Both reuse the exact same `country-pair` observe shape the first four
+concepts already established, so the frontend needed zero changes --
+confirmed live rather than assumed, since `earth-lab.js`'s renderer
+already handles `value`+`unit` generically.
+
+Geography now has 6 real Guided Mission concepts, the most of any
+subject.
