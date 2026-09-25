@@ -10,10 +10,14 @@
 // still-open "exact technical shape" notes), not invented speculatively
 // here before it's needed.
 
+// Field names (`id`/`title`/`icon`) match the ecosystem-wide module-manifest
+// convention resolved 2026-09-25 (see Citadel Ecosystem ARCHITECTURE.md's
+// "Module conventions" section) -- `module` stays a Muster-specific
+// extension field, same as Citadel's manifest keeps its own `profile`.
 const PANEL_REGISTRY = [
-    { id: "messaging", label: "Messages", icon: "✉", module: "./panels/messaging.js" },
-    { id: "map", label: "Map", icon: "◉", module: "./panels/map.js" },
-    { id: "home", label: "Home", icon: "⌂", module: "./panels/home.js" },
+    { id: "messaging", title: "Messages", icon: "✉", module: "./panels/messaging.js" },
+    { id: "map", title: "Map", icon: "◉", module: "./panels/map.js" },
+    { id: "home", title: "Home", icon: "⌂", module: "./panels/home.js" },
 ];
 
 let activePanelId = null;
@@ -43,7 +47,7 @@ async function loadPanel(id) {
         // fake "loading" spinner that never resolves. Matches the
         // family's own "no fake data, no silent failure" discipline.
         root.innerHTML = `<div class="panel-card"><h2>Panel failed to load</h2>
-            <div class="empty-state">${entry.label}: ${err.message}</div></div>`;
+            <div class="empty-state">${entry.title}: ${err.message}</div></div>`;
         console.error(`[muster] panel "${id}" failed to load:`, err);
     }
 }
@@ -54,7 +58,7 @@ function buildTabBar() {
     for (const entry of PANEL_REGISTRY) {
         const btn = document.createElement("button");
         btn.dataset.panelId = entry.id;
-        btn.innerHTML = `<span class="tab-icon">${entry.icon}</span><span>${entry.label}</span>`;
+        btn.innerHTML = `<span class="tab-icon">${entry.icon}</span><span>${entry.title}</span>`;
         btn.addEventListener("click", () => loadPanel(entry.id));
         nav.appendChild(btn);
     }
