@@ -21,6 +21,7 @@ conversion.
 
 import csv
 import io
+import re
 
 REQUIRED_TALKGROUP_HEADERS = {"Decimal", "Mode", "Description"}
 VALID_MODES = {"A", "D", "M", "T"}
@@ -178,6 +179,111 @@ def build_conventional_config(short_name, system_type, driver, device, center_hz
         "systems": [system],
         "captureDir": "/app/calls",
         "statusServer": STATUS_SERVER_URL,
+    }
+
+
+ALL_SYSTEM_TYPES = {"trunked"} | CONVENTIONAL_SYSTEM_TYPES
+
+
+def validate_csv_for_system(system_type, csv_data):
+    """Dispatches to whichever CSV shape a system_type actually uses --
+    the same validation the direct-activation route already runs, reused
+    here so a saved profile (see make_profile below) can never be broken
+    in a way the direct path wouldn't also catch."""
+    if system_type == "trunked":
+        return validate_talkgroups_csv(csv_data)
+    if system_type in CONVENTIONAL_SYSTEM_TYPES:
+        return validate_channel_file_csv(csv_data)
+    return False, f"Unknown system_type {system_type!r} -- must be one of {sorted(ALL_SYSTEM_TYPES)}."
+
+
+def build_config(short_name, system_type, driver, device, center_hz, rate_hz, gain,
+                  control_channels_hz=None, squelch=-50, ppm=None):
+    """Dispatches to build_trunk_recorder_config or build_conventional_config
+    by system_type -- one call site for both the direct-activation route and
+    profile activation, so the two paths can't silently drift apart."""
+    if system_type == "trunked":
+        return build_trunk_recorder_config(
+            short_name=short_name, driver=driver, device=device, center_hz=center_hz,
+            rate_hz=rate_hz, gain=gain, control_channels_hz=control_channels_hz or [],
+            ppm=ppm, squelch=squelch,
+        )
+    if system_type in CONVENTIONAL_SYSTEM_TYPES:
+        return build_conventional_config(
+            short_name=short_name, system_type=system_type, driver=driver, device=device,
+            center_hz=center_hz, rate_hz=rate_hz, gain=gain, squelch=squelch, ppm=ppm,
+        )
+    raise ValueError(f"Unknown system_type {system_type!r} -- must be one of {sorted(ALL_SYSTEM_TYPES)}.")
+
+
+def slugify_profile_name(name):
+    """A real, storable id from an operator-typed profile name -- lowercase,
+    non-alphanumeric runs collapsed to a single hyphen, so "PANCOM P25!"
+    becomes "pancom-p25" rather than something with spaces or punctuation
+    that would need escaping everywhere it's later used as a JSON key or
+    URL path segment (DELETE/activate both address a profile by this id)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return slug or "profile"
+
+
+def unique_profile_id(name, existing_ids):
+    """slugify_profile_name, with a numeric suffix if that slug is already
+    taken -- two profiles named "PANCOM" (a trunked config today, a
+    conventional one later) shouldn't collide and silently overwrite."""
+    base = slugify_profile_name(name)
+    candidate = base
+    n = 2
+    existing = set(existing_ids)
+    while candidate in existing:
+        candidate = f"{base}-{n}"
+        n += 1
+    return candidate
+
+
+def make_profile(name, system_type, short_name, driver, device, center_hz, rate_hz, gain,
+                  csv_data, control_channels_hz=None, squelch=-50, ppm=None, existing_ids=()):
+    """Validates and builds a real, storable scanner profile -- the "like a
+    Uniden BearCat" request from a real storm-chaser field tester
+    (2026-09-16, WayStation's own ROADMAP.md): save several complete scanner
+    setups (e.g. a trunked county system and a conventional Fire/EMS list)
+    and flip between them without re-filling the whole setup form each
+    time. Raises ValueError on anything that wouldn't also be accepted by
+    the direct-activation path -- a saved profile that could never actually
+    be activated is worse than refusing to save it. Returns a plain dict,
+    not written to disk here -- storage is the Flask route's job, this
+    stays pure and testable like the rest of this module."""
+    if not name or not name.strip():
+        raise ValueError("A profile name is required.")
+
+    valid, error = validate_csv_for_system(system_type, csv_data)
+    if not valid:
+        raise ValueError(error)
+
+    # Build once to confirm every other field is real and usable -- the
+    # resulting config itself isn't stored on the profile; activation
+    # rebuilds it fresh from these same fields, so the two paths can never
+    # drift (e.g. a STATUS_SERVER_URL change automatically applies to every
+    # already-saved profile the next time it's activated).
+    build_config(
+        short_name=short_name, system_type=system_type, driver=driver, device=device,
+        center_hz=center_hz, rate_hz=rate_hz, gain=gain,
+        control_channels_hz=control_channels_hz, squelch=squelch, ppm=ppm,
+    )
+
+    return {
+        "id": unique_profile_id(name, existing_ids),
+        "name": name.strip(),
+        "system_type": system_type,
+        "short_name": short_name,
+        "driver": driver,
+        "device": device,
+        "center_hz": center_hz,
+        "rate_hz": rate_hz,
+        "gain": gain,
+        "control_channels_hz": control_channels_hz or [],
+        "squelch": squelch,
+        "ppm": ppm,
+        "csv_data": csv_data,
     }
 
 

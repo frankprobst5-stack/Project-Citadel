@@ -7,8 +7,10 @@ import requests
 import threading
 
 from scanner_config import (
+    build_config,
     build_conventional_config,
     build_trunk_recorder_config,
+    make_profile,
     validate_channel_file_csv,
     validate_talkgroups_csv,
 )
@@ -585,7 +587,147 @@ def save_scanner_config():
     with open(SCANNER_CONFIG_PATH, 'w') as f:
         json.dump(config, f, indent=2)
 
+    # A direct write here is a manual, one-off config -- not tied to any
+    # saved profile, so nothing should still claim to be "active" below.
+    _set_active_profile_id(None)
+
     return jsonify({"status": "success", "config": config})
+
+SCANNER_PROFILES_PATH = f"{SCANNER_DIR}/profiles.json"
+
+
+def _load_profiles_store():
+    """Saved scanner profiles, kept entirely separate from
+    SCANNER_CONFIG_PATH/the two CSV files above -- those are the single
+    live files trunk-recorder actually reads; this file is just storage
+    until a profile is activated (see below)."""
+    if not os.path.exists(SCANNER_PROFILES_PATH):
+        return {"profiles": [], "active_profile_id": None}
+    with open(SCANNER_PROFILES_PATH, 'r') as f:
+        return json.load(f)
+
+
+def _save_profiles_store(store):
+    os.makedirs(SCANNER_DIR, exist_ok=True)
+    with open(SCANNER_PROFILES_PATH, 'w') as f:
+        json.dump(store, f, indent=2)
+
+
+def _set_active_profile_id(profile_id):
+    store = _load_profiles_store()
+    if store.get("active_profile_id") == profile_id:
+        return
+    store["active_profile_id"] = profile_id
+    _save_profiles_store(store)
+
+
+@app.route('/api/scanner/profiles', methods=['GET'])
+def list_scanner_profiles():
+    """Saved scanner setups an operator can flip between without re-filling
+    the whole setup form each time -- the real "like a Uniden BearCat"
+    request from a storm-chaser field tester (2026-09-16, WayStation's own
+    ROADMAP.md), deliberately not built during the field-test freeze and
+    picked up now that it's lifted. `active_profile_id` tells the UI which
+    saved profile (if any) matches what's actually live right now -- null
+    means the live config was set directly (POST /api/scanner/config) or
+    nothing's configured yet, not that something is broken."""
+    return jsonify(_load_profiles_store())
+
+
+@app.route('/api/scanner/profiles', methods=['POST'])
+def save_scanner_profile():
+    """Validates and stores a new named profile. Deliberately does NOT
+    touch the live active config/CSV -- saving a profile is just storage,
+    exactly like filling out the setup form without submitting it;
+    activating one (see below) is the separate, explicit action that
+    actually makes it live."""
+    data = request.json or {}
+    store = _load_profiles_store()
+    existing_ids = {p["id"] for p in store["profiles"]}
+    try:
+        profile = make_profile(
+            name=data.get("name", ""),
+            system_type=data.get("system_type", "trunked"),
+            short_name=data.get("short_name", ""),
+            driver=data.get("driver", "osmosdr"),
+            device=data.get("device"),
+            center_hz=float(data.get("center_hz", 0)),
+            rate_hz=float(data.get("rate_hz", 0)),
+            gain=float(data.get("gain", 40)),
+            csv_data=data.get("csv_data", ""),
+            control_channels_hz=data.get("control_channels_hz", []),
+            squelch=float(data.get("squelch", -50)),
+            ppm=data.get("ppm"),
+            existing_ids=existing_ids,
+        )
+    except (ValueError, TypeError) as e:
+        return jsonify({"status": "error", "detail": str(e)}), 400
+
+    store["profiles"].append(profile)
+    _save_profiles_store(store)
+    return jsonify({"status": "success", "profile": profile})
+
+
+@app.route('/api/scanner/profiles/<profile_id>', methods=['DELETE'])
+def delete_scanner_profile(profile_id):
+    """Removes a saved profile. The live config/CSV trunk-recorder actually
+    reads are left untouched even if this was the active profile --
+    deleting the saved copy doesn't un-configure a scanner that's actually
+    running, it just means that setup can't be re-activated by name later."""
+    store = _load_profiles_store()
+    remaining = [p for p in store["profiles"] if p["id"] != profile_id]
+    if len(remaining) == len(store["profiles"]):
+        return jsonify({"status": "error", "detail": f"No profile with id {profile_id!r}."}), 404
+    store["profiles"] = remaining
+    if store.get("active_profile_id") == profile_id:
+        store["active_profile_id"] = None
+    _save_profiles_store(store)
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/scanner/profiles/<profile_id>/activate', methods=['POST'])
+def activate_scanner_profile(profile_id):
+    """Makes a saved profile the live config -- the one-tap "switch
+    systems" action the field request actually asked for, instead of
+    re-filling the whole setup form each time. Rebuilds the config fresh
+    from the profile's own stored fields (via the same build_config
+    dispatcher save_scanner_config uses) rather than replaying a config
+    dict saved at profile-creation time, so a later change to e.g.
+    STATUS_SERVER_URL applies to every profile the next time it's picked,
+    not just ones saved after that change."""
+    store = _load_profiles_store()
+    profile = next((p for p in store["profiles"] if p["id"] == profile_id), None)
+    if profile is None:
+        return jsonify({"status": "error", "detail": f"No profile with id {profile_id!r}."}), 404
+
+    system_type = profile["system_type"]
+    try:
+        config = build_config(
+            short_name=profile["short_name"],
+            system_type=system_type,
+            driver=profile["driver"],
+            device=profile.get("device"),
+            center_hz=profile["center_hz"],
+            rate_hz=profile["rate_hz"],
+            gain=profile["gain"],
+            control_channels_hz=profile.get("control_channels_hz"),
+            squelch=profile.get("squelch", -50),
+            ppm=profile.get("ppm"),
+        )
+    except (ValueError, TypeError) as e:
+        return jsonify({"status": "error", "detail": str(e)}), 400
+
+    os.makedirs(SCANNER_DIR, exist_ok=True)
+    csv_path = SCANNER_CHANNELS_PATH if system_type in ("conventional", "conventionalP25") else SCANNER_TALKGROUPS_PATH
+    with open(csv_path, 'w') as f:
+        f.write(profile["csv_data"])
+    with open(SCANNER_CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
+
+    store["active_profile_id"] = profile_id
+    _save_profiles_store(store)
+    return jsonify({"status": "success", "config": config})
+
 
 SCANNER_CALLS_DIR = f"{SCANNER_DIR}/calls"
 

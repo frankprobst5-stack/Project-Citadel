@@ -10,9 +10,14 @@ Run with: python3 -m unittest appdata/media-vault/test_scanner_config.py
 import unittest
 
 from scanner_config import (
+    build_config,
     build_conventional_config,
     build_trunk_recorder_config,
+    make_profile,
+    slugify_profile_name,
+    unique_profile_id,
     validate_channel_file_csv,
+    validate_csv_for_system,
     validate_talkgroups_csv,
 )
 
@@ -218,6 +223,127 @@ class BuildConventionalConfigTests(unittest.TestCase):
         config = build_trunk_recorder_config(short_name="t", driver="osmosdr", device=None, center_hz=1, rate_hz=1, gain=1, control_channels_hz=[100])
         self.assertNotIn("device", config["sources"][0])
         self.assertNotIn("ppm", config["sources"][0])
+
+
+class ValidateCsvForSystemTests(unittest.TestCase):
+    def test_dispatches_trunked_to_talkgroups_validation(self):
+        ok, err = validate_csv_for_system("trunked", REAL_SHAPE_CSV)
+        self.assertTrue(ok, err)
+
+    def test_dispatches_conventional_to_channel_file_validation(self):
+        ok, err = validate_csv_for_system("conventional", REAL_CONVENTIONAL_CSV)
+        self.assertTrue(ok, err)
+
+    def test_dispatches_conventionalp25_to_channel_file_validation(self):
+        ok, err = validate_csv_for_system("conventionalP25", REAL_CONVENTIONAL_CSV)
+        self.assertTrue(ok, err)
+
+    def test_rejects_an_unknown_system_type(self):
+        ok, err = validate_csv_for_system("smartnet", REAL_SHAPE_CSV)
+        self.assertFalse(ok)
+        self.assertIn("smartnet", err)
+
+
+class BuildConfigDispatchTests(unittest.TestCase):
+    def test_dispatches_trunked_to_the_real_trunked_shape(self):
+        config = build_config(
+            short_name="test", system_type="trunked", driver="osmosdr", device=None,
+            center_hz=857e6, rate_hz=8e6, gain=40, control_channels_hz=[855462500],
+        )
+        self.assertEqual(config["systems"][0]["type"], "p25")
+        self.assertEqual(config["systems"][0]["talkgroupsFile"], "talkgroups.csv")
+
+    def test_dispatches_conventional_to_the_real_conventional_shape(self):
+        config = build_config(
+            short_name="pancom", system_type="conventionalP25", driver="osmosdr", device=None,
+            center_hz=155e6, rate_hz=2400000.0, gain=40, squelch=-60,
+        )
+        self.assertEqual(config["systems"][0]["channelFile"], "channels.csv")
+        self.assertEqual(config["systems"][0]["modulation"], "qpsk")
+
+    def test_rejects_an_unknown_system_type(self):
+        with self.assertRaises(ValueError):
+            build_config(short_name="t", system_type="smartnet", driver="osmosdr", device=None, center_hz=1, rate_hz=1, gain=1)
+
+
+class SlugifyProfileNameTests(unittest.TestCase):
+    def test_lowercases_and_hyphenates(self):
+        self.assertEqual(slugify_profile_name("PANCOM P25!"), "pancom-p25")
+
+    def test_collapses_repeated_separators(self):
+        self.assertEqual(slugify_profile_name("  Fire & EMS  "), "fire-ems")
+
+    def test_falls_back_when_nothing_alphanumeric_survives(self):
+        self.assertEqual(slugify_profile_name("!!!"), "profile")
+
+
+class UniqueProfileIdTests(unittest.TestCase):
+    def test_returns_the_plain_slug_when_unused(self):
+        self.assertEqual(unique_profile_id("PANCOM", existing_ids=set()), "pancom")
+
+    def test_appends_a_numeric_suffix_on_collision(self):
+        self.assertEqual(unique_profile_id("PANCOM", existing_ids={"pancom"}), "pancom-2")
+
+    def test_keeps_incrementing_past_multiple_collisions(self):
+        self.assertEqual(unique_profile_id("PANCOM", existing_ids={"pancom", "pancom-2", "pancom-3"}), "pancom-4")
+
+
+class MakeProfileTests(unittest.TestCase):
+    def test_builds_a_real_storable_trunked_profile(self):
+        profile = make_profile(
+            name="AEP Utility", system_type="trunked", short_name="aep",
+            driver="osmosdr", device=None, center_hz=857e6, rate_hz=8e6, gain=40,
+            csv_data=REAL_SHAPE_CSV, control_channels_hz=[855462500],
+        )
+        self.assertEqual(profile["id"], "aep-utility")
+        self.assertEqual(profile["name"], "AEP Utility")
+        self.assertEqual(profile["system_type"], "trunked")
+        self.assertEqual(profile["csv_data"], REAL_SHAPE_CSV)
+
+    def test_builds_a_real_storable_conventional_profile(self):
+        profile = make_profile(
+            name="PANCOM", system_type="conventionalP25", short_name="pancom",
+            driver="osmosdr", device="rtl=0", center_hz=155e6, rate_hz=2400000.0,
+            gain=40, csv_data=REAL_CONVENTIONAL_CSV, squelch=-60,
+        )
+        self.assertEqual(profile["id"], "pancom")
+        self.assertEqual(profile["squelch"], -60)
+
+    def test_rejects_a_blank_name(self):
+        with self.assertRaises(ValueError):
+            make_profile(
+                name="  ", system_type="trunked", short_name="t", driver="osmosdr",
+                device=None, center_hz=1, rate_hz=1, gain=1, csv_data=REAL_SHAPE_CSV,
+                control_channels_hz=[100],
+            )
+
+    def test_rejects_an_invalid_csv_before_ever_building_a_config(self):
+        with self.assertRaises(ValueError):
+            make_profile(
+                name="Bad", system_type="trunked", short_name="t", driver="osmosdr",
+                device=None, center_hz=1, rate_hz=1, gain=1, csv_data="",
+                control_channels_hz=[100],
+            )
+
+    def test_rejects_fields_that_would_also_fail_direct_activation(self):
+        # No control channels for a trunked system -- build_trunk_recorder_config
+        # itself would reject this; make_profile must reject it too, not save
+        # a profile that could never actually be activated.
+        with self.assertRaises(ValueError):
+            make_profile(
+                name="Broken", system_type="trunked", short_name="t", driver="osmosdr",
+                device=None, center_hz=1, rate_hz=1, gain=1, csv_data=REAL_SHAPE_CSV,
+                control_channels_hz=[],
+            )
+
+    def test_avoids_colliding_with_an_existing_id(self):
+        profile = make_profile(
+            name="PANCOM", system_type="conventionalP25", short_name="pancom",
+            driver="osmosdr", device=None, center_hz=155e6, rate_hz=2400000.0,
+            gain=40, csv_data=REAL_CONVENTIONAL_CSV, squelch=-60,
+            existing_ids={"pancom"},
+        )
+        self.assertEqual(profile["id"], "pancom-2")
 
 
 if __name__ == "__main__":
