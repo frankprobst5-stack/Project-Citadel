@@ -199,6 +199,65 @@ if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
     fi
 fi
 
+# Station identity (callsign/location/grid/lat/lon), decided 2026-09-16
+# during Undercroft's own Phase 2 planning (see that project's own
+# ROADMAP.md): once Calamares (Undercroft's real installer) owns disk/
+# user/hostname and this script's own module picker above already covers
+# hardware/module selection, the one genuinely missing piece of a
+# first-run setup was station identity, which .env.example previously
+# just shipped blank for manual text-editing. Real, not cosmetic-only:
+# drives the Tactical Map's station marker (map.html) AND the News
+# Archive's hazard-alert location matching (news_location.py). Gated on
+# STATION_CALLSIGN specifically being unset (not COMPOSE_PROFILES like
+# the module picker above) since every field here is independently
+# optional -- an operator who skipped this on a fresh install, or only
+# filled in some fields, should still get asked again on a later
+# `install.sh` re-run, unlike module selection, which must never be
+# silently reset once chosen. Skipped in a non-interactive shell for the
+# same reason the module picker is: nothing here can be answered without
+# a real terminal, and leaving it blank is this project's existing,
+# already-correct default (see .env.example's own comment on these
+# fields).
+if ! grep -q "^STATION_CALLSIGN=.\+" .env 2>/dev/null && [ -t 0 ]; then
+    echo ""
+    echo "Station identity (all optional -- press Enter to skip any of these)."
+    echo "Used by the Tactical Map's station marker and the News Archive's"
+    echo "hazard-alert location matching. Real personal info -- written to"
+    echo "your own .env (gitignored, never committed), nowhere else."
+    read -r -p "  Callsign: " STATION_CALLSIGN_IN
+    read -r -p "  Location (city/description): " STATION_LOCATION_IN
+    read -r -p "  Grid square (e.g. EM12ab): " STATION_GRID_IN
+    read -r -p "  Latitude (decimal, e.g. 35.4676): " STATION_LAT_IN
+    read -r -p "  Longitude (decimal, e.g. -97.5164): " STATION_LON_IN
+
+    if grep -q "^STATION_CALLSIGN=" .env 2>/dev/null; then
+        sed -i "s#^STATION_CALLSIGN=.*#STATION_CALLSIGN=${STATION_CALLSIGN_IN}#" .env
+    else
+        echo "STATION_CALLSIGN=${STATION_CALLSIGN_IN}" >> .env
+    fi
+    if grep -q "^STATION_LOCATION=" .env 2>/dev/null; then
+        sed -i "s#^STATION_LOCATION=.*#STATION_LOCATION=${STATION_LOCATION_IN}#" .env
+    else
+        echo "STATION_LOCATION=${STATION_LOCATION_IN}" >> .env
+    fi
+    if grep -q "^STATION_GRID=" .env 2>/dev/null; then
+        sed -i "s#^STATION_GRID=.*#STATION_GRID=${STATION_GRID_IN}#" .env
+    else
+        echo "STATION_GRID=${STATION_GRID_IN}" >> .env
+    fi
+    if grep -q "^STATION_LAT=" .env 2>/dev/null; then
+        sed -i "s#^STATION_LAT=.*#STATION_LAT=${STATION_LAT_IN}#" .env
+    else
+        echo "STATION_LAT=${STATION_LAT_IN}" >> .env
+    fi
+    if grep -q "^STATION_LON=" .env 2>/dev/null; then
+        sed -i "s#^STATION_LON=.*#STATION_LON=${STATION_LON_IN}#" .env
+    else
+        echo "STATION_LON=${STATION_LON_IN}" >> .env
+    fi
+    echo ""
+fi
+
 # Pre-create bind-mount folders so Docker doesn't create them as root, which
 # would block you from managing your own files later. Always creates every
 # module's folders regardless of which ones were actually selected above --
