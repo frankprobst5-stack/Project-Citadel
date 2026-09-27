@@ -208,7 +208,7 @@ forgotten:
   radio audio instead of a dictation hotkey. Not a reason to prioritize
   this differently, just worth knowing it now has two real motivations
   instead of one.
-- **News Archive & Local Log** `[DISCOVERY]`, 2026-09-15 — real suggestion
+- ~~**News Archive & Local Log**~~ — ✅ **done, 2026-09-16.** `[DISCOVERY]`, 2026-09-15 — real suggestion
   from Facebook feedback on the public release, described as resonating
   with real reactions ("seems popular"), not just one person's idea. A
   new card: the operator enters their own RSS/Atom feed URLs (real,
@@ -227,10 +227,10 @@ forgotten:
   short digest of the most recent cached headlines before the outage — is
   real, ready-made content for XCAST's broadcast pipeline (WiFi captive
   portal / Part 15 AM-FM / APRS bulletin), not a separate, disconnected
-  feature. Not yet scoped: feed-fetch scheduling, article storage
-  schema/retention (how much history to keep before it's just noise), and
-  the UI split between "cached syndicated news" and "local log entries"
-  on what's otherwise one card.
+  feature. **All three of these were "not yet scoped" as of this same
+  entry's first draft — feed-fetch scheduling, article storage
+  schema/retention, and the cached-news/local-log UI split — and are now
+  resolved for real; see the "Major update" build log immediately below.**
   **Major update, same day: this is bigger than plain RSS reading.** Frank
   already built real, well-tested infrastructure for close to exactly
   this, in a now-retired personal project (Masthead, PHP — never launched
