@@ -13,6 +13,22 @@ free/open content, each under its own license, listed here for honesty:
   Interactive Simulations, University of Colorado Boulder. Non-commercial
   use only — see [`phet.colorado.edu/en/licensing`](https://phet.colorado.edu/en/licensing)
   before any commercial use.
+- **2048** (the Arcade's HTML5 game slot) — MIT License. © Gabriele
+  Cirulli. Pulled directly from its own real upstream repo
+  ([`github.com/gabrielecirulli/2048`](https://github.com/gabrielecirulli/2048)),
+  unmodified — `LICENSE.txt` is kept alongside the game's own files under
+  `server/static/games/2048/`.
+- **Ruffle** (the Arcade's SWF Player, `server/static/vendor/ruffle/`) —
+  dual MIT/Apache-2.0. © the Ruffle contributors
+  ([`github.com/ruffle-rs/ruffle`](https://github.com/ruffle-rs/ruffle)),
+  self-hosted build v0.6.0, unmodified. Ruffle is emulator *technology*
+  only, licensed to run whatever `.swf` file it's pointed at — it ships
+  with no game content itself. `server/static/games/swf/README.md` sets
+  the real standard for what may actually go in that slot: something you
+  made yourself, or a game its own creator explicitly released under an
+  open/public-domain license, never a copyrighted commercial game copied
+  from an abandonware site or ROM archive without the rightsholder's
+  permission.
 - **World English Bible** (the verse-of-the-day text) — public domain.
 - **NOAA cloud identification photos** (the Weather Labs cloud chart) — public
   domain, US government work (National Oceanic and Atmospheric Administration).

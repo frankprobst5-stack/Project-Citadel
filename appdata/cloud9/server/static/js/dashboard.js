@@ -739,6 +739,8 @@
   const arcadeToolSnake = document.getElementById("arcade-tool-snake");
   const arcadeToolMemory = document.getElementById("arcade-tool-memory");
   const arcadeToolWordGuess = document.getElementById("arcade-tool-wordguess");
+  const arcadeTool2048 = document.getElementById("arcade-tool-2048");
+  const arcadeToolSwf = document.getElementById("arcade-tool-swf");
 
   let arcadeCleanup = null;
 
@@ -750,7 +752,7 @@
   }
 
   function setActiveTool(btn) {
-    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory, arcadeToolWordGuess].forEach(function (b) {
+    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory, arcadeToolWordGuess, arcadeTool2048, arcadeToolSwf].forEach(function (b) {
       b.classList.remove("stem-tool-active");
     });
     if (btn) btn.classList.add("stem-tool-active");
@@ -781,6 +783,14 @@
   arcadeToolWordGuess.addEventListener("click", function () {
     setActiveTool(arcadeToolWordGuess);
     startWordGuess();
+  });
+  arcadeTool2048.addEventListener("click", function () {
+    setActiveTool(arcadeTool2048);
+    startHtml5Game("/static/games/2048/index.html");
+  });
+  arcadeToolSwf.addEventListener("click", function () {
+    setActiveTool(arcadeToolSwf);
+    startSwfPlayer();
   });
 
   arcadeClose.addEventListener("click", closeArcade);
@@ -1051,6 +1061,68 @@
     arcadeCleanup = function () {
       document.removeEventListener("keydown", handleKey);
     };
+  }
+
+  // Generic loader for any self-contained static HTML5 game living under
+  // static/games/<name>/ -- same iframe-embed pattern the STEM Lab already
+  // uses for the circuit sandbox. Adding another real game later (as long
+  // as it's a real folder of static files, no server-side component)
+  // means dropping the folder in and adding one button + one call to this
+  // -- no new game-hosting code needed.
+  function startHtml5Game(src) {
+    stopCurrentGame();
+    arcadeContent.innerHTML = "<iframe class=\"arcade-iframe\" src=\"" + src + "\"></iframe>";
+    arcadeCleanup = function () {
+      arcadeContent.innerHTML = "";
+    };
+  }
+
+  // Real Ruffle (github.com/ruffle-rs/ruffle) integration, self-hosted --
+  // see THIRD-PARTY-NOTICES.md. Ruffle itself is legitimate, open-source
+  // (MIT/Apache) emulator *technology*; it plays whatever .swf file it's
+  // pointed at, which is a completely separate question from whether that
+  // file is actually licensed to be here -- see games/swf/README.md.
+  // Loaded lazily (only when this button is actually clicked) since the
+  // wasm payload is genuinely large (~14MB) and most sessions won't use it.
+  let rufflePromise = null;
+  function loadRuffleScript() {
+    if (!rufflePromise) {
+      rufflePromise = new Promise(function (resolve, reject) {
+        const script = document.createElement("script");
+        script.src = "/static/vendor/ruffle/ruffle.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    return rufflePromise;
+  }
+
+  function startSwfPlayer() {
+    stopCurrentGame();
+    arcadeContent.innerHTML = "<div class=\"arcade-hint\">Checking for a game...</div>";
+    const SWF_PATH = "/static/games/swf/game.swf";
+
+    fetch(SWF_PATH, { method: "HEAD" }).then(function (res) {
+      if (!res.ok) throw new Error("no swf");
+      return loadRuffleScript();
+    }).then(function () {
+      arcadeContent.innerHTML = "<div class=\"arcade-swf-wrap\" id=\"swf-wrap\"></div>";
+      const ruffle = window.RufflePlayer.newest();
+      const player = ruffle.createPlayer();
+      player.className = "arcade-iframe";
+      document.getElementById("swf-wrap").appendChild(player);
+      player.ruffle().load(SWF_PATH);
+      arcadeCleanup = function () {
+        arcadeContent.innerHTML = "";
+      };
+    }).catch(function () {
+      arcadeContent.innerHTML =
+        "<div class=\"arcade-hint\">No game loaded here yet. Drop a real, properly-licensed " +
+        "<code>.swf</code> file at <code>server/static/games/swf/game.swf</code> and reopen " +
+        "this tab — see that folder's own README.</div>";
+      arcadeCleanup = function () {};
+    });
   }
 
   // --- Tools dropdown ---
