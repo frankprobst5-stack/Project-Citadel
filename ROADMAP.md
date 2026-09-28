@@ -43,21 +43,59 @@ a few days to see what real testers actually hit first — real bug reports
 should outrank all of this. Everything below is real and scoped, not
 forgotten:
 
-- **Cloud9's Arcade: Word Guess added, and Kart Racing wired up for real —
-  2026-09-27.** A fourth built-in mini-game alongside Snake/Memory Match:
-  a classic guess-the-word-letter-by-letter mechanic, star-based lives
-  instead of gallows imagery (this is a kids' dashboard), an on-screen
-  A-Z keyboard for touch devices, and a 30-word STEM-themed list. Verified
-  live end-to-end (win/lose/restart all fire correctly) after rebuilding
-  `citadel-cloud9` — its `templates`/`static` are baked into the image at
-  build time, not bind-mounted, so a source edit alone doesn't take effect
-  without `docker compose build cloud9 && docker compose up -d cloud9`.
-  Separately, **Kart Racing** — a real button that's existed since before
-  this pass, pointed at SuperTuxKart via `external_tools.json`, honestly
-  reporting "not set up yet" since `path` was `null` — gets a real install
-  and a configured path once `sudo apt install supertuxkart` is run
-  (needs an interactive terminal, not something this automated pass could
-  do itself).
+- **Cloud9's Arcade grows from 2 games to 5, plus Kart Racing genuinely
+  launches now — 2026-09-27.** Four real, separate pieces of work:
+  - **Word Guess**: a third built-in mini-game alongside Snake/Memory
+    Match — classic guess-the-word-letter-by-letter, star-based lives
+    instead of gallows imagery (kids' dashboard), an on-screen A-Z
+    keyboard for touch devices, a 30-word STEM-themed list.
+  - **2048**: pulled directly from its own real upstream repo
+    (github.com/gabrielecirulli/2048, MIT), unmodified. Loaded via a new
+    generic `startHtml5Game(src)` helper (same iframe pattern the STEM
+    Lab already used for its circuit sandbox) — a real second HTML5 game
+    later is just a folder + one button, no new hosting code needed.
+  - **SWF Player**: real Ruffle (ruffle-rs/ruffle, MIT/Apache) v0.6.0
+    self-hosted, emulator technology only, ships with zero game content.
+    Checks for a real file at `static/games/swf/game.swf` before even
+    loading the ~14MB wasm payload; finds none today, shows an honest
+    "no game loaded here yet" message rather than faking it.
+    `games/swf/README.md` sets the real bar for what may go there —
+    self-made or explicitly open/public-domain licensed, never a
+    copyrighted commercial game pulled from an abandonware site or ROM
+    archive. (A real, repeated conversation this same day: declined
+    building a scraper against My Abandonware, the ArmorGames archive on
+    archive.org, a GitHub "flash games directory", and Flashpoint's
+    bundled catalog — all of them are bulk redistribution of commercial,
+    copyrighted games without the rightsholders' license, just packaged
+    differently. Internet Archive's own curated Internet Arcade is the
+    one real exception worth building later — embedding their own hosted
+    player via iframe copies no files at all, closer to embedding a
+    YouTube video than downloading a ROM.)
+  - **Kart Racing genuinely launches now** — real architecture fix, not
+    just a config change. Cloud9 runs in an isolated, GUI-less Docker
+    container that can't open a window on the real desktop no matter what
+    path was configured. The obvious-looking fix (bind-mount the host's
+    X11 socket into the container) was deliberately rejected — that would
+    let any bug in this Flask app see and control every window on the
+    host desktop, a real security downside, worse on a kids' platform.
+    Real fix instead, same pattern Gated's own privileged helper already
+    uses: `host-launcher/cloud9-launcher.py`, an unprivileged daemon on
+    the real host that the container asks (over a Unix socket) to launch
+    one of a fixed, pre-approved set of ids from `external_tools.json` —
+    it can never receive an arbitrary path or command. `install.sh` sets
+    this up automatically now (gated on the `education` profile).
+  All four verified live end-to-end, not just written: Word Guess's
+  win/lose/restart all fire correctly; 2048 and Ruffle's `.wasm` serve
+  with correct content-types and the SWF player's empty/loaded states
+  both confirmed (the "loaded" check used a temporary empty placeholder
+  file, removed before committing — never real game content); SuperTuxKart
+  (`sudo apt install supertuxkart`) launched for real through the new
+  host-launcher and confirmed as a genuine running process, with a real
+  zombie-process bug (SIGCHLD not handled) found and fixed along the way.
+  Reminder for future rebuilds: `templates`/`static` are baked into the
+  `citadel-cloud9` image at build time, not bind-mounted, so any of this
+  needs `docker compose build cloud9 && docker compose up -d cloud9` to
+  actually take effect — a source edit alone silently does nothing.
 - **Document mDNS/`.local` addressing for IoT devices — done, 2026-09-16.**
   Added to `manual.html`'s Real Smart-Home Hardware Guide, right after the
   buying-guide table it applies to: point every device at
