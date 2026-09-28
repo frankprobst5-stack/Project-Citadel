@@ -738,6 +738,7 @@
   const arcadeToolKart = document.getElementById("arcade-tool-kart");
   const arcadeToolSnake = document.getElementById("arcade-tool-snake");
   const arcadeToolMemory = document.getElementById("arcade-tool-memory");
+  const arcadeToolWordGuess = document.getElementById("arcade-tool-wordguess");
 
   let arcadeCleanup = null;
 
@@ -749,7 +750,7 @@
   }
 
   function setActiveTool(btn) {
-    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory].forEach(function (b) {
+    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory, arcadeToolWordGuess].forEach(function (b) {
       b.classList.remove("stem-tool-active");
     });
     if (btn) btn.classList.add("stem-tool-active");
@@ -776,6 +777,10 @@
   arcadeToolMemory.addEventListener("click", function () {
     setActiveTool(arcadeToolMemory);
     startMemoryMatch();
+  });
+  arcadeToolWordGuess.addEventListener("click", function () {
+    setActiveTool(arcadeToolWordGuess);
+    startWordGuess();
   });
 
   arcadeClose.addEventListener("click", closeArcade);
@@ -946,6 +951,106 @@
     document.getElementById("memory-restart").addEventListener("click", startMemoryMatch);
 
     arcadeCleanup = function () {};
+  }
+
+  const WORD_GUESS_WORDS = [
+    "ROCKET", "PLANET", "OCEAN", "FOREST", "RAINBOW", "VOLCANO", "DESERT",
+    "GLACIER", "METEOR", "COMET", "GALAXY", "ISLAND", "CANYON", "TORNADO",
+    "BUTTERFLY", "DOLPHIN", "PENGUIN", "GIRAFFE", "ELEPHANT", "OCTOPUS",
+    "KANGAROO", "CHEETAH", "DINOSAUR", "TELESCOPE", "MICROSCOPE", "COMPASS",
+    "MAGNET", "CRYSTAL", "MOUNTAIN", "WATERFALL",
+  ];
+  const WORD_GUESS_LIVES = 6;
+
+  function startWordGuess() {
+    stopCurrentGame();
+    const word = WORD_GUESS_WORDS[Math.floor(Math.random() * WORD_GUESS_WORDS.length)];
+    const guessed = new Set();
+    let livesLeft = WORD_GUESS_LIVES;
+    let finished = false;
+
+    arcadeContent.innerHTML =
+      "<div class=\"arcade-score\" id=\"wordguess-lives\"></div>" +
+      "<div class=\"wordguess-blanks\" id=\"wordguess-blanks\"></div>" +
+      "<div class=\"wordguess-keyboard\" id=\"wordguess-keyboard\"></div>" +
+      "<div class=\"arcade-hint\" id=\"wordguess-status\">Guess the word, letter by letter</div>" +
+      "<button type=\"button\" class=\"arcade-restart-btn\" id=\"wordguess-restart\">New Word</button>";
+
+    const livesEl = document.getElementById("wordguess-lives");
+    const blanksEl = document.getElementById("wordguess-blanks");
+    const keyboardEl = document.getElementById("wordguess-keyboard");
+    const statusEl = document.getElementById("wordguess-status");
+
+    function renderLives() {
+      livesEl.textContent = "⭐".repeat(livesLeft) + "☆".repeat(WORD_GUESS_LIVES - livesLeft);
+    }
+
+    function renderBlanks() {
+      blanksEl.textContent = word
+        .split("")
+        .map(function (letter) { return guessed.has(letter) ? letter : "_"; })
+        .join(" ");
+    }
+
+    function checkOutcome() {
+      const solved = word.split("").every(function (letter) { return guessed.has(letter); });
+      if (solved) {
+        finished = true;
+        statusEl.textContent = "You got it! The word was " + word + ".";
+        return true;
+      }
+      if (livesLeft <= 0) {
+        finished = true;
+        statusEl.textContent = "Out of guesses — the word was " + word + ".";
+        return true;
+      }
+      return false;
+    }
+
+    function disableKeyboard() {
+      keyboardEl.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+    }
+
+    function guessLetter(letter, btn) {
+      if (finished || guessed.has(letter)) return;
+      guessed.add(letter);
+      btn.disabled = true;
+      if (word.indexOf(letter) === -1) {
+        livesLeft--;
+        btn.classList.add("wordguess-key-wrong");
+      } else {
+        btn.classList.add("wordguess-key-right");
+      }
+      renderLives();
+      renderBlanks();
+      if (checkOutcome()) disableKeyboard();
+    }
+
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function (letter) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "wordguess-key";
+      btn.textContent = letter;
+      btn.addEventListener("click", function () { guessLetter(letter, btn); });
+      keyboardEl.appendChild(btn);
+    });
+
+    function handleKey(e) {
+      const letter = e.key.toUpperCase();
+      if (letter.length !== 1 || letter < "A" || letter > "Z") return;
+      const btn = Array.from(keyboardEl.querySelectorAll("button")).find(function (b) { return b.textContent === letter; });
+      if (btn) guessLetter(letter, btn);
+    }
+
+    document.addEventListener("keydown", handleKey);
+    document.getElementById("wordguess-restart").addEventListener("click", startWordGuess);
+
+    renderLives();
+    renderBlanks();
+
+    arcadeCleanup = function () {
+      document.removeEventListener("keydown", handleKey);
+    };
   }
 
   // --- Tools dropdown ---
