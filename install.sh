@@ -482,6 +482,55 @@ EOF
         echo "-- Couldn't install the user-level news-fetch timer -- run scripts/news-scheduled.sh"
         echo "   yourself on whatever schedule you'd like instead."
     fi
+
+    # Cloud9's host-side app launcher -- only real if the education module
+    # is actually enabled (Cloud9 itself won't be running otherwise). Real
+    # architectural reason this exists at all, not just "for consistency":
+    # Cloud9 runs in an isolated Docker container with no GUI and no host
+    # filesystem access, so its Kart Racing/Code Lab/Globe buttons can't
+    # launch a native app themselves. This is a small, unprivileged daemon
+    # on the real host (no root, no capabilities -- launching a desktop
+    # app just needs the real logged-in session, which this already runs
+    # under) that the container asks, over a Unix socket, to launch one of
+    # a fixed, pre-approved set of ids from external_tools.json -- it can
+    # never receive an arbitrary path or command. See
+    # appdata/cloud9/host-launcher/cloud9-launcher.py's own module doc for
+    # the full reasoning, including why the simpler-looking alternative
+    # (bind-mount the host's X11 socket straight into the container) was
+    # deliberately rejected as a real security downside on a kids' platform.
+    if echo "$(grep '^COMPOSE_PROFILES=' .env 2>/dev/null | cut -d= -f2-)" | grep -q "education"; then
+        LAUNCHER_SCRIPT="$(cd "$(dirname "$0")" && pwd)/appdata/cloud9/host-launcher/cloud9-launcher.py"
+        chmod +x "$LAUNCHER_SCRIPT" 2>/dev/null || true
+
+        cat > "$UNIT_DIR/cloud9-launcher.service" <<EOF
+[Unit]
+Description=Cloud9 host-side app launcher (Kart Racing/Code Lab/Globe)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 ${LAUNCHER_SCRIPT}
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=default.target
+EOF
+
+        if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now cloud9-launcher.service 2>/dev/null; then
+            echo "-- Cloud9's host-side app launcher installed (systemctl --user status cloud9-launcher.service)."
+            echo "   Kart Racing/Code Lab/Globe only actually launch once you install the real app and"
+            echo "   set its path in appdata/cloud9/data/external_tools.json -- see that file's own"
+            echo "   comments, or Cloud9's own ROADMAP.md entry for a worked example (SuperTuxKart)."
+        else
+            echo "-- Couldn't install Cloud9's host-side app launcher -- Kart Racing/Code Lab/Globe"
+            echo "   buttons will honestly report they can't reach it until this is set up."
+        fi
+    fi
 fi
 
 echo "============================================================"

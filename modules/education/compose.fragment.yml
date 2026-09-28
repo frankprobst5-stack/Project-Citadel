@@ -23,6 +23,21 @@ services:
       - "${CLOUD9_PORT}:5057"
     volumes:
       - ../../appdata/cloud9/data:/app/data
+      # Real host-launcher socket directory (see host-launcher/
+      # cloud9-launcher.py's own module doc for the full reasoning) --
+      # lets Cloud9's "Kart Racing"/"Code Lab"/"Globe" buttons ask a
+      # narrowly-scoped host-side daemon to launch one of a few
+      # pre-approved native apps, without ever giving this container
+      # itself a display or filesystem access to the host. Mounting the
+      # whole (otherwise-empty) directory rather than the socket file
+      # itself is deliberate -- see that same file's SOCKET_DIR comment
+      # for why a direct file mount breaks across a daemon restart.
+      # CLOUD9_LAUNCHER_RUNTIME_DIR overrides the default in .env for a
+      # non-standard UID; XDG_RUNTIME_DIR (read from whatever shell
+      # actually runs `docker compose up`) wins if it's set, same
+      # `${A:-${B:-default}}` fallback chain OLLAMA_REMOTE_HOST already
+      # uses elsewhere in this file.
+      - ${XDG_RUNTIME_DIR:-${CLOUD9_LAUNCHER_RUNTIME_DIR:-/run/user/1000}}/cloud9-launcher:/run/cloud9-launcher
     environment:
       # Real `${VAR:-default}` Compose substitution, added 2026-09-16 for
       # remote-Ollama-host support -- see modules/ai/compose.fragment.yml's

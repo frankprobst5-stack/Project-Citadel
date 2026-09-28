@@ -5,7 +5,7 @@
   },
   "kart_racing": {
     "label": "SuperTuxKart",
-    "path": null
+    "path": "/usr/games/supertuxkart"
   },
   "globe": {
     "label": "Marble",

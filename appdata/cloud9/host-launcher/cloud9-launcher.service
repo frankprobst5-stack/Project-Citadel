@@ -1,0 +1,22 @@
+[Unit]
+Description=Cloud9 host-side app launcher (Kart Racing/Code Lab/Globe)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/citadel/appdata/cloud9/host-launcher/cloud9-launcher.py
+Restart=on-failure
+RestartSec=2
+
+# Real, narrow hardening -- this daemon's only job is reading
+# external_tools.json and launching one of a handful of pre-approved
+# desktop apps. It never needs root (runs as the real logged-in user
+# already), never needs to write anywhere but its own runtime socket,
+# and never needs network access.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=default.target
