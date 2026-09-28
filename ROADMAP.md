@@ -43,6 +43,21 @@ a few days to see what real testers actually hit first — real bug reports
 should outrank all of this. Everything below is real and scoped, not
 forgotten:
 
+- **Cloud9's Arcade: Word Guess added, and Kart Racing wired up for real —
+  2026-09-27.** A fourth built-in mini-game alongside Snake/Memory Match:
+  a classic guess-the-word-letter-by-letter mechanic, star-based lives
+  instead of gallows imagery (this is a kids' dashboard), an on-screen
+  A-Z keyboard for touch devices, and a 30-word STEM-themed list. Verified
+  live end-to-end (win/lose/restart all fire correctly) after rebuilding
+  `citadel-cloud9` — its `templates`/`static` are baked into the image at
+  build time, not bind-mounted, so a source edit alone doesn't take effect
+  without `docker compose build cloud9 && docker compose up -d cloud9`.
+  Separately, **Kart Racing** — a real button that's existed since before
+  this pass, pointed at SuperTuxKart via `external_tools.json`, honestly
+  reporting "not set up yet" since `path` was `null` — gets a real install
+  and a configured path once `sudo apt install supertuxkart` is run
+  (needs an interactive terminal, not something this automated pass could
+  do itself).
 - **Document mDNS/`.local` addressing for IoT devices — done, 2026-09-16.**
   Added to `manual.html`'s Real Smart-Home Hardware Guide, right after the
   buying-guide table it applies to: point every device at
