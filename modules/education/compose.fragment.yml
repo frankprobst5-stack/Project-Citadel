@@ -45,6 +45,13 @@ services:
       - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
       - OLLAMA_MODEL=llama3.2:1b
       - REDIS_URL=redis://citadel-cloud9-redis:6379/0
+      # The Learning Journal's real backing store -- Flatnotes
+      # (modules/notes/compose.fragment.yml), reused rather than building
+      # new storage, per CARD_REDESIGN_PLAN.md's own "don't rebuild"
+      # finding. A missing/disabled `notes` profile just means the
+      # Journal honestly reports it can't reach the notes service --
+      # never a crash, matching every other cross-container call here.
+      - FLATNOTES_BASE_URL=http://citadel-flatnotes:8080
       # Real fix for a live-reported vulnerability (2026-09-21) -- see
       # docker-compose.yml's own comment on this variable for the full
       # story. weather.py's alerts proxy is the one real container-to-

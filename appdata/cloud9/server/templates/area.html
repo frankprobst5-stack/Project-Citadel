@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ area.title }} - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">{{ area.icon }}</span>
+      <span class="area-heading-title">{{ area.title }}</span>
+    </div>
+    <div class="area-heading-tagline">{{ area.tagline }}</div>
+  </header>
+
+  <main class="area-main">
+    <div class="area-hero" style="--area-img: url('{{ url_for('static', filename=area.hero_img) }}');"></div>
+
+    <div class="area-destinations">
+      {% for dest in area.destinations %}
+      {% if dest.kind == 'modal' %}
+      <a class="area-destination" href="/?open={{ dest.id }}">
+      {% elif dest.kind == 'external' %}
+      <a class="area-destination" href="{{ dest.href }}" target="_blank" rel="noopener">
+      {% else %}
+      <a class="area-destination" href="{{ dest.href }}">
+      {% endif %}
+        <div class="area-destination-icon">{{ dest.icon }}</div>
+        <div class="area-destination-text">
+          <div class="area-destination-title">{{ dest.title }}</div>
+          <div class="area-destination-subtitle">{{ dest.subtitle }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </main>
+</body>
+</html>

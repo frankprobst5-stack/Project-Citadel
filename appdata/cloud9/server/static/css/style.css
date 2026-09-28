@@ -75,6 +75,24 @@ body {
   50% { opacity: 0.55; }
 }
 
+.connection-indicator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text-dim);
+}
+
+.connection-indicator.is-online {
+  color: #8effa1;
+}
+
+.connection-indicator.is-offline {
+  color: #ff8f8f;
+}
+
 .clock {
   font-variant-numeric: tabular-nums;
   font-size: 1.15rem;
@@ -89,12 +107,6 @@ body {
   padding: 24px 40px 48px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-}
-
-.row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 
@@ -326,98 +338,208 @@ body {
   font-size: 0.88rem;
 }
 
-.card {
-  --accent: #6fd3ff;
-  position: relative;
+/* Cloud9 2.0 home screen -- working area, six Areas, lower row. Replaces
+   the old flat grid of same-sized cards (CARD_REDESIGN_PLAN.md). */
+
+.working-area {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.quick-tools {
+  grid-column: 1 / -1;
+}
+
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   background: var(--panel);
   border: 1px solid var(--panel-border);
-  border-radius: 18px;
-  padding: 26px 24px;
-  min-height: 150px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-  overflow: hidden;
+  border-radius: 16px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
 }
 
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: var(--accent);
-  opacity: 0.85;
+.continue-card:hover {
+  border-color: #e8a23f;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  border-color: var(--accent);
-  box-shadow: 0 12px 28px -12px var(--accent);
+.continue-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
 }
 
-.card-icon {
-  font-size: 2.1rem;
-  line-height: 1;
-}
-
-.card-title {
-  font-size: 1.15rem;
+.continue-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #e8a23f;
   font-weight: 700;
 }
 
-.card-subtitle {
-  font-size: 0.92rem;
-  color: var(--text-dim);
+.continue-title {
+  font-size: 0.95rem;
+  margin-top: 2px;
 }
 
-.card-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  font-size: 0.68rem;
+.quick-panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.quick-panel-label {
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--panel-border);
-  padding: 4px 8px;
-  border-radius: 999px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-.card-empty {
-  background: transparent;
-  border-style: dashed;
-  cursor: default;
-  align-items: center;
-  text-align: center;
-}
-
-.card-empty:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--panel-border);
-}
-
-.card-empty .card-icon {
-  opacity: 0.4;
-}
-
-.card-empty .card-title,
-.card-empty .card-subtitle {
+.quick-panel-empty {
   color: var(--text-dim);
+  font-size: 0.92rem;
+}
+
+.weather-quick-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weather-quick-temp {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.weather-quick-desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.quick-tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.quick-tool-btn:hover {
+  border-color: #e8a23f;
+  background: rgba(232, 162, 63, 0.1);
+}
+
+.quick-tool-icon {
+  font-size: 1rem;
+}
+
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.area-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 190px;
+  border-radius: 18px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  background-image: linear-gradient(180deg, rgba(18, 20, 28, 0.05) 30%, rgba(18, 20, 28, 0.92) 100%), var(--area-img);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--panel-border);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  overflow: hidden;
+}
+
+.area-tile:hover {
+  transform: translateY(-4px);
+  border-color: #e8a23f;
+}
+
+.area-tile-icon {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+
+.area-tile-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.area-tile-tagline {
+  font-size: 0.85rem;
+  color: #e8e4d8;
+  margin-top: 2px;
+}
+
+.lower-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lower-tile {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 110px;
+  border-radius: 16px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--text);
+  background-image: linear-gradient(180deg, rgba(18, 20, 28, 0.1) 30%, rgba(18, 20, 28, 0.9) 100%), var(--area-img);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--panel-border);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.lower-tile:hover {
+  transform: translateY(-3px);
+  border-color: #e8a23f;
+}
+
+.lower-tile-title {
+  font-weight: 700;
+  font-size: 1.02rem;
 }
 
 @media (max-width: 900px) {
-  .row {
+  .areas-grid,
+  .lower-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 600px) {
-  .row {
+  .areas-grid,
+  .lower-row {
     grid-template-columns: 1fr;
   }
   .topbar {
@@ -425,16 +547,6 @@ body {
     align-items: flex-start;
     gap: 6px;
   }
-}
-
-@keyframes card-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
-
-.card-shake {
-  animation: card-shake 0.35s ease;
 }
 
 .modal-overlay {

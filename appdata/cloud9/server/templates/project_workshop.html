@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Workshop - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/project-workshop.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" id="pw-back" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">🛠️</span>
+      <span class="area-heading-title">Project Workshop</span>
+    </div>
+    <div class="area-heading-tagline">Plan it, build it, track it.</div>
+  </header>
+
+  <main class="area-main pw-main">
+    <!-- List view -->
+    <div id="pw-list-view">
+      <div class="area-hero" style="--area-img: url('{{ url_for('static', filename='img/areas/project-workshop.png') }}');"></div>
+
+      <button type="button" class="pw-new-btn" id="pw-new-btn">+ New Project</button>
+
+      <form class="pw-new-form" id="pw-new-form" hidden>
+        <input type="text" id="pw-new-title" placeholder="Project title (e.g. Build a Weather Station)" autocomplete="off" required>
+        <textarea id="pw-new-goal" placeholder="What's the goal?" rows="2"></textarea>
+        <div class="pw-new-actions">
+          <button type="submit">Start Project</button>
+          <button type="button" id="pw-new-cancel">Cancel</button>
+        </div>
+      </form>
+
+      <div class="pw-projects" id="pw-projects"></div>
+      <div class="pw-empty" id="pw-empty" hidden>No projects yet -- start your first one above.</div>
+      <div class="pw-error" id="pw-error" hidden>Couldn't reach the notes service right now.</div>
+    </div>
+
+    <!-- Detail view -->
+    <div id="pw-detail-view" hidden>
+      <button type="button" class="pw-detail-back" id="pw-detail-back">← All Projects</button>
+
+      <input type="text" id="pw-title" class="pw-detail-title-input" placeholder="Project title">
+
+      <div class="pw-field">
+        <label>Goal</label>
+        <textarea id="pw-goal" rows="2"></textarea>
+      </div>
+
+      <div class="pw-field">
+        <label>Status</label>
+        <select id="pw-status">
+          <option value="active">Active</option>
+          <option value="finished">Finished</option>
+        </select>
+      </div>
+
+      <div class="pw-field">
+        <label>Materials</label>
+        <ul class="pw-list" id="pw-materials"></ul>
+        <form class="pw-add-row" id="pw-add-material-form">
+          <input type="text" id="pw-add-material-input" placeholder="Add a material...">
+          <button type="submit">Add</button>
+        </form>
+      </div>
+
+      <div class="pw-field">
+        <label>Checklist</label>
+        <ul class="pw-list" id="pw-checklist"></ul>
+        <form class="pw-add-row" id="pw-add-task-form">
+          <input type="text" id="pw-add-task-input" placeholder="Add a task...">
+          <button type="submit">Add</button>
+        </form>
+      </div>
+
+      <div class="pw-field">
+        <label>Photos</label>
+        <div class="pw-photos" id="pw-photos"></div>
+        <input type="file" id="pw-photo-input" accept="image/*">
+      </div>
+
+      <div class="pw-field">
+        <label>Notes</label>
+        <textarea id="pw-notes" rows="4"></textarea>
+      </div>
+
+      <div class="pw-detail-actions">
+        <button type="button" id="pw-save-btn">Save</button>
+        <button type="button" id="pw-delete-btn" class="pw-delete-btn">Delete Project</button>
+      </div>
+      <div class="pw-saved-note" id="pw-saved-note" hidden>Saved!</div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/project-workshop.js') }}"></script>
+</body>
+</html>

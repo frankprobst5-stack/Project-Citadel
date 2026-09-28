@@ -18,6 +18,45 @@ free/open content, each under its own license, listed here for honesty:
   ([`github.com/gabrielecirulli/2048`](https://github.com/gabrielecirulli/2048)),
   unmodified — `LICENSE.txt` is kept alongside the game's own files under
   `server/static/games/2048/`.
+- **Dino Runner** (the Arcade's T-Rex Runner slot) — BSD-3-Clause License
+  (Chromium's own license). © The Chromium Authors. This is the same
+  offline dinosaur game Chrome shows when you lose your connection,
+  pulled directly from its extracted upstream repo
+  ([`github.com/wayou/t-rex-runner`](https://github.com/wayou/t-rex-runner)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/trex-runner/`.
+- **Tetris** (the Arcade's Tetris slot) — MIT License. © Jake Gordon and
+  contributors. Pulled directly from its own real upstream repo
+  ([`github.com/jakesgordon/javascript-tetris`](https://github.com/jakesgordon/javascript-tetris)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/tetris/`.
+- **Space Invaders** (the Arcade's Space Invaders slot) — MIT License.
+  © vrk. An original clone (own code and art, not Taito's assets),
+  pulled directly from its own real upstream repo
+  ([`github.com/vrk/space-invaders`](https://github.com/vrk/space-invaders)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/space-invaders/`.
+- **Pac-Man** (the Arcade's Pac-Man slot) — WTFPL License. © Dale Harvey
+  and contributors. An original clone (own code, art, and audio, not
+  Namco/Bandai's assets), pulled directly from its own real upstream
+  repo ([`github.com/daleharvey/pacman`](https://github.com/daleharvey/pacman)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/pacman/`. Bundles a minified copy of Modernizr
+  (MIT/BSD/public-domain dual-licensed feature-detection library) as
+  part of that same unmodified upstream checkout.
+- **Asteroids** (the Arcade's Asteroids slot) — MIT License. © Doug
+  McInnes. An original clone (own code, art, and audio, not Atari's
+  assets), pulled directly from its own real upstream repo
+  ([`github.com/dmcinnes/HTML5-Asteroids`](https://github.com/dmcinnes/HTML5-Asteroids)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/asteroids/`. Bundles a local copy of jQuery 1.4.1
+  (MIT License, © OpenJS Foundation) as part of that same unmodified
+  upstream checkout.
+- **Pong** (the Arcade's Pong slot) — MIT License. © gamelabz. Pulled
+  directly from its own real upstream repo
+  ([`github.com/gamelabz/html5-game-pong`](https://github.com/gamelabz/html5-game-pong)),
+  unmodified — `LICENSE` is kept alongside the game's own files under
+  `server/static/games/pong/`.
 - **Ruffle** (the Arcade's SWF Player, `server/static/vendor/ruffle/`) —
   dual MIT/Apache-2.0. © the Ruffle contributors
   ([`github.com/ruffle-rs/ruffle`](https://github.com/ruffle-rs/ruffle)),

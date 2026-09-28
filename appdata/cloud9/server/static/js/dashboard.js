@@ -234,57 +234,6 @@
     if (e.target === overlay) closeChat();
   });
 
-  document.querySelectorAll(".card").forEach(function (card) {
-    card.addEventListener("click", function () {
-      const id = card.dataset.id;
-      const link = card.dataset.link;
-      const status = card.dataset.status;
-
-      if (id === "ai_assist") {
-        openChat();
-        return;
-      }
-      if (id === "planner") {
-        openPlanner();
-        return;
-      }
-      if (id === "code_lab") {
-        launchTool("code_lab");
-        return;
-      }
-      if (id === "stem_lab") {
-        openStem();
-        return;
-      }
-      if (id === "video_shelf") {
-        openVideoShelf("video_shelf", "🎬 Video Shelf", false);
-        return;
-      }
-      if (id === "bible_study") {
-        openVideoShelf("bible_study", "📖 Bible Study", true);
-        return;
-      }
-      if (id === "arcade") {
-        openArcade();
-        return;
-      }
-      if (id === "my_school" && !link) {
-        showToast("Add your child's school link in Settings first.", true);
-        return;
-      }
-      if (link) {
-        window.open(link, "_blank", "noopener");
-        return;
-      }
-      if (status !== "empty") {
-        card.classList.add("card-shake");
-        setTimeout(function () {
-          card.classList.remove("card-shake");
-        }, 400);
-      }
-    });
-  });
-
   // --- Daily Planner ---
 
   const plannerOverlay = document.getElementById("planner-overlay");
@@ -740,6 +689,12 @@
   const arcadeToolMemory = document.getElementById("arcade-tool-memory");
   const arcadeToolWordGuess = document.getElementById("arcade-tool-wordguess");
   const arcadeTool2048 = document.getElementById("arcade-tool-2048");
+  const arcadeToolTrex = document.getElementById("arcade-tool-trex");
+  const arcadeToolTetris = document.getElementById("arcade-tool-tetris");
+  const arcadeToolInvaders = document.getElementById("arcade-tool-invaders");
+  const arcadeToolPacman = document.getElementById("arcade-tool-pacman");
+  const arcadeToolAsteroids = document.getElementById("arcade-tool-asteroids");
+  const arcadeToolPong = document.getElementById("arcade-tool-pong");
   const arcadeToolSwf = document.getElementById("arcade-tool-swf");
 
   let arcadeCleanup = null;
@@ -752,7 +707,7 @@
   }
 
   function setActiveTool(btn) {
-    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory, arcadeToolWordGuess, arcadeTool2048, arcadeToolSwf].forEach(function (b) {
+    [arcadeToolKart, arcadeToolSnake, arcadeToolMemory, arcadeToolWordGuess, arcadeTool2048, arcadeToolTrex, arcadeToolTetris, arcadeToolInvaders, arcadeToolPacman, arcadeToolAsteroids, arcadeToolPong, arcadeToolSwf].forEach(function (b) {
       b.classList.remove("stem-tool-active");
     });
     if (btn) btn.classList.add("stem-tool-active");
@@ -787,6 +742,30 @@
   arcadeTool2048.addEventListener("click", function () {
     setActiveTool(arcadeTool2048);
     startHtml5Game("/static/games/2048/index.html");
+  });
+  arcadeToolTrex.addEventListener("click", function () {
+    setActiveTool(arcadeToolTrex);
+    startHtml5Game("/static/games/trex-runner/index.html");
+  });
+  arcadeToolTetris.addEventListener("click", function () {
+    setActiveTool(arcadeToolTetris);
+    startHtml5Game("/static/games/tetris/index.html");
+  });
+  arcadeToolInvaders.addEventListener("click", function () {
+    setActiveTool(arcadeToolInvaders);
+    startHtml5Game("/static/games/space-invaders/index.html");
+  });
+  arcadeToolPacman.addEventListener("click", function () {
+    setActiveTool(arcadeToolPacman);
+    startHtml5Game("/static/games/pacman/index.html");
+  });
+  arcadeToolAsteroids.addEventListener("click", function () {
+    setActiveTool(arcadeToolAsteroids);
+    startHtml5Game("/static/games/asteroids/index.html");
+  });
+  arcadeToolPong.addEventListener("click", function () {
+    setActiveTool(arcadeToolPong);
+    startHtml5Game("/static/games/pong/index.html");
   });
   arcadeToolSwf.addEventListener("click", function () {
     setActiveTool(arcadeToolSwf);
@@ -1679,4 +1658,115 @@
   });
 
   fetchNotes();
+
+  // --- Cloud9 2.0 home screen: greeting, deep-link opener, quick panels ---
+
+  const greetingEl = document.getElementById("greeting");
+  if (greetingEl) {
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+    greetingEl.textContent = "Good " + timeOfDay + "! What do you want to do today?";
+  }
+
+  // Best-effort connection state (the browser's own network-interface
+  // signal -- not a guaranteed check that the wider internet is actually
+  // reachable, just what's honestly available client-side without a
+  // dedicated probe).
+  const connectionIndicator = document.getElementById("connection-indicator");
+  function updateConnectionIndicator() {
+    const online = navigator.onLine;
+    connectionIndicator.textContent = online ? "🟢 Online" : "🔴 Offline";
+    connectionIndicator.classList.toggle("is-online", online);
+    connectionIndicator.classList.toggle("is-offline", !online);
+  }
+  updateConnectionIndicator();
+  window.addEventListener("online", updateConnectionIndicator);
+  window.addEventListener("offline", updateConnectionIndicator);
+
+  // Opens the same panel a home-screen tile used to open directly, now
+  // reached either by a tile's own click (arcade, etc. still live on this
+  // page) or by an Area page's "/?open=<id>" link landing back here.
+  function openPanelById(id) {
+    const handlers = {
+      ai_assist: function () { openChat(); },
+      planner: function () { openPlanner(); },
+      code_lab: function () { launchTool("code_lab"); },
+      stem_lab: function () { openStem(); },
+      video_shelf: function () { openVideoShelf("video_shelf", "🎬 Video Shelf", false); },
+      bible_study: function () { openVideoShelf("bible_study", "📖 Bible Study", true); },
+      arcade: function () { openArcade(); },
+      dictionary: function () { openDictionary(); },
+      journal: function () { openJournal(); },
+      writing: function () { document.getElementById("tool-writing").click(); },
+      scratchpad: function () { document.getElementById("tool-scratchpad").click(); },
+      calculator: function () { document.getElementById("tool-calculator").click(); },
+    };
+    if (handlers[id]) {
+      handlers[id]();
+      return;
+    }
+    if (id === "history") {
+      // openHistory() needs historyFactCache, which loads async -- wait
+      // briefly for it instead of assuming it's already there.
+      let tries = 0;
+      const wait = setInterval(function () {
+        tries += 1;
+        if (historyFactCache) {
+          clearInterval(wait);
+          openHistory();
+        } else if (tries > 20) {
+          clearInterval(wait);
+        }
+      }, 150);
+    }
+  }
+
+  const openParam = new URLSearchParams(window.location.search).get("open");
+  if (openParam) {
+    openPanelById(openParam);
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+  }
+
+  document.querySelectorAll("[data-open]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openPanelById(btn.dataset.open);
+    });
+  });
+
+  // --- Continue Where You Left Off ---
+
+  const continueCard = document.getElementById("continue-card");
+  const continueIcon = document.getElementById("continue-icon");
+  const continueTitle = document.getElementById("continue-title");
+
+  fetch("/api/continue")
+    .then(function (res) { return res.json(); })
+    .then(function (card) {
+      if (!card) return;
+      continueIcon.textContent = card.icon;
+      continueTitle.textContent = card.label;
+      continueCard.href = card.href;
+      continueCard.hidden = false;
+    })
+    .catch(function () {});
+
+  // --- Today's Weather quick panel ---
+
+  const weatherQuick = document.getElementById("weather-quick");
+  const weatherQuickBody = document.getElementById("weather-quick-body");
+
+  fetch("/api/weather/forecast")
+    .then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    })
+    .then(function (result) {
+      if (!result.ok || !result.data || !result.data.length) return;
+      const today = result.data[0];
+      weatherQuickBody.innerHTML =
+        '<span class="weather-quick-temp">' + today.temperature + "°" + today.temperatureUnit + "</span>" +
+        '<span class="weather-quick-desc">' + today.name + " — " + today.shortForecast + "</span>";
+      weatherQuick.hidden = false;
+    })
+    .catch(function () {});
 })();

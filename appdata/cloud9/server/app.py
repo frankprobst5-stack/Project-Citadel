@@ -1,10 +1,11 @@
-import json
 from datetime import date
 
-from flask import Flask, Response, jsonify, render_template, request, stream_with_context
+from flask import Flask, Response, abort, jsonify, render_template, request, stream_with_context
 
 import ai
+import areas
 import climate_lab
+import continue_here
 import dictionary
 import earth_lab
 import event_explorer
@@ -17,10 +18,12 @@ import history_missions
 import journal
 import language_missions
 import launcher
+import learning_journal
 import mission_mode
 import model_lab
 import notes_tools
 import planner
+import project_workshop
 import school_library
 import settings
 import sounding
@@ -29,9 +32,7 @@ import verses
 import videos
 import weather
 import weather_cache
-from paths import DATA_DIR, SERVER_DIR
-
-CARDS_FILE = DATA_DIR / "cards.json"
+from paths import SERVER_DIR
 
 app = Flask(
     __name__,
@@ -40,29 +41,155 @@ app = Flask(
 )
 
 
-def load_cards():
-    with open(CARDS_FILE, encoding="utf-8") as f:
-        rows = json.load(f)["rows"]
-
-    current_settings = settings.get_settings()
-
-    if not current_settings.get("bible_study_enabled"):
-        for row in rows:
-            row["cards"] = [c for c in row["cards"] if c["id"] != "bible_study"]
-
-    for row in rows:
-        for card in row["cards"]:
-            if card["id"] == "my_school":
-                card["link"] = current_settings.get("school_url") or None
-                if current_settings.get("school_name"):
-                    card["title"] = current_settings["school_name"]
-
-    return rows
-
-
 @app.route("/")
 def dashboard():
-    return render_template("index.html", rows=load_cards())
+    return render_template("index.html", areas=areas.list_areas())
+
+
+@app.route("/area/<area_id>")
+def area_page(area_id):
+    area = areas.get_area(area_id)
+    if not area:
+        abort(404)
+    return render_template("area.html", area=area)
+
+
+@app.route("/project-workshop")
+def project_workshop_page():
+    return render_template("project_workshop.html")
+
+
+@app.route("/api/project-workshop", methods=["GET"])
+def project_workshop_list():
+    try:
+        return jsonify(project_workshop.list_projects())
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/project-workshop", methods=["POST"])
+def project_workshop_create():
+    payload = request.get_json(force=True) or {}
+    title = (payload.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "A project title is required."}), 400
+    try:
+        return jsonify(project_workshop.create_project(
+            title,
+            payload.get("goal"),
+            payload.get("materials") or [],
+            payload.get("checklist") or [],
+        )), 201
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/project-workshop/<path:project_id>", methods=["GET"])
+def project_workshop_get(project_id):
+    try:
+        project = project_workshop.get_project(project_id)
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+    if not project:
+        return jsonify({"error": "Project not found."}), 404
+    return jsonify(project)
+
+
+@app.route("/api/project-workshop/<path:project_id>", methods=["PATCH"])
+def project_workshop_update(project_id):
+    payload = request.get_json(force=True) or {}
+    fields = {
+        "title": (payload.get("title") or "").strip() or "Untitled Project",
+        "goal": payload.get("goal") or "",
+        "materials": payload.get("materials") or [],
+        "checklist": payload.get("checklist") or [],
+        "notes": payload.get("notes") or "",
+        "photos": payload.get("photos") or [],
+        "status": payload.get("status") or "active",
+    }
+    try:
+        result = project_workshop.update_project(project_id, fields)
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+    if not result:
+        return jsonify({"error": "Project not found."}), 404
+    return jsonify(result)
+
+
+@app.route("/api/project-workshop/<path:project_id>", methods=["DELETE"])
+def project_workshop_delete(project_id):
+    try:
+        if not project_workshop.delete_project(project_id):
+            return jsonify({"error": "Project not found."}), 404
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/project-workshop/<path:project_id>/photos", methods=["POST"])
+def project_workshop_add_photo(project_id):
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"error": "A photo file is required."}), 400
+    try:
+        result = project_workshop.add_photo(project_id, file.filename, file.read(), file.mimetype)
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+    if not result:
+        return jsonify({"error": "Project not found."}), 404
+    return jsonify(result), 201
+
+
+@app.route("/api/project-workshop/photos/<path:filename>")
+def project_workshop_photo(filename):
+    try:
+        content, content_type = project_workshop.get_photo(filename)
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+    if content is None:
+        abort(404)
+    return Response(content, mimetype=content_type)
+
+
+@app.route("/learning-journal")
+def learning_journal_page():
+    return render_template("learning_journal.html")
+
+
+@app.route("/api/learning-journal", methods=["GET"])
+def learning_journal_list():
+    try:
+        return jsonify(learning_journal.list_entries())
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/learning-journal", methods=["POST"])
+def learning_journal_add():
+    payload = request.get_json(force=True) or {}
+    title = (payload.get("title") or "").strip()
+    text = (payload.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "Entry text is required."}), 400
+    try:
+        return jsonify(learning_journal.add_entry(title, text)), 201
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/learning-journal/<path:entry_id>", methods=["DELETE"])
+def learning_journal_delete(entry_id):
+    try:
+        if not learning_journal.delete_entry(entry_id):
+            return jsonify({"error": "Entry not found."}), 404
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"error": "Couldn't reach the notes service right now."}), 502
+
+
+@app.route("/api/continue")
+def continue_route():
+    return jsonify(continue_here.get_continue_card())
 
 
 @app.route("/api/chat", methods=["POST"])

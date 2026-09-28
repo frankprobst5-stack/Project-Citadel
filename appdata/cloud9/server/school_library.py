@@ -35,9 +35,9 @@ import requests
 from paths import DATA_DIR
 
 KOLIBRI_BASE_URL = os.environ.get("KOLIBRI_BASE_URL", "http://citadel-kolibri:8080")
-# Browser-facing, not container-to-container -- same convention already
-# used by cards.json's own existing "Full School Library" link, so this
-# doesn't introduce a second, inconsistent way to reach Kolibri.
+# Browser-facing, not container-to-container -- the school library page
+# opens this from the child's own browser, not from inside another
+# container, so it needs the host-facing port.
 KOLIBRI_EXTERNAL_URL = os.environ.get("KOLIBRI_EXTERNAL_URL", "http://localhost:8081")
 HEADERS = {"User-Agent": "Cloud9 School Library (kids learning dashboard)"}
 DB_FILE = DATA_DIR / "school_library.db"

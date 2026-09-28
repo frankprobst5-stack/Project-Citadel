@@ -12,7 +12,7 @@
       <span class="brand-mark">☁️9</span>
       <span class="brand-name">Cloud9</span>
     </div>
-    <div class="greeting">Hey! What do you want to do today?</div>
+    <div class="greeting" id="greeting">Hey! What do you want to do today?</div>
     <div class="header-tools">
       <button class="reminder-bar" id="reminder-bar" type="button" hidden>📅 Check your calendar!</button>
       <div class="tools-menu">
@@ -27,36 +27,91 @@
         </div>
       </div>
       <button class="tools-menu-btn" id="settings-btn" type="button" title="Settings">⚙️</button>
+      <div class="connection-indicator" id="connection-indicator"></div>
       <div class="clock" id="clock">--:--</div>
     </div>
   </header>
 
   <main class="board">
-    <div class="history-teaser" id="history-teaser" hidden>
-      <img class="history-teaser-icon" src="{{ url_for('static', filename='img/home/this-day-in-history-icon.png') }}" alt="">
-      <div class="history-teaser-text">
-        <div class="history-teaser-label">This Day in History</div>
-        <div class="history-teaser-fact" id="history-teaser-fact"></div>
+    <section class="working-area">
+      <div class="history-teaser" id="history-teaser" hidden>
+        <img class="history-teaser-icon" src="{{ url_for('static', filename='img/home/this-day-in-history-icon.png') }}" alt="">
+        <div class="history-teaser-text">
+          <div class="history-teaser-label">This Day in History</div>
+          <div class="history-teaser-fact" id="history-teaser-fact"></div>
+        </div>
       </div>
-    </div>
-    {% for row in rows %}
-    <div class="row">
-      {% for card in row.cards %}
-      <div class="card {{ 'card-empty' if card.status == 'empty' else '' }}"
-           style="--accent: {{ card.accent }};"
-           data-id="{{ card.id }}"
-           data-status="{{ card.status }}"
-           data-link="{{ card.link or '' }}">
-        <div class="card-icon">{{ card.icon }}</div>
-        <div class="card-title">{{ card.title }}</div>
-        <div class="card-subtitle">{{ card.subtitle }}</div>
-        {% if card.status == 'coming_soon' %}
-        <div class="card-badge">coming soon</div>
-        {% endif %}
+
+      <a class="continue-card" id="continue-card" href="#" hidden>
+        <span class="continue-icon" id="continue-icon"></span>
+        <div class="continue-text">
+          <div class="continue-label">Continue Where You Left Off</div>
+          <div class="continue-title" id="continue-title"></div>
+        </div>
+      </a>
+
+      <div class="quick-panel weather-quick" id="weather-quick" hidden>
+        <div class="quick-panel-label">Today's Weather</div>
+        <div class="quick-panel-body" id="weather-quick-body"></div>
       </div>
+
+      <div class="quick-panel assignments-quick">
+        <div class="quick-panel-label">Today's Assignments</div>
+        <div class="quick-panel-body quick-panel-empty">Nothing assigned yet.</div>
+      </div>
+
+      <div class="quick-panel quick-tools">
+        <div class="quick-panel-label">Quick Tools</div>
+        <div class="quick-tools-row">
+          <button type="button" class="quick-tool-btn" data-open="scratchpad">
+            <span class="quick-tool-icon">📝</span>
+            <span class="quick-tool-name">Scratch Pad</span>
+          </button>
+          <button type="button" class="quick-tool-btn" data-open="writing">
+            <span class="quick-tool-icon">✍️</span>
+            <span class="quick-tool-name">Writing Paper</span>
+          </button>
+          <button type="button" class="quick-tool-btn" data-open="dictionary">
+            <span class="quick-tool-icon">📖</span>
+            <span class="quick-tool-name">Dictionary</span>
+          </button>
+          <button type="button" class="quick-tool-btn" data-open="calculator">
+            <span class="quick-tool-icon">🧮</span>
+            <span class="quick-tool-name">Calculator</span>
+          </button>
+          <button type="button" class="quick-tool-btn" data-open="journal">
+            <span class="quick-tool-icon">🔬</span>
+            <span class="quick-tool-name">Science Journal</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="areas-grid">
+      {% for area in areas %}
+      <a class="area-tile" href="/area/{{ area.id }}"
+         style="--area-img: url('{{ url_for('static', filename=area.hero_img) }}');">
+        <div class="area-tile-icon">{{ area.icon }}</div>
+        <div class="area-tile-title">{{ area.title }}</div>
+        <div class="area-tile-tagline">{{ area.tagline }}</div>
+      </a>
       {% endfor %}
-    </div>
-    {% endfor %}
+    </section>
+
+    <section class="lower-row">
+      <a class="lower-tile" href="/project-workshop"
+         style="--area-img: url('{{ url_for('static', filename='img/areas/project-workshop.png') }}');">
+        <div class="lower-tile-title">Project Workshop</div>
+      </a>
+      <a class="lower-tile" href="/learning-journal"
+         style="--area-img: url('{{ url_for('static', filename='img/areas/learning-journal.png') }}');">
+        <div class="lower-tile-title">Learning Journal</div>
+      </a>
+      <a class="lower-tile" href="/?open=video_shelf"
+         style="--area-img: url('{{ url_for('static', filename='img/areas/video-shelf.png') }}');">
+        <div class="lower-tile-title">Video Shelf</div>
+      </a>
+    </section>
   </main>
 
   <div class="modal-overlay" id="chat-overlay" hidden>
@@ -190,6 +245,30 @@
           <button type="button" class="stem-tool" id="arcade-tool-2048">
             <span class="stem-tool-icon">🔷</span>
             <span class="stem-tool-name">2048</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-trex">
+            <span class="stem-tool-icon">🦖</span>
+            <span class="stem-tool-name">Dino Runner</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-tetris">
+            <span class="stem-tool-icon">🧱</span>
+            <span class="stem-tool-name">Tetris</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-invaders">
+            <span class="stem-tool-icon">👾</span>
+            <span class="stem-tool-name">Space Invaders</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-pacman">
+            <span class="stem-tool-icon">🟡</span>
+            <span class="stem-tool-name">Pac-Man</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-asteroids">
+            <span class="stem-tool-icon">☄️</span>
+            <span class="stem-tool-name">Asteroids</span>
+          </button>
+          <button type="button" class="stem-tool" id="arcade-tool-pong">
+            <span class="stem-tool-icon">🏓</span>
+            <span class="stem-tool-name">Pong</span>
           </button>
           <button type="button" class="stem-tool" id="arcade-tool-swf">
             <span class="stem-tool-icon">💾</span>

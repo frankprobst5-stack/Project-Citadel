@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">{{ icon }}</span>
+      <span class="area-heading-title">{{ title }}</span>
+    </div>
+  </header>
+
+  <main class="area-main coming-soon-main">
+    <div class="area-hero" style="--area-img: url('{{ url_for('static', filename=hero_img) }}');"></div>
+    <div class="coming-soon-card">
+      <div class="coming-soon-badge">Coming soon</div>
+      <p class="coming-soon-blurb">{{ blurb }}</p>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Learning Journal - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/learning-journal.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">📓</span>
+      <span class="area-heading-title">Learning Journal</span>
+    </div>
+    <div class="area-heading-tagline">What you learned, built, read, and explored.</div>
+  </header>
+
+  <main class="area-main lj-main">
+    <div class="area-hero" style="--area-img: url('{{ url_for('static', filename='img/areas/learning-journal.png') }}');"></div>
+
+    <form class="lj-add-form" id="lj-add-form">
+      <input type="text" id="lj-title" placeholder="What was it about? (optional)" autocomplete="off">
+      <textarea id="lj-text" placeholder="What did you learn, build, read, or explore today?" rows="3" required></textarea>
+      <button type="submit" id="lj-submit">Add Entry</button>
+    </form>
+
+    <div class="lj-entries" id="lj-entries"></div>
+    <div class="lj-empty" id="lj-empty" hidden>Nothing written yet -- your first entry will show up here.</div>
+    <div class="lj-error" id="lj-error" hidden>Couldn't reach the notes service right now.</div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/learning-journal.js') }}"></script>
+</body>
+</html>

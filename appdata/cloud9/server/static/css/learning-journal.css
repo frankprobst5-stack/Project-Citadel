@@ -1,0 +1,111 @@
+/* Learning Journal -- a real Cloud9 view over Flatnotes notes. */
+
+.lj-main {
+  max-width: 720px;
+}
+
+.lj-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.lj-add-form input,
+.lj-add-form textarea {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.lj-add-form input:focus,
+.lj-add-form textarea:focus {
+  outline: none;
+  border-color: #e8a23f;
+}
+
+.lj-add-form button {
+  align-self: flex-end;
+  background: #e8a23f;
+  color: #241a08;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.lj-add-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lj-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lj-entry {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  position: relative;
+}
+
+.lj-entry-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+  padding-right: 28px;
+}
+
+.lj-entry-date {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.lj-entry-text {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.lj-entry-delete {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.lj-entry-delete:hover {
+  color: #ff8f8f;
+}
+
+.lj-empty,
+.lj-error {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 30px 0;
+}
+
+.lj-error {
+  color: #ff8f8f;
+}

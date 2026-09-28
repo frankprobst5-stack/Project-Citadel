@@ -2095,3 +2095,122 @@ with all five real layers at their intended defaults, the home marker
 placed correctly, and zero requests to any external map tile or style
 service -- CARTO and OpenStreetMap are both gone entirely from this
 deck now.
+
+## Cloud9 2.0 home screen -- first real build (2026-09-27/28)
+
+The six-Area reskin from the 2026-09-19 "new direction" entry, finally
+built: the flat `cards.json` grid (12 same-sized cards) is gone,
+replaced by real full-screen Area pages (My Day/Learn/Explore/Create/
+Tutor/Play, `server/areas.py`) using Frank's own already-produced art,
+plus a real working area at the top of the home page (This Day in
+History, a live "Continue Where You Left Off" card, a live Today's
+Weather panel, an honest "nothing assigned yet" Assignments panel since
+no real assignment system exists, a Quick Tools row, and a live Online/
+Offline indicator). Project Workshop and Learning Journal got real
+full-screen pages too, honestly labeled "coming soon" where the plan
+itself hadn't built their backends yet.
+
+**Continue Where You Left Off is a real reuse, not new tracking**: reads
+the Cross-Subject Interactivity Engine's own existing event log
+(`interactivity.get_recent_events`) -- Earth Lab and Weather Labs were
+already writing real `content_viewed` events, this just reads the most
+recent one back.
+
+**A real regression caught by Frank, not by testing**: rebuilding the
+card grid into six Areas silently dropped Math Lab -- it was never
+re-added to any Area's destination list, so a fully real, already-built
+feature (Times Table, Addition/Subtraction, GeoGebra Sandbox) became
+unreachable from the home page. The page itself was never broken
+(confirmed live, `/math-lab` still rendered a working GeoGebra sandbox
+throughout); only its one real navigation path was gone. Fixed by adding
+it to the Learn area. Worth naming honestly: a full flat-to-Areas
+migration needs a real checklist cross-referencing every old card
+against its new home, not just visual confirmation that the new layout
+looks right.
+
+## Learning Journal -- first real build (2026-09-28)
+
+Built exactly to this doc's own 2026-09-20 "don't rebuild" finding:
+Citadel already runs Flatnotes (`modules/notes/compose.fragment.yml`,
+real, live, healthy) as a real markdown notes engine, so the Learning
+Journal is a Cloud9-native view over it, not new storage. New
+`server/learning_journal.py` creates one real Flatnotes note per entry,
+tagged `#cloud9-learning-journal` in its content so Flatnotes' own
+real full-text search (`GET /api/search?term=%23cloud9-learning-journal`)
+lists journal entries back out without touching any other real note a
+family might keep in Flatnotes for something else. Confirmed Flatnotes'
+real OpenAPI schema live before writing any code, then verified the
+full create -> search -> get -> delete round trip directly against the
+real running container before building Cloud9's own integration.
+
+**No per-child scoping yet** -- same honest reasoning as School
+Library's own "Everyone" fallback: Kolibri (the one place Cloud9 already
+checked for real learner accounts) reports zero, so this is one shared
+family journal until real per-child profiles exist somewhere in Citadel.
+
+**A real bug caught immediately by live testing, not assumed away**:
+the first version's storage title used a `%H:%M:%S`-style timestamp;
+Flatnotes titles are real filenames on disk and its own API rejects
+`<>:"/\|?*` with a real `422` -- confirmed live, not guessed from
+documentation. Fixed by using `%H-%M-%S` instead. Caught by actually
+submitting a real entry through the built UI before calling this done,
+not just by unit-testing the backend module in isolation.
+
+**Frontend**: a real full-screen `/learning-journal` page (replacing its
+own former "coming soon" placeholder) -- an add-entry form (optional
+title + required body) and a real list of past entries, newest first,
+each with a real delete button. Verified live end-to-end through the
+actual browser UI: submitted a real entry, watched it render with the
+correct title/date/body, deleted it, watched the list correctly fall
+back to its honest empty state.
+
+## Project Workshop -- first real build, v1 scope (2026-09-28)
+
+Same real Flatnotes-reuse pattern as the Learning Journal, one note per
+project (`server/project_workshop.py`, tag `#cloud9-project-workshop`),
+but a structured document instead of one flat text blob: a real
+`## title` heading, a `**Goal:**` line, a `### Materials` bullet list, a
+real `### Checklist` using genuine markdown `- [ ]`/`- [x]` syntax, a
+`### Notes` section, a `### Photos` section (real filenames from
+Flatnotes' own attachments API), and a `**Status:** active|finished`
+line -- a real, deliberate parser/serializer round-trip
+(`_parse_content`/`_serialize_content`), unit-tested directly (including
+the empty-project edge case) before wiring any Flask route.
+
+**Scoped honestly to v1**, per the recommendation given and accepted
+before building: goal, materials, checklist, notes, and photos. "AI
+help" and a running per-project dated journal (separate from the single
+free-text Notes box) are real, named v2 work, not attempted here.
+
+**A real bug caught by the round-trip unit test itself, before any
+Flask route existed**: the checklist line-matcher sliced `stripped[:5]`
+(5 characters, e.g. `"- [x]"`) but compared it against 4-character
+tuple entries (`"- [ "`, `"- [x"`) -- a length mismatch that always
+evaluated false, silently parsing every real checklist back as empty.
+Caught immediately because the round-trip test asserted full equality
+against the original input rather than just checking the code ran
+without an exception.
+
+**Photos proxy through Cloud9, not Flatnotes directly**: same reasoning
+as School Library playing Kolibri video natively -- the child's browser
+never talks to Flatnotes' own port. `add_photo()` uploads server-side to
+Flatnotes' real `/api/attachments`, and a new `/api/project-workshop/
+photos/<filename>` route streams the bytes back through Cloud9 itself.
+Verified live: uploaded a real 1x1 PNG through the full stack (browser
+form -> Cloud9 -> Flatnotes -> back through Cloud9's proxy), confirmed
+`200 image/png`.
+
+**Frontend**: a real full-screen `/project-workshop` page (replacing its
+own former "coming soon" placeholder) with two views in one page --
+a project list (cards showing title, goal, status badge, checklist
+progress like "1/2 done") and a detail view (editable title/goal/status/
+notes with an explicit Save button, materials and checklist as real
+add/remove/toggle lists that save immediately on change, a photo
+uploader). Verified live end-to-end through the actual browser UI, not
+just the API: created a real project, added materials and checklist
+items, toggled a checkbox and confirmed the change persisted server-side,
+uploaded a real photo and confirmed it rendered, deleted the project and
+confirmed the list correctly fell back to its honest empty state.
+
+Both of the home page's former "coming soon" placeholders (Learning
+Journal, Project Workshop) are now real, working features.
