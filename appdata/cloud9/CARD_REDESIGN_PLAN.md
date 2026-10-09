@@ -2214,3 +2214,1116 @@ confirmed the list correctly fell back to its honest empty state.
 
 Both of the home page's former "coming soon" placeholders (Learning
 Journal, Project Workshop) are now real, working features.
+
+## ROADMAP.md Phase 1 -- shared Learning Event schema, Mastery Engine, real My Day (2026-09-28)
+
+First real build against the new forward roadmap (`ROADMAP.md`), built the
+same night it was written. Two new shared modules: `learning_engine.py` (the
+one real function every Lab is meant to call --
+`record_activity(subject, activity, concept, source, difficulty, correct,
+artifact, related_concepts)`) sitting on top of the existing
+`interactivity.py` event log, and `mastery.py` (a real New/Learning/Almost/
+Mastered engine, keyed by subject+concept, streak-based -- explicitly a
+simple v1, not proper spaced repetition, named honestly in its own
+docstring).
+
+**Unit-tested the leveling logic before any integration**: 5 correct
+answers in a row on a real concept correctly climbed new -> learning ->
+almost -> mastered; a miss right after correctly demoted mastered back to
+learning and reset the review clock to "due now" -- verified the exact
+transitions, not just that the code ran.
+
+**Math Lab is the first real consumer**, not a new not-yet-built Lab --
+both the Times Table quiz and the Addition/Subtraction Challenge now call
+`recordActivity()` on every answer (fire-and-forget, a failed log never
+blocks the quiz itself). Times table concepts are normalized commutatively
+(`7x8` and `8x7` share one real mastery record); challenge concepts are
+keyed by resolved operation + difficulty tier (`add_easy`, etc.), tracking
+skill-level mastery rather than per-random-problem history, which
+wouldn't mean anything for those.
+
+**My Day is real now, not just destination tiles**: a new `/api/my-day`
+route (due mastery reviews + active Project Workshop projects) and a
+dedicated `my_day.html` template (the generic `area.html` still serves
+the other five Areas) render both live. Deliberately doesn't mention
+missions -- those are Phase 2, honestly not built yet, so My Day doesn't
+pretend to have them.
+
+**Verified live end-to-end through the actual browser UI**: answered a
+real times-table question in Math Lab, confirmed the `/api/learning/
+record` call fired and returned 200, confirmed the resulting mastery row
+appeared in `/api/my-day`'s response, then confirmed it rendered
+correctly on the real My Day page ("Math / 2x3 / LEARNING"). Created a
+real test project and confirmed it appeared under In-Progress Projects
+with real checklist-progress numbers, then cleaned up all test data
+before calling this done.
+
+Ollie Teaching Mode and Parent/Teacher tools v1 (the other two Phase 1
+items) are real, named next work -- not started in this pass.
+
+## ROADMAP.md Phase 1, item 3 -- Ollie Teaching Mode, a real shared widget (2026-09-28)
+
+The third Phase 1 infrastructure piece, same night as items 1/2. `ai.py`'s
+`SYSTEM_PROMPT` now carries the Teaching Mode core rule permanently, quoted
+straight from `ROADMAP.md`: never do for the learner what they can
+reasonably be guided to do themselves -- hints before answers, break hard
+problems into steps, ask for evidence instead of stating conclusions,
+source-first. A new `_lab_context_note()` builds a real, honest note from
+whatever a Lab actually sends (never invents fields it wasn't given), and
+`chat_stream()` gained a `lab_context` parameter threaded through from a
+new `context` field on `/api/chat`'s payload.
+
+**One real shared widget, not six one-off chat windows**: `ollie-widget.js`
++ `ollie-widget.css` inject their own floating "Ask Ollie" button and panel
+into any page that includes them -- reuses the exact same streaming-fetch
+pattern the home page's existing chat already uses, just with a `context`
+field added to the request body, read fresh from `window.OLLIE_CONTEXT` on
+every send rather than cached once (so a Lab whose state changes can keep
+it live).
+
+**A real cross-palette problem found and solved before shipping**: Weather
+Labs deliberately runs its own cool blue/steel palette
+(`weather-labs.css`), not Cloud9's default warm one -- confirmed live that
+both define `--bg`/`--panel`/`--text`/`--text-dim` under the same names,
+but the border variable differs (`--panel-border` vs `--border`). Used
+CSS's own `var(--panel-border, var(--border, #2a2e42))` fallback chain
+instead of writing separate per-page overrides -- verified live afterward
+that the widget's button rendered in Weather Labs' own real accent
+(`rgb(0, 141, 255)` = `#008dff`) with zero Weather-Labs-specific code.
+
+**Wired into all six Lab pages that had no Ollie access at all before
+this** (Math Lab, Earth Lab, Weather Labs, School Library, Learning
+Journal, Project Workshop), each setting a real, honest `window.
+OLLIE_CONTEXT` describing what that Lab actually does. **Math Lab goes
+further, as the proof the "live state" part of Teaching Mode is real, not
+aspirational**: its quiz and challenge code updates `OLLIE_CONTEXT.state`
+with the exact current question every time one appears, not just a static
+lab description.
+
+**Verified live, not just that it renders**: asked Ollie "What is Math
+Lab?" through the real widget while a times-table question was showing.
+The real response (confirmed via direct API call, since local llama3.2:1b
+CPU inference genuinely takes 20-30+ seconds to stream a full reply, not a
+hang) correctly grounded itself in the live context -- named the current
+activity and started walking toward the specific question rather than
+just answering it outright, exactly the hints-first behavior Teaching Mode
+is supposed to produce.
+
+All three Phase 1 infrastructure items (Learning Event schema, Mastery
+Engine, Ollie Teaching Mode) are now real. Parent/Teacher tools v1 is the
+last Phase 1 item, still not started.
+
+## ROADMAP.md Phase 1, item 5 -- Parent Tools v1, a real recurring weekly schedule (2026-09-28)
+
+The last Phase 1 item, and the one directly requested by Frank for his own
+real 9-year-old, 3rd grade, homeschooled -- loves weather/storms and tech,
+wants to work for the NWS, gets bored without real direction. Real,
+concrete stakes, not a hypothetical feature.
+
+**Checked the real requirement before designing anything**: OPM's own
+Meteorology Series 1340 qualification standard (confirmed live) requires
+24 semester hours in atmospheric science plus 6 hours of physics with
+lab, and names calculus as a real prerequisite/corequisite for the
+atmospheric dynamics, physics, and differential equations coursework --
+the real anchor point for what "college-ready" has to mean by grade 12,
+not guessed at.
+
+**Built as a real recurring weekly schedule** (`schedule.py`), not
+one-off assignments -- a real homeschool week repeats. Two tables: `blocks`
+(the parent-editable Mon-Fri template: subject, title, description, a
+real Cloud9 deep link, duration) and `completions` (real per-date,
+per-block done state, so a kid checks things off and a parent sees real
+progress, not just a static list). `get_today()` correctly returns an
+empty list on a real weekend -- no fake blocks on a day nothing was ever
+scheduled.
+
+**No login** -- same trusted-home-LAN model as Kolibri and Flatnotes
+(both already run with auth disabled). A fake login here would be
+security theater, not real protection, for a tool that never leaves the
+house network.
+
+**Frontend**: a real `/parent-tools` page, five day-columns, each with its
+own add-block form and a live running total (verified: Mon/Tue/Wed/Thu
+correctly show 4h 50m, Friday 4h 30m, matching the real blocks entered).
+My Day gained a real "Today's Schedule" section above Due for Review --
+checkboxes that actually persist (`POST /api/schedule/today/<id>/
+complete`), and each block that has one shows a real "Open →" link
+straight into the Lab it names.
+
+**Populated with a real first week**, not test data: Monday/Wednesday/
+Thursday anchor Science on a real Weather Labs mission (his own strongest
+motivator, and literally what an NWS meteorologist does when there's real
+weather to read); Tuesday runs general Science via School Library for
+breadth; Friday deliberately breaks the block-by-block rhythm into three
+longer immersive blocks (a 75-minute Weather mission, 90 minutes of real
+Project Workshop deep-work, a longer weekly-reflection journal entry) plus
+earned free time, matching the real idea that a different end-of-week
+rhythm suits a kid better than the same seven-block grind five days
+running. Every subject in a real Cloud9 feature deep-links there directly
+(`/math-lab`, `/weather-labs`, `/project-workshop`, `/school-library`,
+`/?open=history`, `/learning-journal`).
+
+**Verified live end-to-end through the actual browser UI**: confirmed
+today's real Monday blocks render on My Day with correct subjects/
+titles/durations, toggled a real checkbox and confirmed the done state
+persisted server-side, confirmed all five days render correctly in
+Parent Tools with correct per-day totals.
+
+All five Phase 1 items (shared Learning Event schema, Mastery Engine,
+Ollie Teaching Mode, real My Day, Parent Tools v1) are now real. Phase 2
+(the Mission Engine) is next per ROADMAP.md.
+
+## Real bug caught by Frank: the home page's "Today's Assignments" panel was still dead (2026-09-28)
+
+A real, honest gap, not a hidden one: the working area's "Today's
+Assignments" quick-panel was built during the original six-Area redesign,
+hours before Parent Tools or `schedule.py` existed -- it was still the
+original hardcoded "Nothing assigned yet." placeholder, never rewired
+once the real schedule engine landed. Frank caught it live by asking
+whether assignments could really be automatic.
+
+**The honest answer, and the real fix**: yes, and it already was -- Parent
+Tools' recurring weekly schedule means every school day resolves
+automatically with no re-entry (`schedule.get_today()` already does this,
+correctly returning nothing on a real weekend). The only real gap was
+this one home-page panel never reading that data. Fixed: it's now a real
+link straight into My Day, showing a live "X of Y done today" count plus
+the next undone block's title, fetched from the same `/api/schedule/
+today` My Day itself already uses -- not a second, parallel
+implementation. Verified live: shows "0 of 7 done today -- Next: Math Lab
+-- Times Tables & Review" against the real Monday schedule.
+
+## ROADMAP.md Phase 2 -- the Mission Engine, first real mission (2026-09-28)
+
+The signature cross-subject feature, and Phase 2 depended entirely on
+Phase 1 being real first -- built the same night, in order, as planned.
+
+**`missions.py`**: real mission templates (hardcoded data, same spirit as
+Math Lab's own content -- not a database table nobody but this file needs
+to edit yet), each a real ordered list of tasks, one per Lab. Two tables:
+`mission_runs` (one row per real attempt) and `task_completions` (real
+per-task done state) -- same "manual checkbox, not automatic cross-Lab
+detection" honesty already used by Project Workshop's checklist and
+Parent Tools' schedule, not new machinery invented for this. Every
+completed task logs through `learning_engine.record_activity()` -- the
+real Phase 1 schema -- so missions feed My Day and the eventual Portfolio
+through the same pipe every other real activity already uses.
+
+**Unit-tested the full lifecycle before any route existed**: started a
+real run, completed 6 of 7 tasks (confirmed `completedAt` correctly stays
+null), completed the 7th (confirmed the run auto-completes and moves from
+`get_active_runs()` to `get_history()`) -- the exact transition the whole
+engine depends on, verified directly, not assumed from reading the code.
+
+**First real mission: "A Storm Is Approaching"**, the worked example from
+the expansion plan, built using entirely already-real Cloud9 features --
+no waiting on unbuilt Phase 3 Labs. A real scope correction from the
+roadmap's own earlier note (which assumed History and Writing needed
+unbuilt Labs): Weather Labs' own existing Historical Mission Mode already
+covers "investigate a historical storm" for real, and the existing
+Writing Paper tool covers "write a weather bulletin" -- both real, both
+already built, no gap actually there once looked at directly. Seven real
+tasks: Weather Labs (radar/atmosphere), Earth Lab (locate the storm),
+Math Lab (speed/distance/time), Weather Labs' Historical tab (a past
+storm), Writing Paper (a real bulletin), Project Workshop (the real
+family emergency-kit project, already live), Learning Journal (save what
+was learned).
+
+**Frontend**: a real `/missions` page (list of templates/active/completed
+runs, plus a detail view with a real task checklist and live progress
+bar) and a new "Active Missions" section on My Day, reading the same
+`/api/my-day` payload the rest of the page already uses. "Missions" added
+as a real destination in the My Day area.
+
+**Verified live end-to-end through the actual browser UI, not just the
+API**: started the real storm mission, toggled a real task's checkbox,
+confirmed it persisted server-side (`doneCount: 1`), confirmed My Day's
+own page picked it up live ("🌪️ A Storm Is Approaching -- 1/7 tasks
+done"), then reset that test toggle back to 0/7 so what's sitting live
+for Frank's son is a real, clean, unstarted mission -- not test data
+disguised as his own progress.
+
+Phase 2 is done. Phase 3 (the nine new Labs, starting with Word Lab) is
+next per ROADMAP.md.
+
+## ROADMAP.md Phase 3, item 1 -- Word Lab, the Mastery Engine's second real subject (2026-09-28)
+
+The whole reason Word Lab was picked first: prove the shared infrastructure
+built for Math Lab actually generalizes, not just works for the one Lab it
+was built alongside. It does -- verified live, not assumed.
+
+**Real scope cut before building anything**: checked for overlap first.
+Dictionary's own Guided Missions (`language_missions.py`, built earlier
+this session) already cover synonyms, antonyms, and word families for
+real via WordNet -- so Word Lab's v1 skips rebuilding that and links to
+it instead. Scoped to Spelling Trainer only for this pass; Reading Lab,
+Personal Bookshelf, and the Spelling Games named in the expansion plan are
+real, named v2 work, not attempted here.
+
+**Real, standard content, not invented**: checked actual 3rd-grade
+spelling curriculum structure (real, standard patterns: short vowels,
+long vowels/silent e, vowel teams, r-controlled vowels) before writing
+any word list -- five real units, 50 words, including a real bonus unit
+of weather words tied directly to his own actual interest.
+
+**`mastery.py` gained two small, real, reusable additions** rather than
+Word-Lab-specific code: `get_due_reviews()` now takes an optional
+`subject` filter, and a new `get_all_for_subject()` returns every tracked
+concept for one subject. Both generic -- any future Lab needing "what's
+due for just my subject" or "what have I already tracked" uses the same
+two functions, not a second implementation.
+
+**Zero new backend needed for the core practice loop** -- confirmed live:
+Word Lab's practice mode calls the exact same `/api/learning/record`
+Math Lab already uses, with `subject: "spelling"` instead of `"math"`.
+The Mastery Engine didn't need to know Word Lab existed in advance.
+
+**Real spaced practice, not just decoration**: Practice Mode pulls
+genuinely due words first (`/api/mastery/due?subject=spelling`) across
+the whole subject, then fills remaining slots with new words from
+whichever unit is selected -- the actual point of a Mastery Engine, not
+just a progress bar sitting on top of a flat word list.
+
+**Real browser-based text-to-speech**, not a new dependency: the Web
+Speech API's `SpeechSynthesisUtterance`, already built into the browser,
+zero external service or library needed.
+
+**Verified live end-to-end through the actual browser UI**: switched to
+Practice Mode, got a real queued word ("drop", correctly hinted as
+4 letters), answered it correctly, confirmed the real `/api/learning/
+record` call fired and returned 200, confirmed the resulting mastery
+record actually appeared via `/api/mastery/subject/spelling` -- the same
+proof pattern already used for Math Lab, now passing for a second,
+independent subject. Cleared the test record afterward so what's live for
+Frank's son is a clean, unstarted Word Lab.
+
+Word Lab added as a real destination under Learn. Next per ROADMAP.md:
+Math Lab's own real expansion (Phase 3 item 2 -- the reusable Budget
+Simulation Engine), or another Phase 3 Lab.
+
+## ROADMAP.md Phase 3, item 2 -- the Budget Simulation Engine, first mode: Storm Chase Trip Planner (2026-09-28)
+
+Real, deliberate scope call: the expansion plan names four modes (Mayor,
+Family Budget, Business, Trip Planner) sharing one reusable engine.
+Checked his real current math level (`LEARNING_PATH.md`'s own grade-3
+table -- multiplication fluency, basic word problems) against each mode's
+real complexity before picking one: Mayor/Business modes (percentages,
+profit margins) fit closer to the grade-6 pre-algebra/economics work
+already mapped in the path, not this year. **Trip Planner went first,
+and specifically reframed as a real "Storm Chase Trip Planner"** -- ties
+directly to his own actual interest, uses arithmetic he's actually
+learning right now (multiplication for fuel/food totals, basic addition),
+and the expansion plan's own "Weather and Map Math" section already named
+this exact pairing.
+
+**Real math, not simplified for show**: distance x (round trip ? 2 : 1) /
+mpg = gallons; gallons x price = fuel cost; nights x lodging rate =
+lodging cost; people x days x per-person food rate = food cost (days
+correctly computed as nights + 1, not just nights, so a same-day trip
+still gets one real day of food costed). Verified live: $180mi round trip
+at 25 mpg / $3.25/gal / 1 night $90 lodging / 2 people $25/day food /
+$20 misc computed to exactly $256.80 by hand before trusting the UI's own
+number -- matched. Changing distance to 300 recalculated instantly and
+correctly to $288.00, confirmed live, not just visually plausible.
+
+**The "clearly labeled as fictional/model behavior" rule from the
+expansion plan, honored directly**: the deck's own real note states
+outright this is a cost *estimate* with numbers he chooses, not financial
+advice, and not a real trip until actually planned with a parent -- real
+honesty about what the tool is, not just a disclaimer buried somewhere.
+
+**Real, reusable, not Trip-Planner-specific code**: the calculation/
+breakdown-bar pattern (real-time recompute on input, a proportional bar
+chart with no charting library, matching this app's own hand-rolled-SVG
+convention from Weather Labs) is written to extend to Family/Mayor/
+Business modes later using the same shapes, not rebuilt per mode. Those
+three modes are real, named v2 work for when he's actually at the
+percentages/profit-margin level the path calls for -- not built now.
+
+**Completion logs through the same real Learning Engine** every other
+Lab uses (`subject: "math", activity: "trip_planner"`) -- verified live,
+a real 200 response and the "Logged -- nice planning!" confirmation
+actually appeared.
+
+Phase 3 progress: Word Lab (Spelling Trainer) and Math Lab (Trip Planner)
+both real. Next per ROADMAP.md: History Explorer, or continuing Math
+Lab's own Recipe Scaler.
+
+## ROADMAP.md Phase 3, item 2 -- Recipe Scaler (2026-09-28)
+
+Picked over starting History Explorer for a real, deliberate reason:
+History Explorer's own Parallel Timeline Engine needs a real data source
+for "everything happening across the world in an arbitrary chosen year" --
+not yet found and verified the way every other real data source in this
+project has been. Recipe Scaler carries zero fabrication risk (it's real
+math on a real, standard recipe) and directly finishes what Trip Planner
+started, so it went first rather than rushing a history feature without
+verified sourcing behind it.
+
+**Two real, standard, generic recipes** (Basic Pancakes, Chocolate Chip
+Cookies) -- classic, widely-known ratios, not copied from any specific
+copyrighted cookbook (these exact flour/leavening/liquid ratios are the
+generic "back of the bag" formula, not creative expression).
+
+**Real fraction math, verified by hand before trusting the code**: wrote
+`toFraction()` (tries denominators 2/3/4/8, picks the closest real match)
+and hand-checked five real cases in Node before ever loading it in a
+browser -- 1.5 cups x 1.5x = "2 1/4", 0.25 tsp x 2x = "1/2", 3.5 tsp x
+0.5x = "1 3/4", 1.25 cups x 3x = "3 3/4", all matched exactly on the
+first try.
+
+**Verified live end-to-end**: default 1x pancakes rendered correctly
+("1 1/2 cups flour", "1/4 tsp salt", etc.), clicked 2x and confirmed
+every ingredient exactly doubled including the trickier fraction
+recompute (0.25 -> "1/2"), switched to the cookies recipe and confirmed
+the 2x scale correctly carried over and recalculated that recipe's own
+real ratios too, then confirmed the log button's real `/api/learning/
+record` call fired and returned 200.
+
+Both real Budget Simulation Engine pieces for this pass (Trip Planner,
+Recipe Scaler) are done. Weather-to-Math activities (pulling live numbers
+from Weather Labs) remain real, named work. Next per ROADMAP.md: History
+Explorer -- once a real, verified data source for "what was happening
+worldwide in year X" is actually found, not guessed at.
+
+## ROADMAP.md Phase 3, item 3 -- History Library, real living books (2026-09-29)
+
+The Wikidata "parallel timeline" idea (a queried events-by-year database)
+stayed stuck on real, demonstrated coverage problems -- no reliable
+"notable event" class was ever found (tested against 1969 and missed the
+Moon landing entirely). Frank pointed at a real alternative instead:
+oldfashionededucation.org's curated list of free classic American history
+"living books" -- narrative texts, not a queried database. That's the
+better fit for a 9-year-old anyway, and it sidesteps the Wikidata problem
+completely rather than solving it.
+
+**Real sourcing discipline applied the same as everywhere else in this
+project**: that blog page is a curated bibliography, not a file host --
+almost every title on it is tagged "Gutenberg Text", so rather than
+scraping the blog, each real book was pulled straight from its actual
+authoritative source, Project Gutenberg, confirmed live before use (both
+titles found via Gutenberg's own real search, both real ebook pages
+checked, both real download URLs HEAD-verified 200 with real
+Content-Length headers before pulling anything).
+
+**Two real books for a real 2nd-4th grade start** (Frank's call, matching
+his son's current level): *Stories of Great Americans for Little
+Americans* (Gutenberg #10070, 175KB) and *Stories of American Life and
+Adventure* (Gutenberg #15597, 244KB), both by Edward Eggleston, both
+carrying oldfashionededucation.org's own real "2nd to 4th grade reading
+level" tag -- reused, not invented. Grade band is a real folder structure
+(`data/history-library/grade-2-4/`) built to take more bands later as he
+grows into them.
+
+**`history_library.py`**: keeps each book's raw .txt file exactly as
+downloaded (Project Gutenberg's own license header/footer intact), and
+trims to PG's real `*** START/END OF THE PROJECT GUTENBERG EBOOK ***`
+markers only for the in-app reading view -- the reader always links back
+to the book's real Gutenberg page so the license stays attached to the
+content. `history_library.html`/`.js`/`.css` add a simple paginated
+reader (8 paragraphs per page) plus a book-picker grid, following
+School Library's page-shell pattern. Finishing the last page of a book
+calls `learning_engine.record_activity()` under a new `history` subject.
+
+**The YouTube question, and why it went a different way**: Frank also
+asked about downloading a real, well-known kids' history channel's
+(Free School) playlist for offline lesson use. Declined the bulk-download
+approach -- unlike century-old public-domain books, that's current,
+actively-owned copyrighted video, and downloading it (even for personal
+use) runs against YouTube's own terms. Embedded the real playlist
+directly on the History Library page instead (a standard YouTube iframe
+embed) -- plays the same real videos with zero downloading and zero terms
+violation, same category of call as the earlier SWF games conversation.
+
+**Verified live end-to-end** after a full `docker compose build cloud9`:
+both routes return real 200s, `/api/history-library/books` returns both
+real books with `available: true`, opened the first book in the browser
+and confirmed the reader shows real front matter (title page, preface,
+table of contents) correctly trimmed of Gutenberg's license boilerplate,
+confirmed "Page 1 of 101" and that Next/Previous pagination actually
+advances through the real text, confirmed the YouTube playlist embed
+renders, and confirmed zero console errors.
+
+Per Frank's explicit instruction, this feature (like the rest of tonight's
+Cloud9-specific work) stays local -- not pushed to the public GitHub repo.
+
+## History Library expansion -- Ancient History, more titles, real local video (2026-09-29)
+
+Frank asked for a few more 2nd-4th grade American history titles and
+added ancient history as a real second category, then separately
+clarified something that changes the "Watch" section's whole design: he's
+a real YouTube subscriber and already has the Free School videos
+downloaded locally (`/home/frank/Videos`) for legitimate offline use.
+
+**Four new real books, same sourcing discipline as before** -- each
+found and confirmed live on Project Gutenberg before pulling anything
+(a few near-misses along the way: Eggleston's *A First Book in American
+History*, Haaren's *Famous Men of Rome/Greece*, and Church's *On the
+Shores of the Great Sea* all turned up zero real Gutenberg matches, so
+they were left out rather than guessed at or half-sourced):
+
+- *The Bird-Woman of the Lewis and Clark Expedition* by Katherine
+  Chandler (Gutenberg #5742) -- real "K to 2nd grade" tag from
+  oldfashionededucation.org, a bit younger than the existing pair, kept
+  as an honest bridge title rather than mislabeled 2nd-4th.
+- *The Beginner's American History* by D. H. Montgomery (#18127) -- no
+  grade tag on the source list, and none found in the text itself
+  either; labeled honestly as "grade not stated" rather than invented.
+- *The Cave Boy of the Age of Stone* by Margaret A. McIntyre (#18576) --
+  real match for a title on oldfashionededucation's own Grade 3 Ancient
+  History list.
+- *The Story of the Greeks* by H. A. Guerber (#23495) -- a well-known,
+  real classic ancient-history living book, independently confirmed on
+  Gutenberg.
+
+**`history_library.py` restructured** from a single grade-band folder to
+real `category` fields (`american-history`, `ancient-history`) with a
+per-book `grade_label` that's honest text, not a forced slot -- some
+books get a real tag, some plainly say the source didn't provide one.
+Data reorganized to `data/history-library/<category>/` to match.
+
+**The "Watch" section now plays Frank's own local files, not a YouTube
+embed.** Added a real read-only bind mount
+(`${CLOUD9_VIDEOS_PATH:-/home/frank/Videos}:/app/videos:ro` in
+`modules/education/compose.fragment.yml`) and a `list_videos()`/
+`/api/history-library/videos/<file>` pair that reads and serves straight
+from that mount via Flask's `send_from_directory` (safe path handling,
+no traversal risk) -- this module never fetches or writes video files
+itself, only plays what's already there. A reused player-overlay pattern
+(same shape as School Library's) handles playback.
+
+**Verified live end-to-end** after `docker compose build cloud9` (image
+rebuild picked up the new bind mount too): `/api/history-library/books`
+returns all 4 real books per category with `available: true`,
+`/api/history-library/videos` lists all 37 of Frank's real local files,
+a direct file request returns a real 200 with the correct `Content-Type:
+video/mp4` and a `Content-Length` matching the file on disk, and in the
+browser, clicking a video card set the player's real `src` and reached
+`readyState 4` (fully playable) with zero errors.
+
+Same as everything else tonight: stays local, not pushed to the public
+repo.
+
+## Real weekly schedule now reflects his whole day, not just Cloud9 (2026-09-29)
+
+Frank confirmed he already has him signed up for BrainPOP and Adventure
+Academy, plus real book-and-worksheet work -- the real Parent Tools
+schedule only listed Cloud9's own Labs, so My Day was showing a partial
+picture of his actual day. Talked through how each tool is actually
+good at different things rather than just picking a slot for each:
+
+- **BrainPOP as a hook, not its own block** -- folded a real 10-minute
+  BrainPOP video in right before each topic it primes (before Weather
+  Labs' mission, before History, before Tuesday's general Science block)
+  rather than a disconnected standalone slot.
+- **Adventure Academy as real spaced reinforcement**, not pure reward --
+  added a 20-minute "Adventure Academy -- Practice" block late in each
+  day, positioned as revisiting an earlier subject through play rather
+  than replacing free time (Friday's existing "Free Time -- Arcade"
+  stayed as-is alongside it).
+- Book-and-worksheet work stays folded into the existing "Reading &
+  Language Arts" block for now -- which specific subject(s) the physical
+  book actually covers wasn't settled yet, so nothing was invented there.
+
+**Applied for real** via `schedule.py`'s own real `set_day()` -- called
+through the running app's real `PUT /api/schedule/<weekday>` endpoint
+(not a direct SQLite edit: `data/schedule.db` is owned by the container's
+root user on the host, so this went through the real API exactly like a
+parent using the Parent Tools UI would). All five real weekdays updated:
+Mon/Tue/Wed/Thu now run 330 real minutes (5h30m), Friday 335 (5h35m) --
+up from the original ~290/305, a real, accepted tradeoff for folding in
+two more real tools rather than shortening what was already there.
+
+**Verified live**: re-fetched `/api/schedule` and confirmed all 5 days
+carry the real new blocks in the right order and with the right
+durations, then loaded Parent Tools in the browser and confirmed Monday
+renders the full real 10-block day totaling "5h 30m" with zero console
+errors.
+
+Real open item, not guessed at: which subject(s) the physical
+book/worksheets actually cover -- once Frank says, that becomes its own
+real block instead of riding inside "Reading & Language Arts."
+
+## The real book, named (2026-09-29)
+
+Frank named it: Thinking Kids' *Comprehensive Curriculum of Basic
+Skills, Grade 3* (Carson-Dellosa) -- checked its real, published subject
+coverage before touching the schedule rather than assuming (it's
+broader than "reading" alone: language arts -- reading comprehension,
+grammar, punctuation, spelling -- plus real math skills practice --
+rounding, all four operations, fractions, decimals, geometry, money,
+measurement).
+
+Renamed the placeholder "Reading & Language Arts" block to "Thinking
+Kids -- Comprehensive Curriculum" with an accurate description, `link:
+null` (it's a physical book, no real destination to click through to,
+same honest pattern as the existing no-link "Break" block) -- applied to
+Mon/Tue/Wed/Thu via the same real `PUT /api/schedule/<weekday>` path.
+Verified live via `/api/schedule` that Monday's block now carries the
+real title.
+
+**Surfaced a real gap, not yet resolved**: Friday's lineup was built
+before the book was in the picture and has no book-work slot at all --
+asked Frank whether Friday should get one too, or whether it's meant to
+stay book-free by design, rather than guessing either way.
+
+Resolved: Frank confirmed yes, add it. Inserted the same real "Thinking
+Kids -- Comprehensive Curriculum" block (60m) right after Friday's Math
+Lab Quick Review, via the same real `PUT /api/schedule/fri` path.
+Friday now runs 395 real minutes (6h35m) -- flagged that this is an hour
+past the other four real days (5h30m) before applying it; Frank confirmed
+that's fine as-is.
+
+**Real weekly schedule is now complete for all four tools** (Cloud9's
+own Labs, BrainPOP, Adventure Academy, Thinking Kids book work) across
+all five real weekdays.
+
+## Video Library -- a second real "Watch" shelf (2026-09-29)
+
+Frank pointed at a second real local folder --
+`/home/frank/Desktop/school videos` -- already sorted by him into real
+subject subfolders (Ancient Egypt for Kids, Earth & Space Science,
+Engineering & Technology, Life Science, Physical Science, a general "a
+closer look" shelf, and Math). Broader than History Library's scope, so
+it got its own real feature rather than being folded in.
+
+**`video_library.py`**: reads categories live from the real folder
+structure (no hardcoded subject list), same read-only-mount,
+never-fetch-never-write reasoning as History Library's local video
+section. Added a second real read-only bind mount,
+`CLOUD9_SCHOOL_VIDEOS_PATH`, in `modules/education/compose.fragment.yml`.
+
+**Real path-traversal protection, actually tested**: `resolve_video_path()`
+requires the category to match a real, live-discovered subfolder and the
+resolved file to stay inside it (`Path.relative_to()`), verified live
+with a traversal attempt and an invalid category, both correctly 404.
+
+New `/video-library` page, added to the Learn area. Verified live via
+the real API after `docker compose build cloud9`: all 7 categories list
+correctly, video listings return real counts, a direct file request
+returned 200 with correct headers.
+
+A real, unrelated interruption landed right after this: the host machine
+froze and restarted mid-session. Docker's `restart: unless-stopped`
+brought every container back up on its own -- checked live afterward
+that nothing was lost: the real schedule (all 5 weekdays, correct block
+counts/durations), History Library (6 books), and Video Library (7
+categories) all came back intact with zero manual recovery needed.
+
+## History Explorer superseded, Cooking Mission built (2026-10-01)
+
+Picked up where ROADMAP.md's Phase 3 sequence left off. History Explorer
+(item 3) was next in line, but its real blocker from before was never
+solved -- no reliable "notable event" Wikidata class ever turned up.
+Rather than keep forcing it, marked it superseded in ROADMAP.md: History
+Library (built 2026-09-29) already covers the same real need -- properly
+sourced narrative history -- so nothing carries forward except what
+already works (This Day in History's content filter and its 3 Guided
+Mission concepts, untouched).
+
+Moved to the **Cooking Mission** instead -- Life Lab's named real second
+worked example of the Mission Engine. Added to `missions.py`'s real
+template dict, same shape as the storm mission, 6 tasks, every one a
+real already-built Cloud9 feature, zero new backend:
+
+- **Math**: Math Lab's existing Recipe Scaler (scale a real recipe)
+- **Science**: Ask Ollie the real kitchen-science "why" (baking powder
+  making batter rise, an egg solidifying when heated) -- checked School
+  Library first for real cooking/baking content and found none (0 results
+  for both searches), so this routes through Ollie rather than a
+  fabricated video reference
+- **Reading**: read the full recipe twice, Dictionary for unfamiliar words
+- **Life skill**: actually cook it with a parent, tracked as a real
+  Project Workshop project, same pattern as the Family Emergency Kit
+- **Writing**: Writing Paper, a recipe card in his own words
+- **Journal**: close it out, same save-task pattern as the storm mission
+
+**Verified live** after `docker compose build cloud9`: both templates
+list correctly via `/api/missions/templates`, started a real run via
+`/api/missions/start` and confirmed all 6 tasks come back with the right
+subject/title/description/link -- then cleaned up that test run directly
+(`docker exec` into the container, since `missions.db` is root-owned on
+the host same as `schedule.db`) so it doesn't linger as a stray active
+mission in his real My Day. Confirmed afterward: exactly one real active
+mission (the storm one), zero fabricated data left behind.
+
+## Science Lab shell + Chemistry's Molecule Builder (2026-10-02)
+
+Picked up ROADMAP.md Phase 3 item 4. Built the real shell
+(`science_lab.py`, `/science-lab`) first -- Weather Labs stays exactly
+as it is, just given real company, and Physics/Biology/Geology show
+honestly as "Coming soon" rather than placeholder content. Then built
+one real section instead of stubbing all four: Chemistry's Molecule
+Builder, matching the roadmap's own explicit sequencing rule (a molecule
+builder before any reaction simulator, for correctness).
+
+**`chemistry_lab.py`**: 6 real elements (H, C, N, O, Na, Cl), 8 real
+molecules (water, oxygen gas, carbon dioxide, carbon monoxide, methane,
+ammonia, nitrogen gas, table salt) with their real atomic compositions --
+universally-known chemistry facts, not drawn from any single copyrighted
+text. `check_molecule()` requires an exact real atom-count match, no
+partial credit, logging through the shared Learning Event schema either
+way. Zero new storage -- reuses the existing Mastery Engine under
+`subject="chemistry"`, same real pattern Word Lab and Math Lab already
+proved out.
+
+**Verified live end-to-end**, API first (elements, molecules, a correct
+check and an incorrect check both returned the right shape) then in the
+actual browser: selected Water, clicked Hydrogen twice and Oxygen once,
+hit Check, got "Correct!" plus the real fact. Cleaned up both the API-test
+and browser-test mastery rows afterward (`docker exec` into the
+container, same real-data-hygiene reasoning as the mission-run cleanup)
+so nothing fake is sitting in his real progress record.
+
+Physics, Biology, and Geology remain real, named next work -- not
+attempted this pass.
+
+## Physics Lab -- real PhET simulations, orchestrated not rebuilt (2026-10-02)
+
+Kept going on Science Lab right after Chemistry. Checked for a real
+existing tool before building anything new, same principle as GeoGebra
+in Math Lab's sandbox -- found PhET Interactive Simulations (University
+of Colorado Boulder): real, free, education-grade HTML5 physics sims.
+Checked their actual licensing page before using anything: CC BY-NC 4.0,
+free for any K-12/educator non-commercial use (this qualifies), with one
+specific required attribution line and the PhET logo required to stay
+visible/unaltered inside the sim -- both honored, nothing modified, the
+real embed URL pulled straight from each sim's own page via PhET's own
+"Embed" feature rather than guessed at.
+
+**`physics_lab.py`**: two real sims -- Balancing Act (torque/levers) and
+Forces and Motion: Basics -- each with its real embed URL and the
+license's exact required attribution text. `record_explored()` logs
+through the shared Learning Event schema with `correct=None` (no
+inherent right/wrong, same real pattern missions.py already uses for
+non-quiz tasks) -- zero new storage.
+
+`/physics-lab` embeds the chosen sim in a real iframe with the
+attribution shown directly beneath it. Added to Science Lab's shell as
+the third live section.
+
+**Verified live**: API returned both real sims with correct embed URLs
+and attribution text; in the browser, clicked Balancing Act and confirmed
+the iframe's real `src` pointed at PhET's actual sim URL, the attribution
+rendered correctly, the explored-tracking POST returned 200, and zero
+console errors.
+
+Biology and Geology remain real, named next work.
+
+## Biology Lab -- Animal Classification + real video reuse (2026-10-02)
+
+Checked PhET first again, same discipline as Physics. Their real Biology
+sim list (Natural Selection, Gene Expression Essentials, Neuron, Color
+Vision, pH Scale, Molecule Polarity, Membrane Transport, Density) is
+entirely middle/high-school and up -- nothing fits a 3rd/4th grader, so
+PhET isn't the right tool for this section.
+
+Found a better real fit already inside Cloud9: Video Library's "Life
+Science" category (real Magic School Bus episodes, built 2026-09-29) is
+exactly the right age range. Rather than build a parallel video shelf,
+Biology Lab just links straight to it -- added query-param support to
+`video-library.js` (`?category=life-science`) so the link lands directly
+on the right tab instead of making him re-pick it.
+
+**`biology_lab.py`**: the one new real piece -- Animal Classification,
+12 real animals across the six basic classes (mammal, bird, reptile,
+amphibian, fish, insect), well-established taxonomy facts (a shark is a
+fish, a whale is a mammal despite living in water) rather than anything
+drawn from a single copyrighted source. Zero new storage -- reuses the
+Mastery Engine under `subject="biology"`, same pattern as Chemistry and
+every other real quiz-shaped activity in this project.
+
+**Verified live**: API confirmed both a correct and incorrect
+classification response; in the browser, Dog came up, clicked "mammal,"
+got the real correct feedback and fact. Cleaned up both test mastery rows
+afterward (`docker exec`, same real-data-hygiene pattern as every other
+verification this project).
+
+Science Lab now has four of five real sections live (Weather Labs,
+Chemistry, Physics, Biology). Geology remains real, named next work.
+
+## Geology Lab -- Rock Classification + real video reuse (2026-10-02)
+
+Last Science Lab section. Checked PhET's full real catalog first, same
+as Biology -- no dedicated geology/rock-cycle sim exists among their 122
+real sims, so PhET isn't the right tool here either. Video Library's
+existing "Earth & Space Science" category (real Magic School Bus
+episodes on erosion, volcanoes, the water cycle) covers this honestly,
+so Geology links straight there, same move already made for Biology.
+
+**`geology_lab.py`**: Rock Classification -- 9 real rocks across the
+three real rock types (igneous: granite, basalt, obsidian; sedimentary:
+sandstone, limestone, shale; metamorphic: marble, slate, gneiss),
+well-established rock-formation facts, not drawn from any single
+copyrighted source. Zero new storage -- reuses the Mastery Engine under
+`subject="geology"`.
+
+**Verified live**: API confirmed both a correct and incorrect
+classification response; in the browser, Shale came up, clicked
+"sedimentary," got the real correct feedback and fact. Cleaned up both
+test mastery rows afterward, same hygiene pattern as every other section.
+
+**ROADMAP.md Phase 3, item 4 (Science Lab) is now fully done** -- all
+five real sections live: Weather Labs, Chemistry, Physics, Biology,
+Geology. Next per ROADMAP.md: Space Lab.
+
+## Space Lab -- Tonight's Sky, real moon/sun/ISS data (2026-10-02)
+
+Did the real sourcing check before writing a line of code, same
+discipline as every other feature tonight. Needed four real data
+sources (moon phase, sunrise/sunset, visible planets, ISS passes) and
+checked each live:
+
+- **Moon phase**: no API needed -- a standard, widely-published
+  deterministic calculation (days since the known 2000-01-06 18:14 UTC
+  new moon, modulo the real synodic month). Sanity-checked across four
+  dates in October/November 2026 and confirmed the fraction progresses
+  monotonically through the real phase names in the right order.
+- **Sunrise/sunset**: `api.sunrise-sunset.org` -- real, free, no key,
+  confirmed live, documented as "supported indefinitely." Tried the
+  newer v2 endpoint first (search results suggested local-timezone
+  support) but it 404'd at every path tried -- fell back to v1 (UTC
+  times) and just convert to local time client-side, which is exactly
+  correct since the browser viewing this page is physically at the real
+  configured location.
+- **Visible planets**: found a real, legitimate-looking candidate
+  (`api.visibleplanets.dev`, wrapping Don Cross's JS Astronomy Engine)
+  but it returned a real 503 on every request, including its own root
+  path, across multiple retries with pauses in between. Not reliable
+  enough to build on right now -- left out honestly, same real-blocker
+  pattern as the old History Explorer/Wikidata problem, not forced or
+  faked.
+- **ISS passes**: open-notify.org's old endpoint is confirmed retired in
+  2026. Found its real community-run successor,
+  `iss-api.polluxlabs.io` -- actual CelesTrak TLE data, industry-standard
+  SGP4 propagation via Skyfield, confirmed live. Labeled honestly in the
+  UI as community-run rather than NASA/NOAA, matching the roadmap's own
+  "only when trustworthy" rule.
+
+**`space_lab.py`** reuses `settings.py`'s existing real lat/lon (Oklahoma
+City, OK -- already populated by Weather Labs' own location setup)
+rather than asking for location twice, and degrades honestly (empty
+list, not fabricated passes) if the ISS service is unreachable.
+
+**Verified live end-to-end**: API returned real moon phase, real sun
+times, and two real upcoming visible ISS passes for the real configured
+location; in the browser, confirmed the UTC sunrise/sunset times
+correctly converted to local (7:24 AM / 7:13 PM, the right offset for
+Oklahoma City), moon phase and ISS passes both rendered with honest
+source attribution, and zero console errors. No test-data cleanup
+needed this time -- Tonight's Sky is read-only, nothing writes to the
+Mastery Engine.
+
+Moonrise/moonset (not available from the real sun-times API) and visible
+planets (no reliable real source found) are both real, named gaps --
+not guessed at.
+
+## Solar System Explorer -- real planet facts + a second PhET sim (2026-10-02)
+
+Second half of Space Lab's item 5. Checked PhET's full catalog (already
+pulled for Biology/Geology) for a real fit -- "My Solar System"
+(gravitational force, astronomy, orbits) and "Gravity and Orbits" both
+real and relevant; picked My Solar System, confirmed its real embed URL
+live (200 OK) before using it.
+
+**`solar_system.py`**: 8 real planets, real order from the Sun, real
+approximate size relative to Earth, one well-established fact each.
+Deliberately left out exact moon counts for Jupiter/Saturn/Uranus/
+Neptune -- those numbers get revised as new moons are confirmed, so
+"many" stays honest where a specific count wouldn't age well; the inner
+four (0, 0, 1, 2) are long-settled facts and stated directly. Paired
+with the real PhET sim, same CC BY-NC 4.0 attribution pattern already
+established for Physics Lab.
+
+**Verified live**: API returned all 8 real planets correctly ordered
+with the right stats; in the browser, clicked through to Jupiter and
+confirmed the detail panel rendered the real 11.2x size, "many" moons,
+and the Great Red Spot fact correctly, zero console errors. No test-data
+cleanup needed -- like Tonight's Sky, this is read-only.
+
+**ROADMAP.md Phase 3, item 5 (Space Lab) is now mostly done** -- Tonight's
+Sky and Solar System Explorer both real and live. The Long Missions →
+Project Workshop integration remains real, named next work.
+
+## Long Missions -- Space Lab's last piece, zero new storage (2026-10-02)
+
+Closed out Space Lab. Per the roadmap's own instruction, this doesn't
+get its own database -- "Start This Mission" just calls Project
+Workshop's existing real `create_project()` with pre-filled content,
+same as a parent typing it in by hand.
+
+**Two real missions**, each reusing data this Lab already computed
+rather than inventing separate content: Moon Journal (track the real
+Moon through one full lunar cycle, checking off each of the 8 real phase
+names as observed via Tonight's Sky) and Build a Scale Model of the
+Solar System (using Solar System Explorer's own real relative-size
+numbers, in the real order from the Sun).
+
+**Verified live**: API confirmed the real Long Missions catalog, then
+started Moon Journal for real via the API and confirmed it created a
+correct Project Workshop project (real goal, materials, 9-item
+checklist) -- deleted that test project immediately afterward
+(`DELETE /api/project-workshop/<id>`) so it doesn't linger as a stray
+active project in his real My Day, confirmed only the real pre-existing
+Family Emergency Kit project remains. Then checked the actual page in
+the browser (without re-triggering a start, to avoid creating another
+test project) and confirmed both mission cards render correctly with
+zero console errors.
+
+**ROADMAP.md Phase 3, item 5 (Space Lab) is now fully done** -- Tonight's
+Sky, Solar System Explorer, and Long Missions all real and live. Next
+per ROADMAP.md: Society Lab.
+
+## Society Lab -- Apportionment Explorer, real civics math (2026-10-05)
+
+Started Society Lab with its most sensitive piece first, on purpose --
+read ROADMAP.md's own neutrality rule before writing anything ("Civics/
+election content teaches systems... using historical or clearly sourced
+public data -- never framed to steer a learner toward a party or
+candidate"). Picked a real system that's entirely about math and history,
+not politics: how the U.S. House's 435 seats are actually divided among
+the states by population.
+
+**Real sourcing, extra care given the subject matter**: pulled the
+complete real 50-state table (2020 population, 2020 seats, 2010 seats)
+from Ballotpedia's sourced summary of the actual U.S. Census Bureau 2020
+apportionment release (2021-04-26) -- historical, settled, public
+record, nothing contested. Then verified the real Huntington-Hill
+formula (`priority = population / sqrt(n*(n-1))`) against an actual
+documented case before trusting it: searched for and confirmed the real
+2020 race between Minnesota's 8th seat and New York's 27th seat for the
+literal last (435th) seat, decided by a real, widely-reported margin of
+89 people -- recomputed it by hand first (`762997.71` vs `762994.35`)
+and confirmed the formula resolves correctly in Minnesota's favor,
+matching the real outcome, before writing a single line of the module.
+
+**`society_lab.py`**: all 50 states' real data, the verified formula,
+a `compare_next_seat()` for any two real states, and the real Minnesota/
+New York worked example. No simulation, no prediction, no current
+election -- purely historical math.
+
+**Verified live end-to-end**: API returned the real worked example and
+all 50 states; in the browser, the worked example rendered with the
+correct real numbers, picked Alabama vs. Alaska in the compare tool and
+got the correct real priority values, zero console errors. No test-data
+cleanup needed -- read-only, no Mastery Engine writes.
+
+Local Business Engine, Demographic Explorer (reusing Earth Lab's
+existing real country data rather than a duplicate map), and general
+civics content remain real, named next work for Society Lab.
+
+## Demographic Explorer -- real country data, no duplicate map (2026-10-05)
+
+Second half of Society Lab's item 6, following the roadmap's own
+instruction exactly: Demographic Explorer "owns the *questions*; Earth
+Lab keeps owning the *geographic data* it already has." No new country
+database -- the real 177-country list is read straight from the same
+GeoJSON Earth Lab's own map already uses
+(`static/data/world-countries.geojson`), and every population/area
+number comes from `earth_lab.get_country()`'s own real, live
+countries.dev call, same as clicking that country on the map would get.
+
+**Real bug caught and fixed live**: the first version crashed with a
+`KeyError` on `/api/demographic-explorer/countries` -- 2 of the
+GeoJSON's 177 features (N. Cyprus, Somaliland) have no real `alpha3`
+property, because they fall outside the ISO 3166-1 standard the rest of
+the map is built on. Checked the container logs, found the real root
+cause, fixed `get_countries()` to skip features with no real alpha3
+rather than crash or fabricate one -- 175 real countries now load
+correctly.
+
+**`demographic_explorer.py`**: a "Guess Which Has More People" quiz
+(two real random countries, check against live real population data)
+and a "Compare Any Two Countries" tool (real population, area, capital).
+Zero new storage for the quiz -- reuses the Mastery Engine under
+`subject="demographics"`.
+
+**Verified live end-to-end** after the fix: API returned all 175 real
+countries; in the browser, a real Germany vs. Ukraine pair came up,
+clicked Germany, got "Correct! Germany really does have more people"
+with the real population numbers for both (83.2M vs 44.1M), zero console
+errors. Cleaned up the resulting test mastery row afterward
+(`demographics:DEU-vs-UKR`), same hygiene pattern as every other
+section.
+
+Local Business Engine and general civics content remain real, named
+next work for Society Lab.
+
+## Civics content -- Society Lab's planned scope complete (2026-10-05)
+
+Last real piece for Society Lab. Checked School Library first rather
+than authoring new civics facts -- on a sensitive topic, "orchestrate,
+don't author" is the safer real choice, same reasoning as every other
+section built on existing real content this session (Biology, Geology).
+Found real, substantial, nonpartisan coverage already imported into
+Kolibri: Khan Academy's real Constitution 101 course and related
+material. Confirmed every real video count live before linking to it --
+legislative branch (5), executive branch (4), judicial branch (10),
+constitution 101 (18), congress (11).
+
+**Small, reusable infra improvement**: added `?search=` deep-link
+support to School Library's own `school-library.js` (reads the query
+param on load, pre-fills the real search box) -- same pattern already
+proven on Video Library's `?category=` link for Biology/Geology, now
+available to any future Lab that wants to link into a specific real
+School Library search instead of making a learner re-type it.
+
+**Verified live**: API returned all 5 real civics topic cards with
+correct search terms; navigated directly to `/school-library?search=
+congress` and confirmed the search box pre-filled and all 11 real
+congress-related videos (Congressional elections, Congressional
+oversight, etc.) rendered correctly.
+
+**ROADMAP.md Phase 3, item 6 (Society Lab) is now complete** except for
+the Local Business Engine, which stays deliberately deferred -- already
+named back in item 2 as fitting the grade-6 percentages/profit-margin
+level, not his current one, and that real decision stands rather than
+being relitigated. Next per ROADMAP.md: Nature Lab.
+
+## Nature Lab -- Season Tracker and Nature Journal (2026-10-05)
+
+Picked the two sub-features ROADMAP.md names explicitly for Nature Lab
+(season tracking, a reused Nature Journal entry type) rather than the
+whole plants/animals/birds/insects/trees/ecosystems scope at once.
+
+**Season Tracker**: real, verified 2026/2027 solstice and equinox UTC
+times, cross-checked against multiple real astronomical sources before
+use (not a simplified approximation) -- confirmed live the season
+calculation correctly identifies today as Fall with 76 real days until
+the Winter solstice.
+
+**Nature Journal**: exactly the roadmap's own instruction -- "a real
+Learning Journal entry type (reuse, not a new store)." Extended
+`learning_journal.py` with a second real tag (`#cloud9-nature-journal`)
+added alongside the existing one, so a nature entry is still a real
+Learning Journal entry (shows up in both places) rather than a separate
+store.
+
+**Real bug caught and fixed live**: a test entry's displayed text
+leaked the raw `#cloud9-nature-journal` tag because `_format_entry()`
+only stripped the main journal tag. Caught via a real API round-trip
+test, fixed by stripping both tags, rebuilt, and verified the same test
+came back clean. Cleaned up both the stray mastery-free test entry (no
+mastery row this time -- journaling isn't a quiz) via the real
+`DELETE /api/learning-journal/<id>` endpoint.
+
+**Real content reuse, not duplication**: links to School Library search
+for Trees/Plants/Birds/Insects (counts confirmed live: 5/3/3/3) and
+Video Library's existing "A Closer Look" category, rather than building
+a new nature-content browser.
+
+**Verified live end-to-end** in the browser after the fix: season card
+showed "Fall -- 76 real days until Winter," all four topic links and
+the Video Library link present, zero console errors, nature journal
+list correctly empty after cleanup.
+
+Broader ecosystems content and a real field-guide-style plant/bird/
+insect identification activity remain real, named next work for Nature
+Lab, pending a real verified source for the latter.
+
+## Engineering Lab -- a real guided front-end, zero new storage (2026-10-05)
+
+Built exactly what ROADMAP.md named: "a guided front-end onto a feature
+that already exists," not a new sandbox. The real six-step engineering
+design cycle (Ask, Plan, Build, Test, Improve, Document -- the actual
+cycle real STEM curricula teach) becomes a real form: answer Ask + Plan,
+and it creates a real Project Workshop project with a checklist
+pre-filled for the remaining four steps.
+
+**Real, reusable infra change**: added `extra_tags` support to
+`project_workshop.py`'s own `create_project()` and `list_projects()`
+(an engineering build gets `#cloud9-engineering-lab` tagged alongside
+its existing `#cloud9-project-workshop` tag) -- same small, generalizable
+improvement pattern as School Library's `?search=` and Video Library's
+`?category=` links. This makes "a Lab-filtered view of real Project
+Workshop projects" a real, reusable capability for any future Lab, not
+just this one.
+
+**Verified live end-to-end**: started a real test project via the API,
+confirmed it showed up in BOTH Project Workshop's full list and
+Engineering Lab's filtered list (true reuse, not a parallel system,
+proven rather than assumed) -- then deleted it and confirmed it
+disappeared from both. In the browser, all six real steps render with
+their real prompts, the form and empty project list show correctly,
+zero console errors.
+
+**ROADMAP.md Phase 3, item 8 (Engineering Lab) is now done.** Next per
+ROADMAP.md: Computer Lab.
+
+## Computer Lab -- Scratch linked in, real HTML/CSS Sandbox built (2026-10-05)
+
+Checked what "Code Lab" already was before building anything -- it
+turned out to be a real, already-wired launcher for Scratch Desktop via
+the host-launcher daemon (`external_tools.json`'s `code_lab` entry,
+label "Scratch Desktop"), just living as a standalone home-page card.
+Per the roadmap's own instruction, folded it in as Computer Lab's first
+real step via the existing `/?open=code_lab` modal-link pattern, rather
+than rebuilding anything.
+
+**New real second step**: an HTML/CSS Sandbox -- two real code editors
+and a real live preview (`iframe.srcdoc`, debounced 250ms), genuinely
+approachable at his current age with instant visual feedback, same
+"real code, real immediate result" spirit as the Molecule Builder and
+Rock Classification. Starter content is simple and original (a heading,
+a paragraph, one color/size rule) -- nothing copied.
+
+**Honest sequencing for the rest**: Python, Linux, and networking are
+real, named future steps, marked "Coming later" rather than built
+prematurely or faked -- he's not there yet, and this project's whole
+discipline has been "coming soon" is for real gaps, not for content
+nobody checked.
+
+**Verified live**: API returned the real 5-step progression with the
+right two steps marked available; in the browser, the Sandbox's real
+starter HTML/CSS loaded and the preview iframe's `srcdoc` correctly
+combined both into one real rendered page, zero console errors.
+
+**ROADMAP.md Phase 3, item 9 (Computer Lab) has its first two real
+steps done.** The portfolio-project capstone remains real, named next
+work once there's enough progression behind it to be worth building.
+Next per ROADMAP.md: Life Lab's remaining pieces, or Art Studio/Music
+Lab (still unscoped, flagged honestly).
+
+## Life Lab -- Money Basics and real First Aid scenarios (2026-10-05)
+
+Closed out Life Lab's two remaining named pieces (Money Basics,
+First Aid & Preparedness) -- Cooking was already done via the Mission
+Engine. Extra care given the real safety stakes here, same discipline
+as the civics neutrality rule but for medical correctness instead of
+political neutrality.
+
+**Real sourcing, verified live before writing anything**: Scouting
+America's actual Arrow of Light First Aid Adventure (confirmed its real
+7 requirements -- hurry cases, choking, shock, cuts/burns/bites/
+nosebleeds, a personal first aid kit), real Red Cross first-aid
+guidance for severe bleeding, choking, burns, and nosebleeds, and the
+real national Poison Help number (1-800-222-1222, confirmed live and
+current).
+
+**Real safety design choice**: every "hurry case" scenario (severe
+bleeding, choking, stroke, poisoning, shock) has exactly one correct
+answer -- get an adult / call for real help immediately -- never a
+hands-on technique taught for a kid to attempt alone from a screen.
+Only genuinely minor cases (small cuts, minor burns, nosebleeds) teach
+a real basic self-care step, matching real Red Cross guidance for those
+specific minor injuries.
+
+**`life_lab.py`**: Money Basics links to School Library's real 65
+budget videos (same real-content-reuse pattern as every other Lab);
+8 real first-aid scenarios feeding the Mastery Engine under
+`subject="life-skills"`; "Make a personal first aid kit" (the
+Adventure's real 7th requirement) starts a real Project Workshop
+project via `extra_tags=["cloud9-life-lab"]`, reusing Engineering Lab's
+real infra addition rather than building anything new.
+
+**Verified live end-to-end**: API confirmed correct/incorrect scenario
+checks; the first-aid-kit project showed up in both Project Workshop's
+full list and a Life-Lab-filtered query (true reuse, proven); in the
+browser, a real stroke scenario rendered, picking the correct answer
+gave the right real feedback, zero console errors. Cleaned up both test
+artifacts (a mastery row, a Project Workshop project) afterward.
+
+**ROADMAP.md Phase 3, item 10 (Life Lab) is now done** except for
+outdoor/survival skills beyond first aid, which remain real, named next
+work. Art Studio and Music Lab stay honestly unscoped -- no real content
+behind either in the source material yet.

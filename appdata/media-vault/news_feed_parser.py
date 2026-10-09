@@ -29,6 +29,7 @@ SimplePie, with a different shape):
 """
 import hashlib
 import html
+import re
 from datetime import datetime, timezone
 
 import feedparser
@@ -80,22 +81,116 @@ def _extract_coordinates(entry):
     return None, None
 
 
+_IMG_SRC_RE = re.compile(r'<img[^>]+src="([^"\s]+)', re.IGNORECASE)
+
+
 def _extract_image(entry):
-    """Real fallback chain, narrower than Masthead's own (which also
-    handles podcast/video enclosures — out of scope here, this card
-    archives text summaries, not media): a media:thumbnail or an
-    image-typed enclosure, whichever the feed actually provides."""
+    """Real fallback chain. History of real gaps found live, each against
+    an actual configured feed, not a hypothetical:
+      - Fox News: no media:thumbnail, image lives in media:content
+        instead (the second tier below).
+      - NHC Atlantic (2026-10-09): "Graphics"/"Map" entries set NONE of
+        the structured tiers -- the real image is a plain `<img src>`
+        tag buried in the entry's own `summary` HTML.
+      - The Guardian (2026-10-09): real media:content entries, but
+        NEITHER `medium` nor `type` is ever set on them -- just a bare
+        `url` (sometimes several, at different widths). The original
+        media:content tier required one of those two attributes and
+        silently rejected every one of these.
+      - USNI News / NPR World (2026-10-09): their only real image is in
+        `content:encoded` (WordPress's full-article HTML, exposed by
+        feedparser as `entry.content[0].value`), never in `summary` at
+        all -- the regex tier originally only checked `summary`.
+
+    Order: a feed that sets more than one tier should have its most
+    deliberate, structured signal win, same reasoning as Masthead's own
+    chain -- the regex tier is intentionally last since it's the least
+    deliberate/most fragile signal."""
     media_thumb = entry.get("media_thumbnail")
     if media_thumb and isinstance(media_thumb, list):
         url = media_thumb[0].get("url")
         if url:
             return url
 
+    candidates = []
+    for media in entry.get("media_content", []) or []:
+        medium = media.get("medium")
+        mime = media.get("type")
+        url = media.get("url")
+        if not url:
+            continue
+        # Real explicit image signal, or (The Guardian's real shape) no
+        # medium/type at all -- media:content with neither set is, in
+        # practice, almost always an image, and an explicit non-image
+        # medium (e.g. "video", handled separately by _extract_video)
+        # still correctly falls through and is skipped here.
+        if medium == "image" or (mime and str(mime).startswith("image/")) or (medium is None and not mime):
+            try:
+                width = int(media.get("width", 0))
+            except (TypeError, ValueError):
+                width = 0
+            candidates.append((width, url))
+    if candidates:
+        candidates.sort(key=lambda c: c[0], reverse=True)  # prefer the largest real size offered
+        return candidates[0][1]
+
     for link in entry.get("links", []):
         if link.get("rel") == "enclosure" and str(link.get("type", "")).startswith("image/"):
             return link.get("href")
 
+    content_list = entry.get("content") or []
+    content_html = content_list[0].get("value") if content_list else None
+    for html_blob in (content_html, entry.get("summary")):
+        if not html_blob:
+            continue
+        for match in _IMG_SRC_RE.finditer(html_blob):
+            url = match.group(1)
+            # Real junk found live against NPR's own feed (2026-10-09):
+            # one story's first <img> had a literal, broken
+            # src="https://feeds.npr.org/1004/undefined" (NPR's own
+            # client-side templating bug, not something re-parsing can
+            # fix), and its second <img> was an analytics tracking pixel
+            # (".../tracking/npr-rss-pixel.png") -- neither is a real
+            # article photo. Skip both known-garbage shapes and keep
+            # looking at the next <img> in the same blob rather than
+            # blindly trusting the first match.
+            low = url.lower()
+            if "/undefined" in low or "pixel" in low or "tracking" in low:
+                continue
+            return url
+
     return None
+
+
+def _extract_video(entry):
+    """Real playable-video detection, ported from Masthead's own
+    extractPlayableEnclosure() -- a feed's actual <enclosure> or
+    media:content, filtered to a video medium/MIME type, same real
+    distinction Masthead draws against its sibling image/audio checks.
+    feedparser exposes both shapes: `media_content` (a list of dicts
+    with their own `medium`/`type` keys) for media:content, and
+    `links` with `rel == "enclosure"` for the plain RSS <enclosure> tag
+    -- checked in that order since media:content is the more deliberate,
+    structured signal when a feed sets both.
+
+    Returns (video_url, mime_type) or (None, None)."""
+    for media in entry.get("media_content", []) or []:
+        medium = media.get("medium")
+        mime = media.get("type")
+        if medium == "video" or (mime and str(mime).startswith("video/")):
+            url = media.get("url")
+            if url:
+                return url, mime
+
+    for link in entry.get("links", []):
+        if link.get("rel") == "enclosure":
+            mime = link.get("type", "")
+            if str(mime).startswith("video/"):
+                href = link.get("href")
+                if href:
+                    return href, mime
+
+    return None, None
 
 
 def _best_link(entry):
@@ -146,6 +241,7 @@ def fetch_feed(feed_url, timeout=15):
 
         guid = entry.get("id") or link
         lat, lon = _extract_coordinates(entry)
+        video_url, video_mime = _extract_video(entry)
 
         items.append({
             "guid": guid,
@@ -155,6 +251,8 @@ def fetch_feed(feed_url, timeout=15):
             "body": entry.get("summary"),
             "published_at": _published_at(entry),
             "image_url": _extract_image(entry),
+            "video_url": video_url,
+            "media_type": "video" if video_url else None,
             "latitude": lat,
             "longitude": lon,
         })

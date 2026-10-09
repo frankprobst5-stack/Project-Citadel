@@ -1,0 +1,189 @@
+:root {
+  --nal-accent: #6fe0a1;
+  --nal-accent-dim: #1f4d33;
+}
+
+body.nal-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nal-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.nal-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.nal-back:hover {
+  border-color: var(--nal-accent);
+  color: var(--text);
+}
+
+.nal-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.nal-icon { font-size: 1.5rem; }
+
+.nal-main {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.nal-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.nal-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--nal-accent);
+  margin-bottom: 6px;
+}
+
+.nal-section-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.nal-season-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.nal-season-emoji {
+  font-size: 2.6rem;
+}
+
+.nal-season-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.nal-season-sub {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.nal-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.nal-topic-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.nal-topic-card:hover {
+  border-color: var(--nal-accent);
+}
+
+.nal-video-link {
+  display: inline-block;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  color: var(--nal-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nal-video-link:hover {
+  border-color: var(--nal-accent);
+}
+
+.nal-journal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.nal-journal-form input,
+.nal-journal-form textarea {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  resize: vertical;
+}
+
+.nal-btn {
+  align-self: flex-start;
+  background: var(--nal-accent);
+  color: #06261b;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nal-journal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nal-journal-entry {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.nal-journal-entry-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.nal-journal-entry-text {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+}

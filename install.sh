@@ -483,6 +483,101 @@ EOF
         echo "   yourself on whatever schedule you'd like instead."
     fi
 
+    # Global Situation Monitor, added 2026-10-08. Every 15 minutes --
+    # same fetch-due-decides-per-source pattern as News Archive above,
+    # just a longer base interval since there's no NWS-grade real-time
+    # need for geopolitical/defense coverage.
+    SITUATION_SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/situation-scheduled.sh"
+    chmod +x "$SITUATION_SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-situation.service" <<EOF
+[Unit]
+Description=Citadel Global Situation Monitor feed fetch
+
+[Service]
+Type=oneshot
+ExecStart=${SITUATION_SCRIPT_PATH}
+EOF
+
+    cat > "$UNIT_DIR/citadel-situation.timer" <<'EOF'
+[Unit]
+Description=Run Citadel's Global Situation Monitor fetch-due check every 15 minutes
+
+[Timer]
+OnBootSec=3m
+OnUnitActiveSec=15m
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-situation.timer 2>/dev/null; then
+        echo "-- Global Situation Monitor fetch timer installed (systemctl --user status citadel-situation.timer)."
+    else
+        echo "-- Couldn't install the user-level situation-fetch timer -- run scripts/situation-scheduled.sh"
+        echo "   yourself on whatever schedule you'd like instead."
+    fi
+
+    # Master Situation Board, added 2026-10-09. Two units: a periodic
+    # weather fetch (same fetch-due-timer pattern as everything else
+    # above) and a PERSISTENT host-metrics collector service (not a
+    # timer -- it loops internally every 5s; see host-metrics.py's own
+    # docstring for why a container can't do this itself).
+    WEATHER_SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/weather-scheduled.sh"
+    chmod +x "$WEATHER_SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-weather.service" <<EOF
+[Unit]
+Description=Citadel weather conditions fetch
+
+[Service]
+Type=oneshot
+ExecStart=${WEATHER_SCRIPT_PATH}
+EOF
+
+    cat > "$UNIT_DIR/citadel-weather.timer" <<'EOF'
+[Unit]
+Description=Run Citadel's weather conditions fetch every 20 minutes
+
+[Timer]
+OnBootSec=1m
+OnUnitActiveSec=20m
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-weather.timer 2>/dev/null; then
+        echo "-- Weather fetch timer installed (systemctl --user status citadel-weather.timer)."
+    else
+        echo "-- Couldn't install the user-level weather-fetch timer -- run scripts/weather-scheduled.sh"
+        echo "   yourself on whatever schedule you'd like instead."
+    fi
+
+    METRICS_SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/scripts/host-metrics.py"
+    chmod +x "$METRICS_SCRIPT_PATH" 2>/dev/null || true
+
+    cat > "$UNIT_DIR/citadel-metrics.service" <<EOF
+[Unit]
+Description=Citadel host system metrics collector (CPU/RAM/disk/network)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 ${METRICS_SCRIPT_PATH}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+    if systemctl --user daemon-reload 2>/dev/null && systemctl --user enable --now citadel-metrics.service 2>/dev/null; then
+        echo "-- Host metrics collector installed (systemctl --user status citadel-metrics.service)."
+    else
+        echo "-- Couldn't install the user-level metrics collector -- needs the 'psutil' Python package"
+        echo "   (pip install psutil) -- run scripts/host-metrics.py yourself once it's available."
+    fi
+
     # Cloud9's host-side app launcher -- only real if the education module
     # is actually enabled (Cloud9 itself won't be running otherwise). Real
     # architectural reason this exists at all, not just "for consistency":

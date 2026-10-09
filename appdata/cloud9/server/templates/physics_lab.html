@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Physics Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/physics-lab.css') }}">
+</head>
+<body class="phl-body">
+  <header class="topbar phl-topbar">
+    <a class="phl-back" href="/science-lab" aria-label="Back to Science Lab">&larr; Science Lab</a>
+    <div class="phl-heading">
+      <span class="phl-icon">&#9881;&#65039;</span>
+      <span class="phl-title">Physics Lab</span>
+    </div>
+  </header>
+
+  <main class="phl-main">
+    <div class="phl-sim-row" id="phl-sim-row">
+      <div class="phl-loading">Loading simulations&hellip;</div>
+    </div>
+
+    <div class="phl-viewer" id="phl-viewer" hidden>
+      <div class="phl-blurb" id="phl-blurb"></div>
+      <div class="phl-embed-wrap">
+        <iframe id="phl-iframe" class="phl-iframe" allowfullscreen></iframe>
+      </div>
+      <div class="phl-attribution" id="phl-attribution"></div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/physics-lab.js') }}"></script>
+</body>
+</html>

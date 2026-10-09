@@ -5,24 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Vault - Control Hub</title>
     <style>
-        body { font-family: 'Ubuntu', sans-serif; background: #1c1e17; color: #e6e8e3; padding: 40px; margin: 0; }
+        /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- this
+           template was missed in that pass (it's rendered by vault-api's
+           own Flask templates, not a static cockpit/*.html file, so the
+           original rebrand sweep never found it). Same real vars as
+           index.html/news.html, not a fresh palette. */
+        :root {
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 40px; margin: 0; }
         .container { max-width: 1200px; margin: 0 auto; text-align: center; }
-        h1 { color: #87986a; font-size: 2.5rem; border-bottom: 2px solid #4b533f; padding-bottom: 20px; margin-bottom: 40px; letter-spacing: 1px; text-transform: uppercase; }
-        
+        h1 { color: var(--accent); font-size: 2.5rem; border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 40px; letter-spacing: 1px; text-transform: uppercase; }
+
         /* Clean 3-Column layout configuration */
         .hub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; }
-        .hub-card { background: #23271e; padding: 50px 20px; border-radius: 8px; border: 1px solid #3a4031; text-decoration: none; color: #e6e8e3; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .hub-card:hover { background: #2b3025; border-color: #87986a; transform: translateY(-3px); }
+        .hub-card { background: var(--panel); padding: 50px 20px; border-radius: 8px; border: 1px solid var(--border-dim); text-decoration: none; color: var(--text); box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .hub-card:hover { background: var(--panel-alt); border-color: var(--accent); transform: translateY(-3px); }
         .icon { font-size: 3.5rem; margin-bottom: 15px; }
-        .hub-card h2 { color: #a4b38a; margin: 0 0 10px 0; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .hub-card p { margin: 0; color: #7d886d; font-size: 0.9rem; }
+        .hub-card h2 { color: var(--accent-bright); margin: 0 0 10px 0; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hub-card p { margin: 0; color: var(--text-faint); font-size: 0.9rem; }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- LINK TO HEAD STRAIGHT BACK TO THE MAIN BRIDGING DASHBOARD -->
         <div style="text-align: left; margin-bottom: 20px;">
-            <a href="http://localhost:8085" style="background: #2b3025; color: #a4b38a; text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid #3a4031; font-weight: bold; font-size: 0.8rem; text-transform: uppercase;">⬅ Back to Cockpit</a>
+            <a href="http://localhost:8085" style="background: var(--panel-alt); color: var(--accent-bright); text-decoration: none; padding: 10px 20px; border-radius: 6px; border: 1px solid var(--border-dim); font-weight: bold; font-size: 0.8rem; text-transform: uppercase;">⬅ Back to Cockpit</a>
         </div>
 
         <h1>🛠️ DIGITAL OPERATIONS MEDIA VAULT</h1>

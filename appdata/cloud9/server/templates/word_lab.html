@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/word-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">🔤</span>
+      <span class="area-heading-title">Word Lab</span>
+    </div>
+    <div class="area-heading-tagline">Spelling that remembers what you actually need to practice.</div>
+  </header>
+
+  <main class="area-main wl-main">
+    <div class="wl-unit-row" id="wl-unit-row"></div>
+
+    <div class="wl-mode-row">
+      <button type="button" class="wl-mode-btn wl-mode-active" id="wl-study-btn">Study Mode</button>
+      <button type="button" class="wl-mode-btn" id="wl-practice-btn">Practice Mode</button>
+    </div>
+
+    <!-- Study mode -->
+    <div id="wl-study-panel">
+      <div class="wl-word-grid" id="wl-word-grid"></div>
+    </div>
+
+    <!-- Practice mode -->
+    <div id="wl-practice-panel" hidden>
+      <div class="wl-practice-stats">
+        <div>Score: <span id="wl-score">0</span></div>
+        <div>Streak: <span id="wl-streak">0</span></div>
+      </div>
+      <div class="wl-practice-card">
+        <div class="wl-practice-hint" id="wl-practice-hint"></div>
+        <button type="button" class="wl-hear-btn" id="wl-hear-btn">🔊 Hear the Word</button>
+        <form id="wl-practice-form">
+          <input type="text" id="wl-practice-input" placeholder="Type what you heard..." autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button type="submit">Check</button>
+        </form>
+        <div class="wl-practice-feedback" id="wl-practice-feedback"></div>
+      </div>
+      <div class="wl-practice-empty" id="wl-practice-empty" hidden>Nothing to practice in this unit yet -- try Study Mode first, or pick another unit.</div>
+    </div>
+
+    <div class="wl-note">
+      Looking for synonyms, antonyms, or word families instead? That's already in <a href="/?open=dictionary">Dictionary's Guided Missions</a>.
+    </div>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Word Lab", activity: "practicing spelling words" };</script>
+  <script src="{{ url_for('static', filename='js/word-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

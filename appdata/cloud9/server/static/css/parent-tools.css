@@ -1,0 +1,125 @@
+/* Parent Tools -- a real recurring weekly schedule editor (ROADMAP.md
+   Phase 1, item 5). No login: same trusted-home-LAN model as the rest
+   of Cloud9. */
+
+.pt-main {
+  max-width: 1400px;
+}
+
+.pt-week {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 16px;
+  overflow-x: auto;
+}
+
+.pt-day {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.pt-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 8px;
+}
+
+.pt-day-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-transform: capitalize;
+}
+
+.pt-day-total {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.pt-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 20px;
+}
+
+.pt-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+
+.pt-block-subject {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #e8a23f;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pt-block-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pt-block-duration {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.pt-block-remove {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pt-block-remove:hover {
+  color: #ff8f8f;
+}
+
+.pt-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pt-add-form input,
+.pt-add-form select {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.pt-add-form button {
+  background: #e8a23f;
+  color: #241a08;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}

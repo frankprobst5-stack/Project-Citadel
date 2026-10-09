@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/learning-journal.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
 </head>
 <body>
   <header class="topbar area-topbar">
@@ -34,6 +35,8 @@
     <div class="lj-error" id="lj-error" hidden>Couldn't reach the notes service right now.</div>
   </main>
 
+  <script>window.OLLIE_CONTEXT = { lab: "Learning Journal", activity: "writing about what they learned, built, read, or explored" };</script>
   <script src="{{ url_for('static', filename='js/learning-journal.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Space Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/space-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="spl-body">
+  <header class="topbar spl-topbar">
+    <a class="spl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="spl-heading">
+      <span class="spl-icon">&#127756;</span>
+      <span class="spl-title">Tonight's Sky</span>
+    </div>
+    <a class="spl-explorer-link" href="/solar-system-explorer">Solar System Explorer &rarr;</a>
+  </header>
+
+  <main class="spl-main" id="spl-main">
+    <div class="spl-loading">Loading tonight's real sky&hellip;</div>
+  </main>
+
+  <section class="spl-missions" id="spl-missions">
+    <div class="spl-missions-title">Long Missions</div>
+    <div class="spl-missions-note">Real projects that take weeks, not minutes -- each one starts a real Project Workshop project.</div>
+    <div class="spl-mission-list" id="spl-mission-list">
+      <div class="spl-loading">Loading missions&hellip;</div>
+    </div>
+  </section>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Space Lab", activity: "checking tonight's real moon phase, sun times, and ISS passes" };</script>
+  <script src="{{ url_for('static', filename='js/space-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

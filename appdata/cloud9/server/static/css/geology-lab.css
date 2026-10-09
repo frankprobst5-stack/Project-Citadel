@@ -1,0 +1,142 @@
+:root {
+  --gel-accent: #c2884f;
+  --gel-accent-dim: #4d3620;
+  --gel-red: #ff6f7a;
+}
+
+body.gel-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.gel-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.gel-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.gel-back:hover {
+  border-color: var(--gel-accent);
+  color: var(--text);
+}
+
+.gel-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.gel-icon { font-size: 1.5rem; }
+
+.gel-main {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.gel-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gel-accent);
+  margin-bottom: 6px;
+}
+
+.gel-section-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+}
+
+.gel-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.gel-rock-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.gel-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.gel-type-btn {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: capitalize;
+}
+
+.gel-type-btn:hover {
+  border-color: var(--gel-accent);
+}
+
+.gel-feedback {
+  min-height: 1.5em;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.gel-feedback-correct { color: var(--gel-accent); }
+.gel-feedback-incorrect { color: var(--gel-red); }
+
+.gel-next-btn {
+  background: var(--gel-accent);
+  color: #2a1c0f;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.gel-video-link {
+  display: inline-block;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  color: var(--gel-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.gel-video-link:hover {
+  border-color: var(--gel-accent);
+}

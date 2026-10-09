@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="vault-auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // GLOBAL SITUATION MONITOR</title>
+    <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
+    <style>
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #5b7386;
+            /* Situation-status colors not covered by the 3 shared semantic
+               vars above -- "Multi-Region Disruption" and "Direct War" each
+               need their own distinct color so the 5-step ladder reads at a
+               glance, not just 3 colors stretched across 5 states. */
+            --status-multi: #ff8c42;
+            --status-war: #7a1f1f;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); }
+
+        .tab-bar { display: flex; gap: 4px; margin: 20px 0; border-bottom: 1px solid var(--border-dim); }
+        .tab-btn { background: none; border: none; color: var(--text-faint); padding: 10px 18px; font-family: monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .panel { background: var(--panel); border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 12px rgba(0,0,0,0.5); }
+        h2 { color: var(--amber); margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed var(--border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .empty-state { font-family: monospace; color: var(--text-faint); padding: 20px; text-align: center; }
+        .sub-note { font-size: 0.78rem; color: var(--text-faint); margin: -8px 0 16px; line-height: 1.5; }
+
+        /* --- Status badge --- */
+        .status-badge { display: flex; align-items: center; gap: 18px; padding: 18px 20px; border-radius: 6px; margin-bottom: 18px; }
+        .status-badge .dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+        .status-badge .label { font-size: 1.3rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .status-badge .reason { font-size: 0.85rem; color: var(--text-dim); margin-top: 4px; }
+        .status-badge .when { font-size: 0.72rem; color: var(--text-faint); margin-top: 2px; font-family: monospace; }
+        .status-normal { background: rgba(89,214,124,0.12); border: 1px solid var(--green); } .status-normal .dot { background: var(--green); box-shadow: 0 0 8px var(--green); } .status-normal .label { color: var(--green); }
+        .status-elevated { background: rgba(255,176,0,0.12); border: 1px solid var(--amber); } .status-elevated .dot { background: var(--amber); box-shadow: 0 0 8px var(--amber); } .status-elevated .label { color: var(--amber); }
+        .status-multi_region { background: rgba(255,140,66,0.12); border: 1px solid var(--status-multi); } .status-multi_region .dot { background: var(--status-multi); box-shadow: 0 0 8px var(--status-multi); } .status-multi_region .label { color: var(--status-multi); }
+        .status-confrontation { background: rgba(224,82,82,0.12); border: 1px solid var(--red); } .status-confrontation .dot { background: var(--red); box-shadow: 0 0 8px var(--red); } .status-confrontation .label { color: var(--red); }
+        .status-war { background: rgba(122,31,31,0.25); border: 1px solid var(--status-war); } .status-war .dot { background: var(--status-war); box-shadow: 0 0 8px var(--status-war); } .status-war .label { color: #ff6b6b; }
+        .status-not_set { background: var(--panel-alt); border: 1px solid var(--border-dim); } .status-not_set .dot { background: var(--gray); } .status-not_set .label { color: var(--text-faint); }
+
+        .set-status-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+        .set-status-form select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px; border-radius: 4px; font-family: inherit; }
+        .set-status-form textarea { flex: 1; min-width: 220px; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 40px; }
+
+        .history-toggle { background: none; border: none; color: var(--accent-bright); font-family: monospace; font-size: 0.75rem; cursor: pointer; padding: 10px 0 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-list { margin-top: 10px; display: none; }
+        .history-list.open { display: block; }
+        .history-row { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; font-size: 0.82rem; }
+        .history-row .meta { font-size: 0.72rem; color: var(--text-faint); font-family: monospace; }
+
+        /* --- Theater sections / event timeline --- */
+        .theater-section { margin-bottom: 20px; }
+        .theater-title { color: var(--accent-bright); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; display: flex; align-items: center; gap: 10px; }
+        .theater-count { font-size: 0.72rem; color: var(--text-faint); font-weight: normal; text-transform: none; letter-spacing: 0; }
+
+        .event-row { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 10px 14px; margin-bottom: 8px; border-left: 4px solid var(--gray); }
+        .event-row.tier-red { border-left-color: var(--red); }
+        .event-row.tier-orange { border-left-color: var(--status-multi); }
+        .event-row.tier-green { border-left-color: var(--green); }
+        .event-row .meta { font-size: 0.72rem; color: var(--text-faint); margin-bottom: 4px; }
+        .event-row .title a { color: var(--text); text-decoration: none; font-weight: bold; }
+        .event-row .title a:hover { color: var(--accent-bright); }
+        .indicator-tag { display: inline-block; font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; margin: 6px 4px 0 0; font-weight: bold; text-transform: uppercase; letter-spacing: 0.3px; }
+        .indicator-tag.red { background: rgba(224,82,82,0.2); color: #ff8a8a; border: 1px solid var(--red); }
+        .indicator-tag.orange { background: rgba(255,140,66,0.2); color: var(--status-multi); border: 1px solid var(--status-multi); }
+        .indicator-tag.green { background: rgba(89,214,124,0.2); color: var(--green); border: 1px solid var(--green); }
+
+        .fetch-summary { font-family: monospace; font-size: 0.75rem; color: var(--text-faint); margin-top: 6px; }
+
+        /* --- AI Briefing --- */
+        .briefing-text { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 14px 16px; font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; }
+        .briefing-meta { font-size: 0.72rem; color: var(--text-faint); font-family: monospace; margin-top: 8px; }
+        .corroboration-tag { display: inline-block; font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; margin-left: 6px; background: rgba(40,200,255,0.15); color: var(--accent-bright); border: 1px solid var(--accent-bright); font-weight: bold; }
+
+        /* --- Feed settings (same pattern as News Archive's own tab) --- */
+        .sources-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .source-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; font-size: 0.85rem; }
+        .source-row .theater-chip { font-size: 0.68rem; color: var(--accent-bright); text-transform: uppercase; margin-left: 8px; }
+        .source-row .err { color: var(--red); font-size: 0.75rem; }
+        .add-source-form { display: flex; gap: 8px; flex-wrap: wrap; }
+        .add-source-form input, .add-source-form select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 4px; font-family: inherit; }
+        .add-source-form input[name="name"] { flex: 1; min-width: 150px; }
+        .add-source-form input[name="feed_url"] { flex: 2; min-width: 250px; }
+        .del-btn { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; }
+
+        .indicator-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; }
+        .indicator-list .ind-row { background: var(--bg); border: 1px solid var(--border-dim); border-left: 4px solid var(--gray); border-radius: 4px; padding: 8px 12px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+        .indicator-list .ind-row.red { border-left-color: var(--red); }
+        .indicator-list .ind-row.orange { border-left-color: var(--status-multi); }
+        .indicator-list .ind-row.green { border-left-color: var(--green); }
+        .custom-chip { font-size: 0.62rem; color: var(--accent-bright); border: 1px solid var(--accent-bright); border-radius: 8px; padding: 0 6px; margin-left: 6px; text-transform: uppercase; }
+
+        /* --- Suggested keywords review --- */
+        .suggestion-card { background: var(--bg); border: 1px solid var(--border-dim); border-left: 4px solid var(--accent-bright); border-radius: 4px; padding: 10px 14px; margin-bottom: 10px; }
+        .suggestion-card .src { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 6px; }
+        .suggestion-card .src a { color: var(--text-faint); }
+        .suggestion-card .proposal { font-size: 0.9rem; margin-bottom: 8px; }
+        .suggestion-card .proposal b { color: var(--text); }
+        .suggestion-actions { display: flex; gap: 8px; }
+        .approve-btn, .reject-btn { font-family: monospace; font-size: 0.72rem; text-transform: uppercase; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .approve-btn { background: rgba(89,214,124,0.15); border: 1px solid var(--green); color: var(--green); }
+        .approve-btn:hover { background: var(--green); color: var(--bg); }
+        .reject-btn { background: rgba(224,82,82,0.15); border: 1px solid var(--red); color: var(--red); }
+        .reject-btn:hover { background: var(--red); color: var(--bg); }
+        .remove-custom-btn { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 1px 6px; font-size: 0.65rem; cursor: pointer; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-box">
+            <h1>🌐 Global Situation Monitor</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ Cockpit Matrix</button>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabBtnMonitor" onclick="switchTab('monitor')">🌐 Situation</button>
+            <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">⚙️ Feed Settings</button>
+        </div>
+
+        <div class="tab-panel active" id="tabMonitor">
+            <div class="panel">
+                <h2>📟 Household Assessment</h2>
+                <div class="sub-note">This status is always set by hand, never computed automatically from the watch-list below -- a keyword match means "worth your attention," not "confirmed." Decide for yourself, log it here, and the timeline below is the evidence to weigh.</div>
+                <div id="statusBadge" class="status-badge status-not_set"><div class="dot"></div><div><div class="label">Loading…</div></div></div>
+
+                <div class="set-status-form">
+                    <select id="newStatus">
+                        <option value="normal">🟢 Normal</option>
+                        <option value="elevated">🟡 Elevated</option>
+                        <option value="multi_region">🟠 Multi-Region Disruption</option>
+                        <option value="confrontation">🔴 Great-Power Confrontation</option>
+                        <option value="war">⚫ Direct Great-Power War</option>
+                    </select>
+                    <textarea id="newStatusReason" placeholder="Why? (e.g. 'Houthi attacks continuing but contained, no NATO/Taiwan escalation this week.')"></textarea>
+                    <button class="action-btn" onclick="setStatus()">Log Assessment</button>
+                </div>
+                <button class="history-toggle" id="statusHistoryToggle" onclick="toggleHistory()">▸ Show assessment history</button>
+                <div class="history-list" id="historyList"></div>
+            </div>
+
+            <div class="panel">
+                <h2>🤖 AI Briefing (Off-Grid AI)</h2>
+                <div class="sub-note">Asks the local Off-Grid AI (Ollama, running fully offline on this machine) to organize and summarize only the <b>Active</b> (red/orange) matches below -- routine/green-tier items in "Keep An Eye On" are left out, since they don't need a full briefing unless they escalate into an active match. It's explicitly instructed never to estimate a probability of war or suggest a status; that stays your call. It's a small local model, not a real analyst -- treat this as a rough first pass, not a source of truth, and always check the actual headlines yourself.</div>
+                <div class="set-status-form" style="margin-bottom:14px;">
+                    <select id="briefingWindow">
+                        <option value="3">Last 3 days</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                    <button class="action-btn" onclick="generateBriefing()" id="briefingBtn">Generate Briefing</button>
+                </div>
+                <div id="briefingBody" class="empty-state">No briefing generated yet.</div>
+                <button class="history-toggle" id="briefingHistoryToggle" onclick="toggleBriefingHistory()">▸ Show briefing history</button>
+                <div class="history-list" id="briefingHistoryList"></div>
+            </div>
+
+            <div class="panel">
+                <h2>🔴🟠 Active Watch-List Matches</h2>
+                <div class="sub-note">Only red/orange-tier matches show up here -- this is the same set the AI Briefing above is built from. Grouped by theater; most recent first.</div>
+                <div id="timelineBody"><div class="empty-state">Checking…</div></div>
+                <div id="fetchSummary" class="fetch-summary"></div>
+            </div>
+
+            <div class="panel">
+                <h2>👀 Keep An Eye On</h2>
+                <div class="sub-note">Routine/green-tier matches (exercises, intercepts, and similar) -- not concerning on their own, logged here for awareness only. No AI analysis is spent on these. If one of these situations develops further, it'll start also matching a red/orange indicator and move up to Active above -- that's what pulls it into the next full briefing.</div>
+                <div id="monitorBody"><div class="empty-state">Checking…</div></div>
+            </div>
+        </div>
+
+        <div class="tab-panel" id="tabSettings">
+            <div class="panel">
+                <h2>⚙ Manage Feed Sources</h2>
+                <div id="sourcesBody" class="sources-list"></div>
+                <div class="add-source-form">
+                    <input type="text" name="name" id="newSourceName" placeholder="Source name">
+                    <input type="text" name="feed_url" id="newSourceUrl" placeholder="Feed URL (RSS/Atom)">
+                    <select id="newSourceTheater">
+                        <option value="global">Global / General</option>
+                        <option value="europe_nato_russia">Europe / NATO-Russia</option>
+                        <option value="indo_pacific_taiwan">Indo-Pacific / China</option>
+                        <option value="middle_east">Middle East</option>
+                        <option value="south_asia">South Asia / India-Pakistan</option>
+                        <option value="latin_america">Latin America</option>
+                        <option value="africa">Africa</option>
+                        <option value="cross_theater">Cross-Theater</option>
+                        <option value="cbrn_biosecurity">CBRN / Biosecurity</option>
+                    </select>
+                    <button class="action-btn" onclick="addSource()">Add</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>🤖 Suggested Keywords (Review)</h2>
+                <div class="sub-note">The AI scans recent articles that matched NOTHING on the watch-list and proposes candidates from them -- it never adds anything on its own. Every suggestion below needs your approve or reject. In testing, roughly half of what it proposes is genuinely useful and the rest is a questionable call (not fabricated, just not really escalation-relevant) -- read the source headline next to each one before deciding.</div>
+                <div class="set-status-form" style="margin-bottom:14px;">
+                    <select id="suggestWindow">
+                        <option value="1">Last 1 day</option>
+                        <option value="2" selected>Last 2 days</option>
+                        <option value="5">Last 5 days</option>
+                    </select>
+                    <button class="action-btn" onclick="scanForSuggestions()" id="suggestBtn">Scan For Gaps</button>
+                </div>
+                <div id="suggestionsBody" class="empty-state">No pending suggestions.</div>
+            </div>
+
+            <div class="panel">
+                <h2>🔎 Watch-List Indicators</h2>
+                <div class="sub-note">Red = extremely concerning, orange = concerning, green = routine/lower concern. Fixed (code-level) indicators aren't editable here; indicators labeled "custom" came from an approved AI suggestion above and can be removed if they turn out noisy.</div>
+                <div id="indicatorsBody" class="indicator-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function switchTab(name) {
+            document.getElementById('tabMonitor').classList.toggle('active', name === 'monitor');
+            document.getElementById('tabSettings').classList.toggle('active', name === 'settings');
+            document.getElementById('tabBtnMonitor').classList.toggle('active', name === 'monitor');
+            document.getElementById('tabBtnSettings').classList.toggle('active', name === 'settings');
+        }
+
+        function formatDateTime(iso) {
+            if (!iso) return 'unknown';
+            try {
+                return new Date(iso.replace(' ', 'T') + 'Z').toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return iso; }
+        }
+
+        const STATUS_LABELS = {
+            normal: '🟢 Normal',
+            elevated: '🟡 Elevated',
+            multi_region: '🟠 Multi-Region Disruption',
+            confrontation: '🔴 Great-Power Confrontation',
+            war: '⚫ Direct Great-Power War',
+            not_set: '— No Assessment Logged Yet —',
+        };
+
+        let historyOpen = false;
+        function toggleHistory() {
+            historyOpen = !historyOpen;
+            const list = document.getElementById('historyList');
+            list.classList.toggle('open', historyOpen);
+            document.getElementById('statusHistoryToggle').textContent = (historyOpen ? '▾ Hide' : '▸ Show') + ' assessment history';
+        }
+
+        async function loadStatus() {
+            const badge = document.getElementById('statusBadge');
+            try {
+                const res = await fetch('/api/situation/status?t=' + Date.now());
+                const d = await res.json();
+                badge.className = 'status-badge status-' + d.status;
+                badge.innerHTML = `
+                    <div class="dot"></div>
+                    <div>
+                        <div class="label">${escapeHtml(STATUS_LABELS[d.status] || d.status)}</div>
+                        ${d.reason ? `<div class="reason">${escapeHtml(d.reason)}</div>` : ''}
+                        ${d.created_at ? `<div class="when">as of ${escapeHtml(formatDateTime(d.created_at))}</div>` : ''}
+                    </div>
+                `;
+            } catch (err) {
+                badge.innerHTML = `<div class="dot"></div><div><div class="label">Not connected</div></div>`;
+            }
+        }
+
+        async function loadHistory() {
+            const list = document.getElementById('historyList');
+            try {
+                const res = await fetch('/api/situation/status/history?t=' + Date.now());
+                const rows = await res.json();
+                if (!rows.length) {
+                    list.innerHTML = '<div class="empty-state">No history yet.</div>';
+                    return;
+                }
+                list.innerHTML = rows.map(r => `
+                    <div class="history-row">
+                        <div class="meta">${escapeHtml(formatDateTime(r.created_at))}</div>
+                        <div><b>${escapeHtml(STATUS_LABELS[r.status] || r.status)}</b>${r.reason ? ' — ' + escapeHtml(r.reason) : ''}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function setStatus() {
+            const status = document.getElementById('newStatus').value;
+            const reason = document.getElementById('newStatusReason').value.trim();
+            const res = await fetch('/api/situation/status', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status, reason})
+            });
+            if (res.ok) {
+                document.getElementById('newStatusReason').value = '';
+                loadStatus();
+                loadHistory();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Could not log assessment.');
+            }
+        }
+
+        const THEATER_ORDER = ['europe_nato_russia', 'indo_pacific_taiwan', 'middle_east', 'south_asia', 'latin_america', 'africa', 'cross_theater', 'cbrn_biosecurity'];
+        const THEATER_LABELS = {
+            europe_nato_russia: '🇪🇺 Europe / NATO–Russia',
+            indo_pacific_taiwan: '🌏 Indo-Pacific / China',
+            middle_east: '🕌 Middle East',
+            south_asia: '🏔️ South Asia / India-Pakistan',
+            latin_america: '🌎 Latin America',
+            africa: '🌍 Africa',
+            cross_theater: '🌐 Cross-Theater',
+            cbrn_biosecurity: '🧬 CBRN / Biosecurity',
+        };
+
+        function eventWorstTier(ev) {
+            const tiers = ev.indicators.map(i => i.tier);
+            return tiers.includes('red') ? 'red' : tiers.includes('orange') ? 'orange' : 'green';
+        }
+
+        function renderTheaterGroups(evs, indicatorSourceCounts) {
+            const byTheater = {};
+            for (const ev of evs) {
+                for (const ind of ev.indicators) {
+                    if (!byTheater[ind.theater]) byTheater[ind.theater] = [];
+                    if (!byTheater[ind.theater].includes(ev)) byTheater[ind.theater].push(ev);
+                }
+            }
+            let html = '';
+            for (const theater of THEATER_ORDER) {
+                const theaterEvs = byTheater[theater];
+                if (!theaterEvs || !theaterEvs.length) continue;
+                html += `<div class="theater-section">
+                    <div class="theater-title">${THEATER_LABELS[theater]} <span class="theater-count">(${theaterEvs.length})</span></div>`;
+                html += theaterEvs.map(ev => `
+                    <div class="event-row tier-${eventWorstTier(ev)}">
+                        <div class="meta">${escapeHtml(ev.source_name || '')} — ${escapeHtml(formatDateTime(ev.published_at))}</div>
+                        <div class="title"><a href="${escapeHtml(ev.url)}" target="_blank" rel="noopener">${escapeHtml(ev.title)}</a></div>
+                        <div>${ev.indicators.map(i => {
+                            const n = indicatorSourceCounts[i.id] ? indicatorSourceCounts[i.id].size : 1;
+                            return `<span class="indicator-tag ${i.tier}">${escapeHtml(i.label)}</span>${n > 1 ? `<span class="corroboration-tag">${n} sources</span>` : ''}`;
+                        }).join('')}</div>
+                    </div>`).join('');
+                html += `</div>`;
+            }
+            return html;
+        }
+
+        async function loadTimeline() {
+            const activeBody = document.getElementById('timelineBody');
+            const monitorBody = document.getElementById('monitorBody');
+            const summary = document.getElementById('fetchSummary');
+            try {
+                const res = await fetch('/api/situation/events?limit=500&t=' + Date.now());
+                const events = await res.json();
+                const matched = events.filter(e => e.indicators && e.indicators.length);
+
+                // Active = at least one red/orange indicator matched.
+                // Monitor = matched something, but only ever green/routine
+                // tier indicators -- see this panel's own sub-note for why
+                // these get no AI attention and don't feed the briefing.
+                const active = matched.filter(ev => eventWorstTier(ev) !== 'green');
+                const monitor = matched.filter(ev => eventWorstTier(ev) === 'green');
+
+                summary.textContent = `${events.length} recent article(s) checked, ${active.length} active, ${monitor.length} routine/monitor-only.`;
+
+                // Corroboration counted across ALL matched events (active +
+                // monitor together), not just the bucket being rendered --
+                // a routine-tier mention and an active-tier mention of the
+                // same real story should still count as 2 sources toward
+                // each other.
+                const indicatorSourceCounts = {};
+                for (const ev of matched) {
+                    for (const ind of ev.indicators) {
+                        if (!indicatorSourceCounts[ind.id]) indicatorSourceCounts[ind.id] = new Set();
+                        indicatorSourceCounts[ind.id].add(ev.source_name || 'unknown');
+                    }
+                }
+
+                activeBody.innerHTML = renderTheaterGroups(active, indicatorSourceCounts) ||
+                    '<div class="empty-state">No active watch-list matches yet — nothing in the watch-list has matched recent coverage, or add sources in Feed Settings.</div>';
+                monitorBody.innerHTML = renderTheaterGroups(monitor, indicatorSourceCounts) ||
+                    '<div class="empty-state">Nothing routine-tier flagged either.</div>';
+            } catch (err) {
+                const msg = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+                activeBody.innerHTML = msg;
+                monitorBody.innerHTML = msg;
+            }
+        }
+
+        function renderBriefing(d) {
+            const body = document.getElementById('briefingBody');
+            if (!d || d.status === 'not_set') {
+                body.innerHTML = '<div class="empty-state">No briefing generated yet.</div>';
+                return;
+            }
+            body.innerHTML = `
+                <div class="briefing-text">${escapeHtml(d.briefing_text)}</div>
+                <div class="briefing-meta">Generated ${escapeHtml(formatDateTime(d.created_at))} · model ${escapeHtml(d.model_used)} · built from ${d.event_count} matched article(s) over the last ${d.window_days} day(s)</div>
+            `;
+        }
+
+        async function loadLatestBriefing() {
+            try {
+                const res = await fetch('/api/situation/briefing/latest?t=' + Date.now());
+                const d = await res.json();
+                renderBriefing(d);
+            } catch (err) {
+                // Leave whatever was already shown -- a transient fetch
+                // failure here shouldn't blank out a real prior briefing.
+            }
+        }
+
+        async function generateBriefing() {
+            const btn = document.getElementById('briefingBtn');
+            const windowDays = parseInt(document.getElementById('briefingWindow').value, 10);
+            const body = document.getElementById('briefingBody');
+            btn.disabled = true;
+            btn.textContent = 'Generating… (can take up to a couple minutes)';
+            body.innerHTML = '<div class="empty-state">Asking the local Off-Grid AI to organize the matched headlines…</div>';
+            try {
+                const res = await fetch('/api/situation/briefing/generate', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({window_days: windowDays})
+                });
+                const d = await res.json();
+                if (!res.ok) {
+                    body.innerHTML = `<div class="empty-state">${escapeHtml(d.detail || 'Could not generate a briefing.')}</div>`;
+                } else {
+                    renderBriefing(d);
+                    loadBriefingHistory();
+                }
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Briefing';
+            }
+        }
+
+        let briefingHistoryOpen = false;
+        function toggleBriefingHistory() {
+            briefingHistoryOpen = !briefingHistoryOpen;
+            const list = document.getElementById('briefingHistoryList');
+            list.classList.toggle('open', briefingHistoryOpen);
+            document.getElementById('briefingHistoryToggle').textContent = (briefingHistoryOpen ? '▾ Hide' : '▸ Show') + ' briefing history';
+        }
+
+        async function loadBriefingHistory() {
+            const list = document.getElementById('briefingHistoryList');
+            try {
+                const res = await fetch('/api/situation/briefing/history?t=' + Date.now());
+                const rows = await res.json();
+                if (!rows.length) {
+                    list.innerHTML = '<div class="empty-state">No briefing history yet.</div>';
+                    return;
+                }
+                list.innerHTML = rows.map(r => `
+                    <div class="history-row">
+                        <div class="meta">${escapeHtml(formatDateTime(r.created_at))} · model ${escapeHtml(r.model_used)} · ${r.event_count} article(s), ${r.window_days}-day window</div>
+                        <div>${escapeHtml(r.briefing_text)}</div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function loadSources() {
+            const body = document.getElementById('sourcesBody');
+            try {
+                const res = await fetch('/api/situation/sources?t=' + Date.now());
+                const sources = await res.json();
+                if (!sources.length) {
+                    body.innerHTML = '<div class="empty-state">No sources configured yet.</div>';
+                    return;
+                }
+                body.innerHTML = sources.map(s => `
+                    <div class="source-row">
+                        <span>${escapeHtml(s.name)}<span class="theater-chip">${escapeHtml(s.theater)}</span> — <span style="color:var(--text-faint)">${escapeHtml(s.feed_url)}</span>
+                            ${s.last_error ? `<div class="err">${escapeHtml(s.last_error)}</div>` : ''}</span>
+                        <button class="del-btn" onclick="deleteSource('${s.id}')">Remove</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function addSource() {
+            const name = document.getElementById('newSourceName').value.trim();
+            const feed_url = document.getElementById('newSourceUrl').value.trim();
+            const theater = document.getElementById('newSourceTheater').value;
+            if (!name || !feed_url) return;
+            const res = await fetch('/api/situation/sources', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, feed_url, theater})
+            });
+            if (res.ok) {
+                document.getElementById('newSourceName').value = '';
+                document.getElementById('newSourceUrl').value = '';
+                loadSources();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                alert(data.error || 'Could not add source.');
+            }
+        }
+
+        async function deleteSource(id) {
+            await fetch('/api/situation/sources/' + id, { method: 'DELETE' });
+            loadSources();
+        }
+
+        async function loadIndicators() {
+            const body = document.getElementById('indicatorsBody');
+            try {
+                const res = await fetch('/api/situation/indicators?t=' + Date.now());
+                const d = await res.json();
+                body.innerHTML = d.indicators.map(ind => `
+                    <div class="ind-row ${ind.tier}">
+                        <div>
+                            <b>${escapeHtml(THEATER_LABELS[ind.theater] || ind.theater)}</b>${ind.custom ? '<span class="custom-chip">custom</span>' : ''}<br>
+                            ${escapeHtml(ind.label)}
+                        </div>
+                        ${ind.custom ? `<button class="remove-custom-btn" onclick="removeCustomIndicator('${ind.id}')">Remove</button>` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function removeCustomIndicator(id) {
+            await fetch('/api/situation/custom-indicators/' + id, { method: 'DELETE' });
+            loadIndicators();
+        }
+
+        async function scanForSuggestions() {
+            const btn = document.getElementById('suggestBtn');
+            const windowDays = parseInt(document.getElementById('suggestWindow').value, 10);
+            const body = document.getElementById('suggestionsBody');
+            btn.disabled = true;
+            btn.textContent = 'Scanning… (can take a couple minutes)';
+            body.innerHTML = '<div class="empty-state">Asking the local AI to review unmatched headlines…</div>';
+            try {
+                const res = await fetch('/api/situation/suggest-keywords', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({window_days: windowDays})
+                });
+                const d = await res.json();
+                if (!res.ok) {
+                    body.innerHTML = `<div class="empty-state">${escapeHtml(d.detail || 'Could not scan for suggestions.')}</div>`;
+                } else {
+                    loadSuggestions();
+                }
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Scan For Gaps';
+            }
+        }
+
+        async function loadSuggestions() {
+            const body = document.getElementById('suggestionsBody');
+            try {
+                const res = await fetch('/api/situation/suggestions?status=pending&t=' + Date.now());
+                const rows = await res.json();
+                if (!rows.length) {
+                    body.innerHTML = '<div class="empty-state">No pending suggestions. Click "Scan For Gaps" to check recent unmatched articles.</div>';
+                    return;
+                }
+                body.innerHTML = rows.map(s => `
+                    <div class="suggestion-card">
+                        <div class="src">From: <a href="${escapeHtml(s.source_url || '#')}" target="_blank" rel="noopener">${escapeHtml(s.source_title)}</a></div>
+                        <div class="proposal">
+                            <span class="indicator-tag ${s.tier}">${escapeHtml(THEATER_LABELS[s.theater] || s.theater)}</span>
+                            <b>${escapeHtml(s.label)}</b> — keyword: "${escapeHtml(s.keyword)}"
+                        </div>
+                        <div class="suggestion-actions">
+                            <button class="approve-btn" onclick="reviewSuggestion('${s.id}', 'approve')">✓ Approve</button>
+                            <button class="reject-btn" onclick="reviewSuggestion('${s.id}', 'reject')">✗ Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function reviewSuggestion(id, action) {
+            await fetch(`/api/situation/suggestions/${id}/${action}`, { method: 'POST' });
+            loadSuggestions();
+            if (action === 'approve') loadIndicators();
+        }
+
+        function refreshAll() {
+            loadStatus();
+            loadHistory();
+            loadTimeline();
+            loadSources();
+            loadIndicators();
+            loadLatestBriefing();
+            loadBriefingHistory();
+            loadSuggestions();
+        }
+
+        refreshAll();
+        setInterval(refreshAll, 60000);
+    </script>
+</body>
+</html>

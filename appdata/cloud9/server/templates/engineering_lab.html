@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Engineering Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/engineering-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="enl-body">
+  <header class="topbar enl-topbar">
+    <a class="enl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="enl-heading">
+      <span class="enl-icon">&#128296;</span>
+      <span class="enl-title">Engineering Lab</span>
+    </div>
+  </header>
+
+  <main class="enl-main">
+    <section class="enl-section">
+      <div class="enl-section-title">The Real Engineering Cycle</div>
+      <div class="enl-steps-row" id="enl-steps-row">
+        <div class="enl-loading">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="enl-section">
+      <div class="enl-section-title">Start a New Build</div>
+      <div class="enl-section-note">Answer the real first two steps -- Ask and Plan -- and this creates a real Project Workshop project to actually build, test, improve, and document.</div>
+      <form class="enl-form" id="enl-form">
+        <label>
+          <span>Ask: What problem are you solving, or what do you want to build?</span>
+          <input type="text" id="enl-problem" placeholder="e.g. Build a bridge that holds a real cup of water" required>
+        </label>
+        <label>
+          <span>Plan: What real materials will you need? (one per line)</span>
+          <textarea id="enl-materials" rows="3" placeholder="Popsicle sticks&#10;Tape&#10;Glue"></textarea>
+        </label>
+        <button type="submit" class="enl-btn">Start This Build</button>
+      </form>
+    </section>
+
+    <section class="enl-section">
+      <div class="enl-section-title">Your Real Engineering Projects</div>
+      <div class="enl-project-list" id="enl-project-list">
+        <div class="enl-loading">Loading&hellip;</div>
+      </div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Engineering Lab", activity: "working through the real Ask-Plan-Build-Test-Improve-Document cycle" };</script>
+  <script src="{{ url_for('static', filename='js/engineering-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

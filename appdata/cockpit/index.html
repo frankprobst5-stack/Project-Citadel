@@ -226,6 +226,7 @@
             { key: 'kiwix', title: "Knowledge Base", desc: "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html", profile: 'knowledge' },
             { key: 'mealie', title: "Recipes & Meal Planner", desc: "Import recipes by URL or hand-enter them, build a weekly meal plan, generate a shopping list, and check a recipe's ingredients against your Food Inventory and Freezer Foods ledgers.", meta: "Engine: Mealie", icon: "🍲", action: "http://localhost:8097", profile: 'recipes' },
             { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html", profile: null },
+            { key: 'static', title: "Garden Planner", desc: "A real spring/summer/fall crop plan for the 16-bed garden — laid out to match the actual fence and compass orientation. Click any bed to see what's growing, spacing, and timing.", meta: "Storage: Botanical Core", icon: "🥕", action: "garden.html", profile: null },
             { key: 'static', title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html", profile: null },
             { key: 'ai', title: "Off-Grid AI", desc: "Query localized, non-networked Large Language Models for secure tactical data analysis.", meta: "Engine: Offline LLM Core", icon: "🧠", action: "ai.html", profile: 'ai' },
             { key: 'power', title: "Home Monitor Matrix", desc: "Manage local camera feeds, control hardware relays, view real solar/security telemetry, and scan your LAN for Tasmota/Shelly/ESPHome devices to bring under control.", meta: "Engine: Vigil Kernel", icon: "🏠", action: "/project-vigil/index.html", profile: 'vigil' },
@@ -236,6 +237,9 @@
             { key: 'static', title: "System Settings", desc: "View live service diagnostics, station identity, and build info. Configuration editing is not wired up yet.", meta: "Engine: Citadel Core", icon: "⚙️", action: "settings.html", profile: null },
             { key: 'muster', title: "Muster (Mobile Ops)", desc: "Grid-down operations control, reachable on any phone or tablet with zero install. Real messages and map markers, pulled live from WayStation.", meta: "Engine: Muster Bridge", icon: "👥", action: "muster/index.html", profile: 'muster' },
             { key: 'static', title: "News Archive & Local Log", desc: "Aggregated hazard alerts (NWS, USGS, NHC, InciWeb) and syndicated news, archived so it's still readable once the grid goes down -- plus a hand-typed local log for when nothing new can arrive at all. Add as many feed sources as you want here, not on the front page.", meta: "Engine: Hazard/CAP Feed Core", icon: "📰", action: "news.html", profile: null },
+            { key: 'familyphotos', title: "Family Photo Gallery", desc: "Browse, organize, and back up family photos and videos -- add, edit, and delete entries, all stored locally with no cloud upload. Supports ongoing phone backup plus importing existing photo archives.", meta: "Engine: Immich", icon: "🖼️", action: "http://localhost:8100", profile: null },
+            { key: 'static', title: "Global Situation Monitor", desc: "Tracks a fixed watch-list of major-power escalation indicators (NATO-Russia, Taiwan, Middle East) across curated feeds -- the status shown is always your own logged assessment, never an automated alarm.", meta: "Engine: Situation Watch Core", icon: "🌐", action: "situation.html", profile: null },
+            { key: 'static', title: "Master Situation Board", desc: "Everything at a glance on one page -- global situation, local hazards, weather, home monitor status, supply levels, media library, host system metrics, and backups.", meta: "Engine: Board Core", icon: "🛡️", action: "board.html", profile: null },
         ];
 
         // Populated by loadEnabledModules() before buildDashboardCockpit()
@@ -379,7 +383,7 @@
         async function runHealthChecks() {
             const host = window.location.hostname;
             const results = {};
-            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie, backup] = await Promise.all([
+            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie, backup, familyphotos] = await Promise.all([
                 checkSameOrigin('/api/grid'),
                 checkSameOrigin('/api/inventory/general'),
                 checkSameOrigin('tiles/comms_base.pmtiles'),
@@ -390,6 +394,7 @@
                 checkNoCors(`http://${host}:8099`),
                 checkNoCors(`http://${host}:8097`),
                 checkSameOrigin('/api/backup/list'),
+                checkNoCors(`http://${host}:8100`),
             ]);
             results.power = power;
             results.network = true; // trivially true: this page loaded over the LAN nginx
@@ -402,6 +407,7 @@
             results.cloud9 = cloud9;
             results.mealie = mealie;
             results.backup = backup;
+            results.familyphotos = familyphotos;
             results.static = true; // purely local static content, always available
             return results;
         }
@@ -574,7 +580,7 @@
         }
 
         function diffAndLog(prev, curr) {
-            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes', backup: 'Backup system' };
+            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes', backup: 'Backup system', familyphotos: 'Family photo gallery' };
             Object.keys(labels).forEach(k => {
                 if (!prev) return; // first run: don't spam a log full of "detected" on load
                 if (prev[k] !== curr[k]) {

@@ -1769,4 +1769,33 @@
       weatherQuick.hidden = false;
     })
     .catch(function () {});
+
+  // --- Today's Assignments quick panel -- real data from Parent Tools'
+  // recurring weekly schedule (ROADMAP.md Phase 1, item 5), same source
+  // My Day's own "Today's Schedule" section reads. The schedule is
+  // recurring, so this is genuinely automatic every school day with no
+  // re-entry -- weekends and days with nothing scheduled honestly show
+  // "Nothing assigned yet" rather than faking blocks that don't exist. ---
+
+  const assignmentsQuickBody = document.getElementById("assignments-quick-body");
+
+  fetch("/api/schedule/today")
+    .then(function (res) { return res.json(); })
+    .then(function (today) {
+      const blocks = (today && today.blocks) || [];
+      if (!blocks.length) {
+        assignmentsQuickBody.textContent = "Nothing assigned yet.";
+        return;
+      }
+      const doneCount = blocks.filter(function (b) { return b.done; }).length;
+      const next = blocks.find(function (b) { return !b.done; });
+      assignmentsQuickBody.innerHTML =
+        '<div class="assignments-quick-line"><span>' + doneCount + " of " + blocks.length + " done today</span></div>" +
+        '<div class="assignments-quick-next">' +
+        (next ? "Next: " + next.title : "All done for today! 🎉") +
+        "</div>";
+    })
+    .catch(function () {
+      assignmentsQuickBody.textContent = "Nothing assigned yet.";
+    });
 })();

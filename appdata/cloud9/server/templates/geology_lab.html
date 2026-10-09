@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geology Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/geology-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="gel-body">
+  <header class="topbar gel-topbar">
+    <a class="gel-back" href="/science-lab" aria-label="Back to Science Lab">&larr; Science Lab</a>
+    <div class="gel-heading">
+      <span class="gel-icon">&#129704;</span>
+      <span class="gel-title">Geology Lab</span>
+    </div>
+  </header>
+
+  <main class="gel-main">
+    <section class="gel-section">
+      <div class="gel-section-title">Rock Classification</div>
+      <div class="gel-section-note">What real type of rock is this? Pick one.</div>
+      <div class="gel-card">
+        <div class="gel-rock-name" id="gel-rock-name">Loading&hellip;</div>
+        <div class="gel-type-row" id="gel-type-row"></div>
+        <div class="gel-feedback" id="gel-feedback"></div>
+        <button type="button" class="gel-next-btn" id="gel-next-btn">Next Rock &rarr;</button>
+      </div>
+    </section>
+
+    <section class="gel-section">
+      <div class="gel-section-title">Watch</div>
+      <div class="gel-section-note">Real Earth &amp; Space Science videos, already in your Video Library.</div>
+      <a class="gel-video-link" href="/video-library?category=earth-space-science">Open Earth &amp; Space Science videos &rarr;</a>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Geology Lab", activity: "classifying real rocks" };</script>
+  <script src="{{ url_for('static', filename='js/geology-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

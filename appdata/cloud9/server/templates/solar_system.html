@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solar System Explorer - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/solar-system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="sse-body">
+  <header class="topbar sse-topbar">
+    <a class="sse-back" href="/space-lab" aria-label="Back to Space Lab">&larr; Space Lab</a>
+    <div class="sse-heading">
+      <span class="sse-icon">&#127769;</span>
+      <span class="sse-title">Solar System Explorer</span>
+    </div>
+  </header>
+
+  <main class="sse-main">
+    <section class="sse-section">
+      <div class="sse-section-title">The Planets</div>
+      <div class="sse-section-note">Click a planet to see how it really compares to Earth.</div>
+      <div class="sse-planet-row" id="sse-planet-row">
+        <div class="sse-loading">Loading&hellip;</div>
+      </div>
+      <div class="sse-detail" id="sse-detail" hidden></div>
+    </section>
+
+    <section class="sse-section">
+      <div class="sse-section-title" id="sse-sim-title">Try It Yourself</div>
+      <div class="sse-section-note" id="sse-sim-blurb"></div>
+      <div class="sse-embed-wrap">
+        <iframe id="sse-iframe" class="sse-iframe" allowfullscreen></iframe>
+      </div>
+      <div class="sse-attribution" id="sse-attribution"></div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Solar System Explorer", activity: "exploring the real planets and orbits" };</script>
+  <script src="{{ url_for('static', filename='js/solar-system.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

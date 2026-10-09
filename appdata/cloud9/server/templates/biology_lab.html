@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Biology Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/biology-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="bil-body">
+  <header class="topbar bil-topbar">
+    <a class="bil-back" href="/science-lab" aria-label="Back to Science Lab">&larr; Science Lab</a>
+    <div class="bil-heading">
+      <span class="bil-icon">&#129516;</span>
+      <span class="bil-title">Biology Lab</span>
+    </div>
+  </header>
+
+  <main class="bil-main">
+    <section class="bil-section">
+      <div class="bil-section-title">Animal Classification</div>
+      <div class="bil-section-note">What real class does this animal belong to? Pick one.</div>
+      <div class="bil-card">
+        <div class="bil-animal-name" id="bil-animal-name">Loading&hellip;</div>
+        <div class="bil-class-row" id="bil-class-row"></div>
+        <div class="bil-feedback" id="bil-feedback"></div>
+        <button type="button" class="bil-next-btn" id="bil-next-btn">Next Animal &rarr;</button>
+      </div>
+    </section>
+
+    <section class="bil-section">
+      <div class="bil-section-title">Watch</div>
+      <div class="bil-section-note">Real Life Science videos, already in your Video Library.</div>
+      <a class="bil-video-link" href="/video-library?category=life-science">Open Life Science videos &rarr;</a>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Biology Lab", activity: "classifying real animals" };</script>
+  <script src="{{ url_for('static', filename='js/biology-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

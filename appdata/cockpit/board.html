@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="vault-auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // MASTER SITUATION BOARD</title>
+    <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
+    <style>
+        :root {
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #5b7386;
+            --status-multi: #ff8c42; --status-war: #7a1f1f;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 16px; margin: 0; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .header-row h1 { color: var(--accent); margin: 0; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 1.5px; }
+        .back-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 7px 14px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; }
+        .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .clock { font-family: monospace; text-align: right; }
+        .clock .big { font-size: 1.3rem; font-weight: bold; }
+        .clock .small { font-size: 0.72rem; color: var(--text-faint); }
+
+        .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+        .tile { background: var(--panel); border-radius: 6px; padding: 14px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 2px var(--border); display: flex; flex-direction: column; cursor: pointer; transition: box-shadow 0.15s ease; min-height: 120px; }
+        .tile:hover { box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 2px var(--accent); }
+        .tile.wide { grid-column: span 2; }
+        .tile.tall { min-height: 220px; }
+        .tile.dim { opacity: 0.45; cursor: default; }
+        .tile-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .tile-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-faint); font-weight: bold; }
+        .tile-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+        .dot-orange { background: var(--status-multi); box-shadow: 0 0 6px var(--status-multi); }
+        .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .dot-gray { background: var(--gray); }
+
+        .tile-big { font-size: 1.8rem; font-weight: bold; line-height: 1.1; }
+        .tile-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
+        .tile-detail { font-size: 0.72rem; color: var(--text-faint); margin-top: auto; padding-top: 8px; }
+
+        .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.75rem; }
+        .bar-row .label { width: 42px; color: var(--text-faint); flex-shrink: 0; }
+        .bar-track { flex: 1; height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+        .bar-fill.warn { background: var(--amber); }
+        .bar-fill.crit { background: var(--red); }
+        .bar-val { width: 38px; text-align: right; flex-shrink: 0; font-family: monospace; }
+
+        .forecast-strip { display: flex; gap: 8px; margin-top: 6px; font-size: 0.7rem; }
+        .forecast-strip div { flex: 1; text-align: center; background: var(--panel-alt); border-radius: 4px; padding: 4px 2px; }
+
+        .media-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+
+        .status-chip { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+        .status-normal { background: rgba(89,214,124,0.18); color: var(--green); }
+        .status-elevated { background: rgba(255,176,0,0.18); color: var(--amber); }
+        .status-multi_region { background: rgba(255,140,66,0.18); color: var(--status-multi); }
+        .status-confrontation { background: rgba(224,82,82,0.18); color: var(--red); }
+        .status-war { background: rgba(122,31,31,0.3); color: #ff6b6b; }
+        .status-not_set { background: var(--panel-alt); color: var(--text-faint); }
+    </style>
+</head>
+<body>
+    <div class="header-row">
+        <h1>🛡️ Master Situation Board</h1>
+        <div class="clock">
+            <div class="big" id="liveClock">--:--:--</div>
+            <div class="small" id="liveDate">-- -- ----</div>
+        </div>
+        <button class="back-btn" onclick="window.location.href='index.html'">⬅ Cockpit Matrix</button>
+    </div>
+
+    <div class="board-grid" id="boardGrid">
+        <!-- Global Situation -->
+        <div class="tile" onclick="window.location.href='situation.html'">
+            <div class="tile-head"><span class="tile-title">🌐 Global Situation</span></div>
+            <div id="situationBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Local Hazards -->
+        <div class="tile" onclick="window.location.href='news.html'">
+            <div class="tile-head"><span class="tile-title">⚠ Local Hazards</span><span class="tile-dot dot-gray" id="hazardDot"></span></div>
+            <div id="hazardBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Weather -->
+        <div class="tile wide" onclick="window.location.href='news.html'">
+            <div class="tile-head"><span class="tile-title">🌤️ Current Weather</span></div>
+            <div id="weatherBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Host Metrics -->
+        <div class="tile tall" id="metricsTile" onclick="window.location.href='settings.html'">
+            <div class="tile-head"><span class="tile-title">🖥️ Host System</span><span class="tile-dot dot-gray" id="metricsDot"></span></div>
+            <div id="metricsBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Home Monitor -->
+        <div class="tile" id="vigilTile" onclick="window.location.href='/project-vigil/index.html'">
+            <div class="tile-head"><span class="tile-title">🏠 Home Monitor</span><span class="tile-dot dot-gray" id="vigilDot"></span></div>
+            <div id="vigilBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Supply Status -->
+        <div class="tile" onclick="window.location.href='logistics.html'">
+            <div class="tile-head"><span class="tile-title">📦 Supply Status</span></div>
+            <div id="supplyBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Media Library -->
+        <div class="tile" onclick="window.location.href='vault-root/'">
+            <div class="tile-head"><span class="tile-title">🎬 Media Library</span></div>
+            <div id="mediaBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+
+        <!-- Backup -->
+        <div class="tile" onclick="window.location.href='settings.html'">
+            <div class="tile-head"><span class="tile-title">💾 Backup</span><span class="tile-dot dot-gray" id="backupDot"></span></div>
+            <div id="backupBody"><div class="tile-sub">Loading…</div></div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function tickClock() {
+            const now = new Date();
+            document.getElementById('liveClock').textContent = now.toLocaleTimeString();
+            document.getElementById('liveDate').textContent = now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        setInterval(tickClock, 1000);
+        tickClock();
+
+        const STATUS_LABELS = {
+            normal: '🟢 Normal', elevated: '🟡 Elevated', multi_region: '🟠 Multi-Region',
+            confrontation: '🔴 Confrontation', war: '⚫ War', not_set: 'Not Set',
+        };
+
+        async function loadSituation() {
+            const body = document.getElementById('situationBody');
+            try {
+                const [statusRes, eventsRes] = await Promise.all([
+                    fetch('/api/situation/status?t=' + Date.now()),
+                    fetch('/api/situation/events?limit=500&t=' + Date.now()),
+                ]);
+                const status = await statusRes.json();
+                const events = await eventsRes.json();
+                const active = events.filter(e => e.indicators && e.indicators.some(i => i.tier !== 'green'));
+                body.innerHTML = `
+                    <span class="status-chip status-${status.status}">${STATUS_LABELS[status.status] || status.status}</span>
+                    <div class="tile-big" style="margin-top:8px;">${active.length}</div>
+                    <div class="tile-sub">active watch-list match${active.length === 1 ? '' : 'es'}</div>
+                `;
+            } catch (err) {
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        async function loadHazards() {
+            const body = document.getElementById('hazardBody');
+            const dot = document.getElementById('hazardDot');
+            try {
+                const res = await fetch('/api/news/active-alerts?t=' + Date.now());
+                const data = await res.json();
+                const count = (data.alerts || []).length;
+                dot.className = 'tile-dot ' + (count > 0 ? 'dot-red' : 'dot-green');
+                body.innerHTML = `
+                    <div class="tile-big">${count}</div>
+                    <div class="tile-sub">${count > 0 ? 'active alert' + (count === 1 ? '' : 's') : 'clear'}</div>
+                    ${count > 0 ? `<div class="tile-detail">${escapeHtml((data.alerts[0].cap_event || data.alerts[0].title || '').slice(0, 60))}</div>` : ''}
+                `;
+            } catch (err) {
+                dot.className = 'tile-dot dot-gray';
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        async function loadWeather() {
+            const body = document.getElementById('weatherBody');
+            try {
+                const res = await fetch('/api/weather/conditions?t=' + Date.now());
+                const d = await res.json();
+                if (d.status !== 'ok') {
+                    body.innerHTML = `<div class="tile-sub">${escapeHtml(d.detail || 'Not fetched yet')}</div>`;
+                    return;
+                }
+                body.innerHTML = `
+                    <div class="tile-big">${d.temperature_f != null ? Math.round(d.temperature_f) + '°F' : '--'}</div>
+                    <div class="tile-sub">${escapeHtml(d.description || '')} · wind ${d.wind_mph ?? '--'}mph · humidity ${d.humidity_percent != null ? Math.round(d.humidity_percent) + '%' : '--'}</div>
+                    <div class="forecast-strip">
+                        ${(d.forecast || []).map(p => `<div><b>${escapeHtml(p.name)}</b><br>${p.temperature}°${escapeHtml(p.temperature_unit || '')}<br>${escapeHtml(p.short_forecast || '')}</div>`).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        function barClass(pct) {
+            return pct >= 90 ? 'crit' : pct >= 70 ? 'warn' : '';
+        }
+        function fmtBytes(b) {
+            if (b == null) return '--';
+            const gb = b / (1024 ** 3);
+            return gb >= 1 ? gb.toFixed(1) + 'GB' : (b / (1024 ** 2)).toFixed(0) + 'MB';
+        }
+        function fmtRate(bps) {
+            if (bps == null) return '--';
+            const kbps = bps / 1024;
+            return kbps >= 1024 ? (kbps / 1024).toFixed(1) + 'MB/s' : kbps.toFixed(0) + 'KB/s';
+        }
+
+        async function loadMetrics() {
+            const body = document.getElementById('metricsBody');
+            const dot = document.getElementById('metricsDot');
+            try {
+                const res = await fetch('/api/metrics?t=' + Date.now());
+                const d = await res.json();
+                if (d.status !== 'ok') {
+                    dot.className = 'tile-dot dot-gray';
+                    body.innerHTML = `<div class="tile-sub">${escapeHtml(d.detail || 'Not running')}</div>`;
+                    return;
+                }
+                dot.className = 'tile-dot dot-green';
+                body.innerHTML = `
+                    <div class="bar-row"><span class="label">CPU</span><div class="bar-track"><div class="bar-fill ${barClass(d.cpu_percent)}" style="width:${d.cpu_percent}%"></div></div><span class="bar-val">${d.cpu_percent.toFixed(0)}%</span></div>
+                    <div class="bar-row"><span class="label">RAM</span><div class="bar-track"><div class="bar-fill ${barClass(d.mem_percent)}" style="width:${d.mem_percent}%"></div></div><span class="bar-val">${d.mem_percent.toFixed(0)}%</span></div>
+                    <div class="bar-row"><span class="label">Disk</span><div class="bar-track"><div class="bar-fill ${barClass(d.disk_percent)}" style="width:${d.disk_percent}%"></div></div><span class="bar-val">${d.disk_percent.toFixed(0)}%</span></div>
+                    <div class="tile-detail">${fmtBytes(d.mem_used_bytes)} / ${fmtBytes(d.mem_total_bytes)} RAM · ${fmtBytes(d.disk_used_bytes)} / ${fmtBytes(d.disk_total_bytes)} disk<br>
+                    ↑ ${fmtRate(d.net_up_bytes_per_sec)} &nbsp; ↓ ${fmtRate(d.net_down_bytes_per_sec)}</div>
+                `;
+            } catch (err) {
+                dot.className = 'tile-dot dot-gray';
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        let vigilEnabled = null;
+        async function checkVigilEnabled() {
+            try {
+                const res = await fetch('/modules-enabled.json', { cache: 'no-store' });
+                const mods = await res.json();
+                vigilEnabled = mods.includes('vigil');
+            } catch { vigilEnabled = true; } // fail open, same as index.html
+            if (!vigilEnabled) {
+                document.getElementById('vigilTile').classList.add('dim');
+                document.getElementById('vigilBody').innerHTML = '<div class="tile-sub">Module not enabled</div>';
+            }
+        }
+
+        async function loadVigil() {
+            if (vigilEnabled === false) return;
+            const body = document.getElementById('vigilBody');
+            const dot = document.getElementById('vigilDot');
+            try {
+                const [stateRes, gridRes] = await Promise.all([
+                    fetch('/api/vigil/state?t=' + Date.now()),
+                    fetch('/api/grid?t=' + Date.now()),
+                ]);
+                const state = await stateRes.json();
+                const grid = await gridRes.json();
+                const deviceCount = Object.keys(grid || {}).length;
+                const criticalOk = state.critical_power_bus === 'ON';
+                dot.className = 'tile-dot ' + (criticalOk ? 'dot-green' : 'dot-red');
+                body.innerHTML = `
+                    <div class="tile-big">${state.solar_battery_soc ?? '--'}%</div>
+                    <div class="tile-sub">battery · critical bus ${escapeHtml(state.critical_power_bus || '?')}</div>
+                    <div class="tile-detail">${deviceCount} device${deviceCount === 1 ? '' : 's'} tracked</div>
+                `;
+            } catch (err) {
+                dot.className = 'tile-dot dot-gray';
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        async function loadSupply() {
+            const body = document.getElementById('supplyBody');
+            const categories = ['food', 'fuel', 'ppe', 'orchard', 'animal', 'water', 'office', 'fertilizer', 'freezer', 'medical'];
+            try {
+                const results = await Promise.all(categories.map(c => fetch(`/api/inventory/${c}`).then(r => r.json()).catch(() => [])));
+                let needsAttention = 0, totalTracked = 0;
+                results.forEach(items => {
+                    totalTracked += items.length;
+                    needsAttention += items.filter(i => {
+                        const minQty = parseInt(i.min_qty) || 0;
+                        return minQty > 0 && i.qty <= minQty;
+                    }).length;
+                });
+                body.innerHTML = `
+                    <div class="tile-big" style="color:${needsAttention > 0 ? 'var(--amber)' : 'var(--green)'}">${needsAttention}</div>
+                    <div class="tile-sub">item${needsAttention === 1 ? '' : 's'} need attention</div>
+                    <div class="tile-detail">${totalTracked} items tracked total</div>
+                `;
+            } catch (err) {
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        async function loadMedia() {
+            const body = document.getElementById('mediaBody');
+            try {
+                const res = await fetch('/api/media/counts?t=' + Date.now());
+                const d = await res.json();
+                body.innerHTML = `
+                    <div class="media-row"><span>🎞️ Videos</span><b>${d.videos ?? 0}</b></div>
+                    <div class="media-row"><span>🎵 MP3s</span><b>${d.mp3s ?? 0}</b></div>
+                    <div class="media-row"><span>📄 PDFs</span><b>${d.pdfs ?? 0}</b></div>
+                `;
+            } catch (err) {
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        async function loadBackup() {
+            const body = document.getElementById('backupBody');
+            const dot = document.getElementById('backupDot');
+            try {
+                const res = await fetch('/api/backup/list?t=' + Date.now());
+                const list = await res.json();
+                if (!list.length) {
+                    dot.className = 'tile-dot dot-amber';
+                    body.innerHTML = '<div class="tile-sub">No backups yet</div>';
+                    return;
+                }
+                const latest = list[0];
+                dot.className = 'tile-dot dot-green';
+                body.innerHTML = `
+                    <div class="tile-big">${list.length}</div>
+                    <div class="tile-sub">backup${list.length === 1 ? '' : 's'} on disk</div>
+                    <div class="tile-detail">latest: ${escapeHtml(latest.filename || latest.name || '')}</div>
+                `;
+            } catch (err) {
+                dot.className = 'tile-dot dot-gray';
+                body.innerHTML = '<div class="tile-sub">Not connected</div>';
+            }
+        }
+
+        function refreshFast() { loadMetrics(); }
+        function refreshNormal() {
+            loadSituation();
+            loadHazards();
+            loadWeather();
+            loadVigil();
+            loadSupply();
+            loadMedia();
+            loadBackup();
+        }
+
+        checkVigilEnabled().then(refreshNormal);
+        refreshFast();
+        setInterval(refreshFast, 5000);
+        setInterval(refreshNormal, 30000);
+    </script>
+</body>
+</html>

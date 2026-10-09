@@ -28,7 +28,7 @@ def _note_url(title):
 
 
 def _format_entry(note):
-    content = (note.get("content") or "").replace(f"#{JOURNAL_TAG}", "").strip()
+    content = (note.get("content") or "").replace(f"#{JOURNAL_TAG}", "").replace(f"#{NATURE_TAG}", "").strip()
     title = "Untitled Entry"
     body = content
     if content.startswith("## "):
@@ -88,3 +88,48 @@ def add_entry(title, text):
 def delete_entry(entry_id):
     resp = requests.delete(_note_url(entry_id), headers=HEADERS, timeout=10)
     return resp.status_code == 200
+
+
+# Nature Journal -- ROADMAP.md Phase 3, item 7: "a real Learning Journal
+# entry type (reuse, not a new store)." A Nature Journal entry is a real
+# Learning Journal entry with a second real tag added, so it still shows
+# up in the main Learning Journal (true reuse) while Nature Lab can also
+# list just its own real entries.
+NATURE_TAG = "cloud9-nature-journal"
+
+
+def list_nature_entries():
+    resp = requests.get(
+        f"{FLATNOTES_BASE_URL}/api/search",
+        params={"term": f"#{NATURE_TAG}", "sort": "lastModified", "order": "desc"},
+        headers=HEADERS,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    entries = []
+    for result in resp.json():
+        note_resp = requests.get(_note_url(result["title"]), headers=HEADERS, timeout=10)
+        if note_resp.status_code == 404:
+            continue
+        note_resp.raise_for_status()
+        entries.append(_format_entry(note_resp.json()))
+    return entries
+
+
+def add_nature_entry(title, text):
+    text = (text or "").strip()
+    if not text:
+        raise ValueError("Entry text is required.")
+    title = (title or "").strip() or "Untitled Entry"
+
+    storage_title = "Learning Journal - " + datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    content = f"## {title}\n\n{text}\n\n#{JOURNAL_TAG} #{NATURE_TAG}"
+
+    resp = requests.post(
+        f"{FLATNOTES_BASE_URL}/api/notes",
+        json={"title": storage_title, "content": content},
+        headers=HEADERS,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return _format_entry(resp.json())

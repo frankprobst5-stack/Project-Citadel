@@ -23,6 +23,19 @@ services:
       - "${CLOUD9_PORT}:5057"
     volumes:
       - ../../appdata/cloud9/data:/app/data
+      # History Library's real "Watch" section -- Frank's own, already-
+      # downloaded (legitimately, as a channel subscriber, for offline
+      # use) copies of real history videos, read-only so this container
+      # can play them but never write into the host's real Videos folder.
+      - ${CLOUD9_VIDEOS_PATH:-/home/frank/Videos}:/app/videos:ro
+      # Video Library's real subject-organized shelf -- a second, separate
+      # real folder Frank already has on this machine (already sorted into
+      # real subject folders: Ancient Egypt, Earth & Space Science,
+      # Engineering & Technology, Life Science, Physical Science, a
+      # general "a closer look" shelf, and math), same read-only reasoning
+      # as CLOUD9_VIDEOS_PATH above -- this container only ever plays these,
+      # never fetches or writes them.
+      - ${CLOUD9_SCHOOL_VIDEOS_PATH:-/home/frank/Desktop/school videos}:/app/school-videos:ro
       # Real host-launcher socket directory (see host-launcher/
       # cloud9-launcher.py's own module doc for the full reasoning) --
       # lets Cloud9's "Kart Racing"/"Code Lab"/"Globe" buttons ask a

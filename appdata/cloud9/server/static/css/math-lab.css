@@ -285,6 +285,172 @@ body {
   color: var(--math-accent);
 }
 
+/* Trip Planner -- the real Budget Simulation Engine's first mode
+   (ROADMAP.md Phase 3, item 2). Family/Mayor/Business modes are real,
+   named later work using this same reusable pattern. */
+.ml-trip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 700px) {
+  .ml-trip-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ml-trip-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ml-trip-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.ml-trip-field input[type="number"] {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.ml-trip-field input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+.ml-trip-results {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 20px;
+  align-self: flex-start;
+}
+
+.ml-trip-total-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.ml-trip-total {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--math-accent);
+  margin: 4px 0 16px;
+}
+
+.ml-trip-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.ml-trip-bar-row {
+  font-size: 0.82rem;
+}
+
+.ml-trip-bar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.ml-trip-bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ml-trip-bar-fill {
+  height: 100%;
+  background: var(--math-accent);
+}
+
+.ml-trip-logged {
+  margin-top: 10px;
+  color: var(--math-green);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Recipe Scaler */
+.ml-recipe-select-row {
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.ml-recipe-select-row select {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-family: inherit;
+  margin-left: 8px;
+}
+
+.ml-recipe-scale-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.ml-recipe-scale-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ml-recipe-scale-btn.ml-recipe-scale-active {
+  background: var(--math-accent);
+  color: #1b0f33;
+  border-color: var(--math-accent);
+  font-weight: 700;
+}
+
+.ml-recipe-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+
+.ml-recipe-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.ml-recipe-table td:first-child {
+  font-weight: 700;
+  color: var(--math-accent);
+  white-space: nowrap;
+  width: 1%;
+}
+
+.ml-recipe-note {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
 /* Sandbox */
 .ml-sandbox-container {
   width: 100%;

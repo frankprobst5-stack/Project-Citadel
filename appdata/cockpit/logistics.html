@@ -64,6 +64,17 @@
         .badge-warn { background: rgba(255,176,0,0.15); color: var(--amber); border: 1px solid var(--amber); }
         .badge-bad { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid var(--red); }
         .tile-alert-badge { background: rgba(255,176,0,0.15); color: var(--amber); border: 1px solid var(--amber); border-radius: 10px; font-size: 0.7rem; padding: 2px 8px; font-family: monospace; vertical-align: middle; }
+
+        /* Category tabs -- splits the 10 ledger tiles into 4 groups
+           (Food & Water / Livestock / Orchard & Garden / Equipment &
+           Supplies) instead of one flat grid, same real tab pattern
+           already used on news.html. */
+        .cat-tab-bar { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border-dim); flex-wrap: wrap; }
+        .cat-tab-btn { background: none; border: none; color: var(--text-faint); padding: 10px 18px; font-family: monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 3px solid transparent; }
+        .cat-tab-btn:hover { color: var(--text); }
+        .cat-tab-btn.active { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+        .category-tab { display: none; }
+        .category-tab.active { display: block; }
     </style>
 </head>
 <body>
@@ -75,62 +86,86 @@
         </div>
         <div class="status-bar">RESOURCE TRACKING SYSTEM // LEDGER STORAGE: ENGINE_JSON_ARRAYS // ACTIVE</div>
 
-        <!-- 3-COLUMN LOGISTICS EXECUTIVE DECK -->
-        <div class="logistics-grid">
-            <div class="log-card">
-                <h2>🥫 Food Inventory <span id="food-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track home provisions, freeze-dried storage stacks, shelf-life matrices, and calorie indexes.</p>
-                <button class="action-btn" onclick="openPanel('foodPanel')">Access Ledger</button>
+        <!-- CATEGORY TABS -->
+        <div class="cat-tab-bar">
+            <button class="cat-tab-btn active" id="catTabBtn-foodwater" onclick="switchCategoryTab('foodwater')">🥫💧 Food &amp; Water</button>
+            <button class="cat-tab-btn" id="catTabBtn-livestock" onclick="switchCategoryTab('livestock')">🐓 Livestock</button>
+            <button class="cat-tab-btn" id="catTabBtn-orchardgarden" onclick="switchCategoryTab('orchardgarden')">🍏🌾 Orchard &amp; Garden</button>
+            <button class="cat-tab-btn" id="catTabBtn-equipment" onclick="switchCategoryTab('equipment')">🥽⛽ Equipment &amp; Supplies</button>
+        </div>
+
+        <div class="category-tab active" id="catTab-foodwater">
+            <div class="logistics-grid">
+                <div class="log-card">
+                    <h2>🥫 Food Inventory <span id="food-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track home provisions, freeze-dried storage stacks, shelf-life matrices, and calorie indexes.</p>
+                    <button class="action-btn" onclick="openPanel('foodPanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>🧊 Freezer Foods <span id="freezer-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Separate from shelf-stable Food Inventory — freezer contents have their own rotation dates.</p>
+                    <button class="action-btn" onclick="openPanel('freezerPanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>💧 Water Storage <span id="water-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track drums, jugs, filters, and treated reserves, with rotation dates on anything that needs it.</p>
+                    <button class="action-btn" onclick="openPanel('waterPanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>🍲 Recipe Pantry Check</h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in Mealie and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
+                    <button class="action-btn" onclick="openPanel('pantryCheckPanel')">Access Ledger</button>
+                </div>
             </div>
-            <div class="log-card">
-                <h2>⛽ Fuel Resources <span id="fuel-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Monitor stabilized gasoline reserves, diesel drums, propane levels, and rotation timelines.</p>
-                <button class="action-btn" onclick="openPanel('fuelPanel')">Access Ledger</button>
+        </div>
+
+        <div class="category-tab" id="catTab-livestock">
+            <div class="logistics-grid">
+                <div class="log-card">
+                    <h2>🐓 Livestock & Animals <span id="animal-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track animal populations, health logs, feeding requirements, and production outputs.</p>
+                    <button class="action-btn" onclick="openPanel('animalPanel')">Access Ledger</button>
+                </div>
             </div>
-            <div class="log-card">
-                <h2>🥽 PPE & Equipment <span id="ppe-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Manage personal protective kits, gas mask canisters, respirator gear, and filtration items.</p>
-                <button class="action-btn" onclick="openPanel('ppePanel')">Access Ledger</button>
+        </div>
+
+        <div class="category-tab" id="catTab-orchardgarden">
+            <div class="logistics-grid">
+                <div class="log-card">
+                    <h2>🍏 Orchard & Fruit Trees <span id="orchard-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Log individual tree counts, varieties, pruning records, watering routines, and seasonal health charts.</p>
+                    <button class="action-btn" onclick="openPanel('orchardPanel')">Access Ledger</button>
+                </div>
+                <div class="log-card" style="box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 0 15px rgba(0, 141, 255, 0.15);">
+                    <h2 style="color:var(--accent);">🌾 Botanical Garden Tracker</h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Query multi-year spring/fall garden data records, crop varieties, pests, fertilizers, and total yield weights.</p>
+                    <button class="action-btn" style="background:var(--panel-alt); border-color:var(--accent);" onclick="openPanel('gardenPanel')">Access Ledger</button>
+                </div>
             </div>
-            <div class="log-card">
-                <h2>🍏 Orchard & Fruit Trees <span id="orchard-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Log individual tree counts, varieties, pruning records, watering routines, and seasonal health charts.</p>
-                <button class="action-btn" onclick="openPanel('orchardPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>🐓 Livestock & Animals <span id="animal-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track animal populations, health logs, feeding requirements, and production outputs.</p>
-                <button class="action-btn" onclick="openPanel('animalPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>💧 Water Storage <span id="water-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track drums, jugs, filters, and treated reserves, with rotation dates on anything that needs it.</p>
-                <button class="action-btn" onclick="openPanel('waterPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>🖊️ Office & School Supplies <span id="office-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Paper, ink, workbooks, and general office/school stock levels.</p>
-                <button class="action-btn" onclick="openPanel('officePanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>🧪 Fertilizers & Pesticides <span id="fertilizer-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track product stock, storage location, and expiration/potency dates.</p>
-                <button class="action-btn" onclick="openPanel('fertilizerPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>🧊 Freezer Foods <span id="freezer-alert-badge"></span></h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Separate from shelf-stable Food Inventory — freezer contents have their own rotation dates.</p>
-                <button class="action-btn" onclick="openPanel('freezerPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card" style="box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 0 15px rgba(0, 141, 255, 0.15);">
-                <h2 style="color:var(--accent);">🌾 Botanical Garden Tracker</h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Query multi-year spring/fall garden data records, crop varieties, pests, fertilizers, and total yield weights.</p>
-                <button class="action-btn" style="background:var(--panel-alt); border-color:var(--accent);" onclick="openPanel('gardenPanel')">Access Ledger</button>
-            </div>
-            <div class="log-card">
-                <h2>🍲 Recipe Pantry Check</h2>
-                <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in Mealie and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
-                <button class="action-btn" onclick="openPanel('pantryCheckPanel')">Access Ledger</button>
+        </div>
+
+        <div class="category-tab" id="catTab-equipment">
+            <div class="logistics-grid">
+                <div class="log-card">
+                    <h2>⛽ Fuel Resources <span id="fuel-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Monitor stabilized gasoline reserves, diesel drums, propane levels, and rotation timelines.</p>
+                    <button class="action-btn" onclick="openPanel('fuelPanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>🥽 PPE & Equipment <span id="ppe-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Manage personal protective kits, gas mask canisters, respirator gear, and filtration items.</p>
+                    <button class="action-btn" onclick="openPanel('ppePanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>🖊️ Office & School Supplies <span id="office-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Paper, ink, workbooks, and general office/school stock levels.</p>
+                    <button class="action-btn" onclick="openPanel('officePanel')">Access Ledger</button>
+                </div>
+                <div class="log-card">
+                    <h2>🧪 Fertilizers & Pesticides <span id="fertilizer-alert-badge"></span></h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Track product stock, storage location, and expiration/potency dates.</p>
+                    <button class="action-btn" onclick="openPanel('fertilizerPanel')">Access Ledger</button>
+                </div>
             </div>
         </div>
 
@@ -422,15 +457,32 @@
             el.innerHTML = needsAttention > 0 ? `<span class="tile-alert-badge">${needsAttention} NEED ATTENTION</span>` : '';
         }
 
+        // Which category tab each ledger panel lives under -- used both by
+        // the tab buttons themselves and by the hash deep-link below, so a
+        // direct link to e.g. #food lands on the Food & Water tab with the
+        // Food ledger already open, not the first tab with nothing open.
+        const PANEL_TO_TAB = {
+            food: 'foodwater', freezer: 'foodwater', water: 'foodwater', pantryCheck: 'foodwater',
+            animal: 'livestock',
+            orchard: 'orchardgarden', garden: 'orchardgarden',
+            fuel: 'equipment', ppe: 'equipment', office: 'equipment', fertilizer: 'equipment',
+        };
+
+        function switchCategoryTab(name) {
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.toggle('active', t.id === 'catTab-' + name));
+            document.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.toggle('active', b.id === 'catTabBtn-' + name));
+        }
+
         // Global Boot Loader Loop
         function initLedgerMatrix() {
             Object.keys(inventoryData).forEach(cat => fetchCategory(cat));
             loadGardenLedger();
             // Deep-link support (e.g. logistics.html#food from the cockpit's
-            // Supply Status strip) -- jumps straight to the right ledger
-            // instead of landing on the tile grid every time.
+            // Supply Status strip) -- jumps straight to the right tab AND
+            // ledger instead of landing on the tile grid every time.
             const requested = location.hash.replace('#', '');
             if (requested && document.getElementById(requested + 'Panel')) {
+                if (PANEL_TO_TAB[requested]) switchCategoryTab(PANEL_TO_TAB[requested]);
                 openPanel(requested + 'Panel');
             }
         }

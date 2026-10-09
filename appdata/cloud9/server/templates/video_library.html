@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Library - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/video-library.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="vl-body">
+  <header class="topbar vl-topbar">
+    <a class="vl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="vl-heading">
+      <span class="vl-icon">&#127909;</span>
+      <span class="vl-title">Video Library</span>
+    </div>
+  </header>
+
+  <main class="vl-main" id="vl-list-view">
+    <div class="vl-tabs" id="vl-tabs">
+      <div class="vl-loading">Loading categories&hellip;</div>
+    </div>
+    <div class="vl-video-grid" id="vl-video-grid">
+      <div class="vl-loading">Loading videos&hellip;</div>
+    </div>
+  </main>
+
+  <div class="vl-player-overlay" id="vl-player-overlay" hidden>
+    <div class="vl-player-panel">
+      <button class="vl-player-close" id="vl-player-close" aria-label="Close">&#10005;</button>
+      <video class="vl-player-video" id="vl-player-video" controls></video>
+      <div class="vl-player-title" id="vl-player-title"></div>
+    </div>
+  </div>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Video Library", activity: "watching a real educational video" };</script>
+  <script src="{{ url_for('static', filename='js/video-library.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Society Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/society-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="sol-body">
+  <header class="topbar sol-topbar">
+    <a class="sol-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="sol-heading">
+      <span class="sol-icon">&#127979;&#65039;</span>
+      <span class="sol-title">Apportionment Explorer</span>
+    </div>
+    <a class="sol-explorer-link" href="/demographic-explorer">Demographic Explorer &rarr;</a>
+  </header>
+
+  <main class="sol-main">
+    <div class="sol-note">
+      How the real 435 seats of the U.S. House are divided among the states by real population -- a real math system, not an opinion. Every number here is real historical Census Bureau data.
+    </div>
+
+    <section class="sol-section">
+      <div class="sol-section-title">The Real Formula</div>
+      <div class="sol-formula">priority = population &divide; &radic;(n &times; (n&minus;1))</div>
+      <div class="sol-section-note">Each state gets 1 guaranteed seat. For every seat after that, this real formula scores how strong a state's claim is to "seat number n." The two highest scores nationwide get the next two seats, and so on, until all 435 are handed out.</div>
+    </section>
+
+    <section class="sol-section" id="sol-worked-example">
+      <div class="sol-loading">Loading the real 2020 example&hellip;</div>
+    </section>
+
+    <section class="sol-section">
+      <div class="sol-section-title">Civics</div>
+      <div class="sol-section-note">How the real system of government actually works -- real videos already in your School Library.</div>
+      <div class="sol-civics-grid" id="sol-civics-grid">
+        <div class="sol-loading">Loading&hellip;</div>
+      </div>
+    </section>
+
+    <section class="sol-section">
+      <div class="sol-section-title">Try It: Compare Two States</div>
+      <div class="sol-section-note">Pick any two real states and see the real math behind each one's claim to one more seat than they actually have.</div>
+      <div class="sol-compare-row">
+        <select id="sol-state-a"></select>
+        <span>vs</span>
+        <select id="sol-state-b"></select>
+        <button type="button" class="sol-btn" id="sol-compare-btn">Compare</button>
+      </div>
+      <div class="sol-compare-result" id="sol-compare-result"></div>
+    </section>
+
+    <section class="sol-section">
+      <div class="sol-section-title">All 50 States, 2020</div>
+      <div class="sol-table-wrap">
+        <table class="sol-table" id="sol-table">
+          <thead>
+            <tr><th>State</th><th>2020 Population</th><th>Seats (2020)</th><th>Change from 2010</th></tr>
+          </thead>
+          <tbody id="sol-table-body"></tbody>
+        </table>
+      </div>
+      <div class="sol-source-note">Source: U.S. Census Bureau, 2020 Census apportionment results (released 2021-04-26)</div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Society Lab", activity: "exploring the real math behind how House seats are divided among states" };</script>
+  <script src="{{ url_for('static', filename='js/society-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

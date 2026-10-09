@@ -24,8 +24,10 @@ AREAS = {
         "icon": "\U0001F31E",
         "hero_img": "img/areas/my-day.png",
         "destinations": [
+            {"title": "Missions", "subtitle": "One real event, every subject together", "icon": "\U0001F680", "kind": "page", "href": "/missions"},
             {"title": "Daily Planner", "subtitle": "Notes & calendar", "icon": "\U0001F4C5", "kind": "modal", "id": "planner"},
             {"title": "Science Journal", "subtitle": "Log what you noticed or built", "icon": "\U0001F52C", "kind": "modal", "id": "journal"},
+            {"title": "Parent Tools", "subtitle": "Lay out the real weekly schedule", "icon": "\U0001F5D3️", "kind": "page", "href": "/parent-tools"},
         ],
     },
     "learn": {
@@ -35,6 +37,9 @@ AREAS = {
         "hero_img": "img/areas/learn.png",
         "destinations": [
             {"title": "School Library", "subtitle": "Videos & exercises", "icon": "\U0001F4DA", "kind": "page", "href": "/school-library"},
+            {"title": "History Library", "subtitle": "Real classic books & videos, by grade", "icon": "\U0001F4DC", "kind": "page", "href": "/history-library"},
+            {"title": "Video Library", "subtitle": "Science, math & more, by subject", "icon": "\U0001F3AC", "kind": "page", "href": "/video-library"},
+            {"title": "Word Lab", "subtitle": "Spelling that remembers what to practice", "icon": "\U0001F524", "kind": "page", "href": "/word-lab"},
             {"title": "Math Lab", "subtitle": "Times tables, challenges & a math sandbox", "icon": "\U0001F522", "kind": "page", "href": "/math-lab"},
             {"title": "Dictionary", "subtitle": "Look up a word", "icon": "\U0001F4D6", "kind": "modal", "id": "dictionary"},
         ],
@@ -47,6 +52,13 @@ AREAS = {
         "destinations": [
             {"title": "Earth Lab", "subtitle": "Click a country, learn something new", "icon": "\U0001F30D", "kind": "page", "href": "/earth-lab"},
             {"title": "Weather Labs", "subtitle": "Learn to read the sky", "icon": "⛈️", "kind": "page", "href": "/weather-labs"},
+            {"title": "Science Lab", "subtitle": "Build real molecules, atom by atom", "icon": "\U0001F9EA", "kind": "page", "href": "/science-lab"},
+            {"title": "Space Lab", "subtitle": "Tonight's real moon, sun, and ISS passes", "icon": "\U0001F30C", "kind": "page", "href": "/space-lab"},
+            {"title": "Society Lab", "subtitle": "Real civics & election math", "icon": "\U0001F3DB️", "kind": "page", "href": "/society-lab"},
+            {"title": "Nature Lab", "subtitle": "Seasons, trees, birds & your own nature journal", "icon": "\U0001F343", "kind": "page", "href": "/nature-lab"},
+            {"title": "Engineering Lab", "subtitle": "Ask, Plan, Build, Test, Improve, Document", "icon": "\U0001F6E0️", "kind": "page", "href": "/engineering-lab"},
+            {"title": "Computer Lab", "subtitle": "Scratch, then real HTML & CSS", "icon": "\U0001F4BB", "kind": "page", "href": "/computer-lab"},
+            {"title": "Life Lab", "subtitle": "First aid, preparedness & money basics", "icon": "\U0001F9F0", "kind": "page", "href": "/life-lab"},
         ],
     },
     "create": {

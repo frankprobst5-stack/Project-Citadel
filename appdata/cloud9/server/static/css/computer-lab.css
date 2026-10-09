@@ -1,0 +1,104 @@
+:root {
+  --cpl-accent: #5fc9e0;
+  --cpl-accent-dim: #204a52;
+}
+
+body.cpl-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.cpl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.cpl-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.cpl-back:hover {
+  border-color: var(--cpl-accent);
+  color: var(--text);
+}
+
+.cpl-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.cpl-icon { font-size: 1.5rem; }
+
+.cpl-main {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+}
+
+.cpl-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.cpl-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.cpl-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cpl-step-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 18px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.cpl-step-card:not(.cpl-step-disabled):hover {
+  border-color: var(--cpl-accent);
+}
+
+.cpl-step-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cpl-step-title {
+  font-weight: 700;
+}
+
+.cpl-step-subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.cpl-step-arrow {
+  color: var(--cpl-accent);
+  font-weight: 700;
+}

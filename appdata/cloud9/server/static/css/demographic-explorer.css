@@ -1,0 +1,171 @@
+:root {
+  --dex-accent: #5fc9e0;
+  --dex-accent-dim: #204a52;
+  --dex-green: #6fe0a1;
+  --dex-red: #ff6f7a;
+}
+
+body.dex-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dex-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.dex-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.dex-back:hover {
+  border-color: var(--dex-accent);
+  color: var(--text);
+}
+
+.dex-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.dex-icon { font-size: 1.5rem; }
+
+.dex-main {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.dex-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.dex-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dex-accent);
+  margin-bottom: 10px;
+}
+
+.dex-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.dex-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+}
+
+.dex-guess-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.dex-guess-btn {
+  flex: 1;
+  max-width: 220px;
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dex-guess-btn:hover {
+  border-color: var(--dex-accent);
+}
+
+.dex-feedback {
+  min-height: 1.6em;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.dex-feedback-correct { color: var(--dex-green); }
+.dex-feedback-incorrect { color: var(--dex-red); }
+
+.dex-btn {
+  background: var(--dex-accent);
+  color: #06262c;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dex-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.dex-compare-row select {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.dex-compare-result:empty { display: none; }
+
+.dex-compare-card {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dex-compare-country {
+  flex: 1;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.dex-compare-name {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.dex-compare-stat {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}

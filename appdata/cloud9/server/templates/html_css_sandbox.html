@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML &amp; CSS Sandbox - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/html-css-sandbox.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="hcs-body">
+  <header class="topbar hcs-topbar">
+    <a class="hcs-back" href="/computer-lab" aria-label="Back to Computer Lab">&larr; Computer Lab</a>
+    <div class="hcs-heading">
+      <span class="hcs-icon">&#127909;</span>
+      <span class="hcs-title">HTML &amp; CSS Sandbox</span>
+    </div>
+  </header>
+
+  <main class="hcs-main">
+    <div class="hcs-editors">
+      <div class="hcs-editor-pane">
+        <div class="hcs-editor-label">HTML</div>
+        <textarea class="hcs-textarea" id="hcs-html" spellcheck="false"></textarea>
+      </div>
+      <div class="hcs-editor-pane">
+        <div class="hcs-editor-label">CSS</div>
+        <textarea class="hcs-textarea" id="hcs-css" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="hcs-preview-pane">
+      <div class="hcs-editor-label">Preview -- updates as you type</div>
+      <iframe class="hcs-preview-frame" id="hcs-preview" sandbox=""></iframe>
+    </div>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "HTML & CSS Sandbox", activity: "writing real HTML and CSS and seeing it render live" };</script>
+  <script src="{{ url_for('static', filename='js/html-css-sandbox.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

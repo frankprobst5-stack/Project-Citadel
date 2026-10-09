@@ -393,6 +393,30 @@ body {
   padding: 16px 20px;
 }
 
+a.quick-panel {
+  display: block;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+a.quick-panel:hover {
+  border-color: #e8a23f;
+}
+
+.assignments-quick-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.assignments-quick-next {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
 .quick-panel-label {
   font-size: 0.75rem;
   text-transform: uppercase;

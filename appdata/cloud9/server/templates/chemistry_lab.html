@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chemistry Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chemistry-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="chl-body">
+  <header class="topbar chl-topbar">
+    <a class="chl-back" href="/science-lab" aria-label="Back to Science Lab">&larr; Science Lab</a>
+    <div class="chl-heading">
+      <span class="chl-icon">&#129514;</span>
+      <span class="chl-title">Molecule Builder</span>
+    </div>
+  </header>
+
+  <main class="chl-main">
+    <div class="chl-note">Pick a real molecule, then click atoms to build it. Get the exact real formula right -- no partial credit, same as a real chemist.</div>
+
+    <div class="chl-molecule-row" id="chl-molecule-row">
+      <div class="chl-loading">Loading molecules&hellip;</div>
+    </div>
+
+    <div class="chl-builder" id="chl-builder" hidden>
+      <div class="chl-target" id="chl-target"></div>
+
+      <div class="chl-workspace" id="chl-workspace"></div>
+
+      <div class="chl-element-row" id="chl-element-row"></div>
+
+      <div class="chl-actions">
+        <button type="button" class="chl-btn" id="chl-reset-btn">Clear</button>
+        <button type="button" class="chl-btn chl-btn-primary" id="chl-check-btn">Check My Molecule</button>
+      </div>
+
+      <div class="chl-feedback" id="chl-feedback"></div>
+    </div>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Chemistry Lab", activity: "building real molecules out of atoms" };</script>
+  <script src="{{ url_for('static', filename='js/chemistry-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

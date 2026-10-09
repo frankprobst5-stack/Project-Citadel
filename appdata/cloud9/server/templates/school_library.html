@@ -6,6 +6,7 @@
   <title>School Library - Cloud9</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/school-library.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
 </head>
 <body class="sl-body">
   <header class="topbar sl-topbar">
@@ -49,6 +50,8 @@
     </div>
   </div>
 
+  <script>window.OLLIE_CONTEXT = { lab: "School Library", activity: "browsing videos and exercises from the course library" };</script>
   <script src="{{ url_for('static', filename='js/school-library.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
 </body>
 </html>

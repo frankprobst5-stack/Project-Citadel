@@ -1,0 +1,160 @@
+:root {
+  --vl-accent: #5fc9e0;
+  --vl-accent-dim: #204a52;
+}
+
+body.vl-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.vl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.vl-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.vl-back:hover {
+  border-color: var(--vl-accent);
+  color: var(--text);
+}
+
+.vl-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.vl-icon { font-size: 1.5rem; }
+
+.vl-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vl-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vl-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.vl-tab {
+  background: var(--panel);
+  color: var(--text-dim);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.vl-tab:hover {
+  border-color: var(--vl-accent);
+  color: var(--text);
+}
+
+.vl-tab-active {
+  background: var(--vl-accent);
+  color: #06262c;
+  border-color: var(--vl-accent);
+}
+
+.vl-video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.vl-video-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  transition: border-color 0.15s;
+}
+
+.vl-video-card:hover {
+  border-color: var(--vl-accent);
+}
+
+.vl-video-card-icon {
+  font-size: 1.4rem;
+  margin-bottom: 6px;
+}
+
+.vl-player-overlay[hidden] {
+  display: none;
+}
+
+.vl-player-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.vl-player-panel {
+  width: 92%;
+  max-width: 900px;
+  position: relative;
+}
+
+.vl-player-video {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  display: block;
+}
+
+.vl-player-title {
+  color: var(--text);
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+.vl-player-close {
+  position: absolute;
+  top: -36px;
+  right: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+}

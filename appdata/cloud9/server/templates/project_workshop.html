@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/project-workshop.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
 </head>
 <body>
   <header class="topbar area-topbar">
@@ -97,6 +98,8 @@
     </div>
   </main>
 
+  <script>window.OLLIE_CONTEXT = { lab: "Project Workshop", activity: "working on a hands-on project with a goal, materials, and a checklist" };</script>
   <script src="{{ url_for('static', filename='js/project-workshop.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
 </body>
 </html>

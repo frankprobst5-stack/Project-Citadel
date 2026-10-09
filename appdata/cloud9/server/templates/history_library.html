@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History Library - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/history-library.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="hl-body">
+  <header class="topbar hl-topbar">
+    <a class="hl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="hl-heading">
+      <span class="hl-icon">&#128220;</span>
+      <span class="hl-title">History Library</span>
+    </div>
+  </header>
+
+  <main class="hl-main" id="hl-list-view">
+    <section class="hl-section">
+      <div class="hl-section-title">American History</div>
+      <div class="hl-section-note">Real classic history books, free and public domain, from <a href="https://www.gutenberg.org/" target="_blank" rel="noopener">Project Gutenberg</a>.</div>
+      <div class="hl-book-grid" id="hl-book-grid-american-history">
+        <div class="hl-loading">Loading the library&hellip;</div>
+      </div>
+    </section>
+
+    <section class="hl-section">
+      <div class="hl-section-title">Ancient History</div>
+      <div class="hl-section-note">Real classic history books, free and public domain, from <a href="https://www.gutenberg.org/" target="_blank" rel="noopener">Project Gutenberg</a>.</div>
+      <div class="hl-book-grid" id="hl-book-grid-ancient-history">
+        <div class="hl-loading">Loading the library&hellip;</div>
+      </div>
+    </section>
+
+    <section class="hl-section">
+      <div class="hl-section-title">Watch</div>
+      <div class="hl-section-note">Real, kid-friendly history videos &mdash; your own downloaded copies, playing straight from this computer.</div>
+      <div class="hl-video-grid" id="hl-video-grid">
+        <div class="hl-loading">Loading videos&hellip;</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="hl-player-overlay" id="hl-player-overlay" hidden>
+    <div class="hl-player-panel">
+      <button class="hl-player-close" id="hl-player-close" aria-label="Close">&#10005;</button>
+      <video class="hl-player-video" id="hl-player-video" controls></video>
+      <div class="hl-player-title" id="hl-player-title"></div>
+    </div>
+  </div>
+
+  <main class="hl-main hl-reader" id="hl-reader-view" hidden>
+    <div class="hl-reader-topbar">
+      <button type="button" class="hl-back-to-list" id="hl-back-to-list">&larr; Back to library</button>
+      <div class="hl-reader-page-label" id="hl-reader-page-label"></div>
+    </div>
+    <div class="hl-reader-panel">
+      <div class="hl-reader-title" id="hl-reader-title"></div>
+      <div class="hl-reader-byline" id="hl-reader-byline"></div>
+      <div class="hl-reader-text" id="hl-reader-text"></div>
+    </div>
+    <div class="hl-reader-nav">
+      <button type="button" class="hl-mode-btn" id="hl-reader-prev">&larr; Previous page</button>
+      <button type="button" class="hl-mode-btn" id="hl-reader-next">Next page &rarr;</button>
+    </div>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "History Library", activity: "reading a real classic American history book" };</script>
+  <script src="{{ url_for('static', filename='js/history-library.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

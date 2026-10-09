@@ -1,0 +1,175 @@
+/* Word Lab -- ROADMAP.md Phase 3, item 1: the first proof the shared
+   Mastery Engine generalizes beyond Math Lab. */
+
+.wl-main {
+  max-width: 760px;
+}
+
+.wl-unit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wl-unit-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.wl-unit-btn.wl-unit-active {
+  background: #e8a23f;
+  color: #241a08;
+  border-color: #e8a23f;
+  font-weight: 700;
+}
+
+.wl-mode-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wl-mode-btn {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wl-mode-btn.wl-mode-active {
+  border-color: #e8a23f;
+  color: #e8a23f;
+}
+
+.wl-word-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.wl-word-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.wl-word-card:hover {
+  border-color: #e8a23f;
+}
+
+.wl-word-text {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.wl-word-level {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.wl-word-level.wl-level-mastered { color: #8effa1; }
+.wl-word-level.wl-level-almost { color: #e8a23f; }
+.wl-word-level.wl-level-learning { color: #8fb8ff; }
+
+.wl-practice-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.wl-practice-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+}
+
+.wl-practice-hint {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  min-height: 1.2em;
+}
+
+.wl-hear-btn {
+  background: #e8a23f;
+  color: #241a08;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+#wl-practice-form {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+#wl-practice-input {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  width: 220px;
+}
+
+#wl-practice-form button[type="submit"] {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.wl-practice-feedback {
+  margin-top: 16px;
+  font-weight: 700;
+  min-height: 1.4em;
+}
+
+.wl-feedback-correct { color: #8effa1; }
+.wl-feedback-incorrect { color: #ff8f8f; }
+
+.wl-practice-empty {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 20px;
+}
+
+.wl-note {
+  margin-top: 28px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.wl-note a {
+  color: #e8a23f;
+}

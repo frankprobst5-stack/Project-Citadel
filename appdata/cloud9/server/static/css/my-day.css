@@ -1,0 +1,167 @@
+/* My Day -- real Phase 1 content (ROADMAP.md): due mastery reviews and
+   in-progress projects, above the existing destination tiles. */
+
+.md-field {
+  margin-bottom: 24px;
+}
+
+.md-field-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.md-reviews,
+.md-projects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.md-schedule,
+.md-missions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.md-mission-chip {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.md-mission-chip:hover {
+  border-color: #e8a23f;
+}
+
+.md-mission-title {
+  font-weight: 700;
+}
+
+.md-mission-progress {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.md-schedule-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.md-schedule-block.md-schedule-done {
+  opacity: 0.55;
+}
+
+.md-schedule-block.md-schedule-done .md-schedule-title {
+  text-decoration: line-through;
+}
+
+.md-schedule-checkbox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.md-schedule-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-schedule-subject {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #e8a23f;
+  font-weight: 700;
+}
+
+.md-schedule-title {
+  font-weight: 600;
+}
+
+.md-schedule-duration {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.md-schedule-link {
+  color: #e8a23f;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.md-schedule-link:hover {
+  text-decoration: underline;
+}
+
+.md-review-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+}
+
+.md-review-subject {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.md-review-level {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(232, 162, 63, 0.15);
+  color: #e8a23f;
+}
+
+.md-project-chip {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.88rem;
+  transition: border-color 0.15s;
+}
+
+.md-project-chip:hover {
+  border-color: #e8a23f;
+}
+
+.md-project-progress {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
+
+.md-empty {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}

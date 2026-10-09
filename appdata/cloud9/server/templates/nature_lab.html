@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nature Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/nature-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="nal-body">
+  <header class="topbar nal-topbar">
+    <a class="nal-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="nal-heading">
+      <span class="nal-icon">&#127291;</span>
+      <span class="nal-title">Nature Lab</span>
+    </div>
+  </header>
+
+  <main class="nal-main">
+    <section class="nal-section" id="nal-season-section">
+      <div class="nal-loading">Loading the real season&hellip;</div>
+    </section>
+
+    <section class="nal-section">
+      <div class="nal-section-title">Explore</div>
+      <div class="nal-section-note">Real nature videos already in your library.</div>
+      <div class="nal-topic-grid" id="nal-topic-grid">
+        <div class="nal-loading">Loading&hellip;</div>
+      </div>
+      <a class="nal-video-link" href="/video-library?category=a-closer-look">A Closer Look -- more real nature videos &rarr;</a>
+    </section>
+
+    <section class="nal-section">
+      <div class="nal-section-title">Nature Journal</div>
+      <div class="nal-section-note">What did you see outside today? This saves into your real Learning Journal too.</div>
+      <form class="nal-journal-form" id="nal-journal-form">
+        <input type="text" id="nal-journal-title" placeholder="What did you see? (e.g. A robin's nest)" required>
+        <textarea id="nal-journal-text" placeholder="Describe it -- where, what it looked like, what it was doing..." rows="3" required></textarea>
+        <button type="submit" class="nal-btn">Save Entry</button>
+      </form>
+      <div class="nal-journal-list" id="nal-journal-list">
+        <div class="nal-loading">Loading your real entries&hellip;</div>
+      </div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Nature Lab", activity: "tracking the real seasons and keeping a nature journal" };</script>
+  <script src="{{ url_for('static', filename='js/nature-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

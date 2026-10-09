@@ -1,0 +1,243 @@
+:root {
+  --sol-accent: #b89aff;
+  --sol-accent-dim: #3a2d61;
+}
+
+body.sol-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.sol-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.sol-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.sol-back:hover {
+  border-color: var(--sol-accent);
+  color: var(--text);
+}
+
+.sol-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.sol-icon { font-size: 1.5rem; }
+
+.sol-explorer-link {
+  margin-left: auto;
+  color: var(--sol-accent);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.sol-explorer-link:hover {
+  text-decoration: underline;
+}
+
+.sol-main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.sol-note {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.sol-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.sol-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--sol-accent);
+  margin-bottom: 6px;
+}
+
+.sol-section-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.sol-formula {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.sol-example-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.sol-example-title {
+  font-weight: 700;
+  color: var(--sol-accent);
+  margin-bottom: 8px;
+}
+
+.sol-example-desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.sol-example-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sol-example-state {
+  flex: 1;
+  min-width: 180px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.sol-example-state-winner {
+  box-shadow: 0 0 0 2px var(--sol-accent) inset;
+}
+
+.sol-example-state-name {
+  font-weight: 700;
+}
+
+.sol-example-stat {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.sol-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+
+.sol-compare-row select {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.sol-btn {
+  background: var(--sol-accent);
+  color: #1c1230;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sol-compare-result:empty { display: none; }
+
+.sol-table-wrap {
+  overflow-x: auto;
+}
+
+.sol-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.sol-table th,
+.sol-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.sol-table th {
+  color: var(--sol-accent);
+  font-weight: 700;
+}
+
+.sol-change-positive { color: #6fe0a1; }
+.sol-change-negative { color: #ff6f7a; }
+
+.sol-civics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.sol-civics-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.sol-civics-card:hover {
+  border-color: var(--sol-accent);
+}
+
+.sol-civics-card-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.sol-civics-card-subtitle {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.sol-source-note {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-top: 10px;
+}

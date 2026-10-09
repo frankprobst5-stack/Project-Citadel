@@ -21,12 +21,20 @@ LOG_TAG="citadel-news"
 log() { echo "[$LOG_TAG] $(date -u +%Y-%m-%dT%H:%M:%SZ) $*"; }
 
 DASHBOARD_PORT="8085"
+VAULT_API_TOKEN=""
 if [[ -f "$ENV_FILE" ]]; then
     port_line=$(grep -E "^COCKPIT_PORT=" "$ENV_FILE" 2>/dev/null || true)
     [[ -n "$port_line" ]] && DASHBOARD_PORT="${port_line#COCKPIT_PORT=}"
+    token_line=$(grep -E "^VAULT_API_TOKEN=" "$ENV_FILE" 2>/dev/null || true)
+    [[ -n "$token_line" ]] && VAULT_API_TOKEN="${token_line#VAULT_API_TOKEN=}"
 fi
 
-RESPONSE="$(curl -fsS -X POST "http://localhost:${DASHBOARD_PORT}/api/news/fetch-due")" || {
+# Real bug found live 2026-10-08: this script never sent X-Vault-Token,
+# so every run has 401'd against the auth gate added 2026-09-21
+# (app.py's _require_vault_token) -- the timer has been "running" every
+# 5 minutes but silently failing every single time since it was
+# installed, confirmed via `journalctl --user -u citadel-news.service`.
+RESPONSE="$(curl -fsS -X POST -H "X-Vault-Token: ${VAULT_API_TOKEN}" "http://localhost:${DASHBOARD_PORT}/api/news/fetch-due")" || {
     log "ERROR: fetch-due request failed — is Citadel running?"
     exit 1
 }
@@ -37,6 +45,6 @@ log "fetch-due: $RESPONSE"
 # simple hour-of-day check keeps this in the same 5-minute timer instead
 # of needing a second one just for this.
 if [[ "$(date -u +%H%M)" -ge "0300" && "$(date -u +%H%M)" -lt "0305" ]]; then
-    PRUNE_RESPONSE="$(curl -fsS -X POST "http://localhost:${DASHBOARD_PORT}/api/news/prune")" || true
+    PRUNE_RESPONSE="$(curl -fsS -X POST -H "X-Vault-Token: ${VAULT_API_TOKEN}" "http://localhost:${DASHBOARD_PORT}/api/news/prune")" || true
     log "prune: $PRUNE_RESPONSE"
 fi

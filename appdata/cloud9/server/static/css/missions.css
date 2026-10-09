@@ -1,0 +1,206 @@
+/* Missions -- ROADMAP.md Phase 2, the real cross-subject engine. */
+
+.mi-main {
+  max-width: 760px;
+}
+
+.mi-section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin: 24px 0 10px;
+}
+
+.mi-section-label:first-child {
+  margin-top: 0;
+}
+
+.mi-templates,
+.mi-runs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.mi-template-card,
+.mi-run-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.mi-template-card:hover,
+.mi-run-card:hover {
+  border-color: #e8a23f;
+  transform: translateY(-2px);
+}
+
+.mi-card-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.mi-card-title {
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.mi-card-sub {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+
+.mi-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.mi-progress-fill {
+  height: 100%;
+  background: #e8a23f;
+}
+
+.mi-empty {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  padding: 8px 0 4px;
+}
+
+/* Detail view */
+
+.mi-detail-back {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.mi-detail-back:hover {
+  color: var(--text);
+}
+
+.mi-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.mi-detail-icon {
+  font-size: 2.2rem;
+}
+
+.mi-detail-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.mi-detail-desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.mi-detail-progress {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: 12px 0 20px;
+}
+
+.mi-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mi-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.mi-task.mi-task-done {
+  opacity: 0.6;
+}
+
+.mi-task-checkbox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.mi-task-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mi-task-subject {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #e8a23f;
+  font-weight: 700;
+}
+
+.mi-task-title {
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.mi-task.mi-task-done .mi-task-title {
+  text-decoration: line-through;
+}
+
+.mi-task-desc {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.mi-task-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #e8a23f;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.mi-task-link:hover {
+  text-decoration: underline;
+}
+
+.mi-complete-banner {
+  margin-top: 20px;
+  background: rgba(142, 255, 161, 0.12);
+  border: 1px solid rgba(142, 255, 161, 0.3);
+  color: #8effa1;
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: center;
+  font-weight: 700;
+}

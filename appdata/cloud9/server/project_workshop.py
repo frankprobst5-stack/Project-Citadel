@@ -110,7 +110,8 @@ def _serialize_content(fields):
         lines.append(fields["notes"])
     lines += ["", _SECTION_PHOTOS]
     lines += fields.get("photos") or []
-    lines += ["", "**Status:** " + (fields.get("status") or "active"), "", "#" + PROJECT_TAG]
+    tags = ["#" + PROJECT_TAG] + ["#" + t for t in fields.get("extraTags") or []]
+    lines += ["", "**Status:** " + (fields.get("status") or "active"), "", " ".join(tags)]
     return "\n".join(lines)
 
 
@@ -122,10 +123,11 @@ def _get_note(storage_title):
     return resp.json()
 
 
-def list_projects():
+def list_projects(extra_tag=None):
+    term = f"#{PROJECT_TAG}" if not extra_tag else f"#{extra_tag}"
     resp = requests.get(
         f"{FLATNOTES_BASE_URL}/api/search",
-        params={"term": f"#{PROJECT_TAG}", "sort": "lastModified", "order": "desc"},
+        params={"term": term, "sort": "lastModified", "order": "desc"},
         headers=HEADERS,
         timeout=10,
     )
@@ -159,7 +161,7 @@ def get_project(project_id):
     return fields
 
 
-def create_project(title, goal, materials, checklist):
+def create_project(title, goal, materials, checklist, extra_tags=None):
     title = (title or "").strip() or "Untitled Project"
     storage_title = "Project - " + datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     content = _serialize_content({
@@ -174,6 +176,7 @@ def create_project(title, goal, materials, checklist):
         "notes": "",
         "photos": [],
         "status": "active",
+        "extraTags": extra_tags or [],
     })
     resp = requests.post(
         f"{FLATNOTES_BASE_URL}/api/notes",

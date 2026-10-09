@@ -6,6 +6,7 @@
   <title>Math Lab - Cloud9</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/math-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
 </head>
 <body>
   <header class="ml-topbar">
@@ -85,6 +86,85 @@
       </div>
     </section>
 
+    <section class="ml-deck" id="ml-deck-trip-planner">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Storm Chase Trip Planner</span>
+      </div>
+      <div class="ml-deck-note">Real math with a real purpose: figure out what a real trip would actually cost. This is a real cost <em>estimate</em> using numbers you choose &mdash; not financial advice, and not a real trip until you actually plan one with a parent.</div>
+
+      <div class="ml-trip-grid">
+        <div class="ml-trip-inputs">
+          <label class="ml-trip-field">
+            <span>Distance to the storm (miles, one way)</span>
+            <input type="number" id="ml-trip-distance" value="180" min="0">
+          </label>
+          <label class="ml-trip-field">
+            <span>
+              <input type="checkbox" id="ml-trip-roundtrip" checked>
+              Round trip (there and back)
+            </span>
+          </label>
+          <label class="ml-trip-field">
+            <span>Vehicle fuel economy (miles per gallon)</span>
+            <input type="number" id="ml-trip-mpg" value="25" min="1">
+          </label>
+          <label class="ml-trip-field">
+            <span>Gas price ($ per gallon)</span>
+            <input type="number" id="ml-trip-gas-price" value="3.25" min="0" step="0.01">
+          </label>
+          <label class="ml-trip-field">
+            <span>Nights away</span>
+            <input type="number" id="ml-trip-nights" value="1" min="0">
+          </label>
+          <label class="ml-trip-field">
+            <span>Lodging ($ per night)</span>
+            <input type="number" id="ml-trip-lodging" value="90" min="0">
+          </label>
+          <label class="ml-trip-field">
+            <span>People on the trip</span>
+            <input type="number" id="ml-trip-people" value="2" min="1">
+          </label>
+          <label class="ml-trip-field">
+            <span>Food ($ per person, per day)</span>
+            <input type="number" id="ml-trip-food" value="25" min="0">
+          </label>
+          <label class="ml-trip-field">
+            <span>Other costs ($ &mdash; snacks, parking, extras)</span>
+            <input type="number" id="ml-trip-misc" value="20" min="0">
+          </label>
+        </div>
+
+        <div class="ml-trip-results">
+          <div class="ml-trip-total-label">Real Total Cost</div>
+          <div class="ml-trip-total" id="ml-trip-total">$0.00</div>
+          <div class="ml-trip-breakdown" id="ml-trip-breakdown"></div>
+          <button type="button" class="ml-start-btn" id="ml-trip-log-btn">I planned my trip!</button>
+          <div class="ml-trip-logged" id="ml-trip-logged" hidden>Logged -- nice planning!</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ml-deck" id="ml-deck-recipe">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Recipe Scaler</span>
+      </div>
+      <div class="ml-deck-note">Real fractions with a real purpose &mdash; scale a real recipe up or down and watch every ingredient recalculate.</div>
+
+      <div class="ml-recipe-select-row">
+        <label>Recipe:
+          <select id="ml-recipe-select"></select>
+        </label>
+      </div>
+
+      <div class="ml-recipe-scale-row" id="ml-recipe-scale-row"></div>
+
+      <table class="ml-recipe-table" id="ml-recipe-table"></table>
+
+      <div class="ml-recipe-note" id="ml-recipe-serves"></div>
+      <button type="button" class="ml-start-btn" id="ml-recipe-log-btn">I scaled a recipe!</button>
+      <div class="ml-trip-logged" id="ml-recipe-logged" hidden>Logged -- nice scaling!</div>
+    </section>
+
     <section class="ml-deck" id="ml-deck-sandbox">
       <div class="ml-deck-header">
         <span class="ml-deck-title">Math Sandbox</span>
@@ -96,6 +176,8 @@
   </main>
 
   <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+  <script>window.OLLIE_CONTEXT = { lab: "Math Lab", activity: "practicing times tables, addition, and subtraction" };</script>
   <script src="{{ url_for('static', filename='js/math-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
 </body>
 </html>

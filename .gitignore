@@ -67,6 +67,15 @@ appdata/cloud9/data/writing_paper.json
 appdata/cloud9/data/videos.json
 appdata/cloud9/data/history_fact_cache.json
 appdata/cloud9/server/static/videos/
+
+# Real local video library video_library.py reads from (see its own
+# docstring) -- same "media libraries... none of this belongs in git"
+# reasoning as every other video/media exclusion above. 20GB of real
+# (almost certainly copyrighted) educational video files at the repo
+# root; never should have been trackable in the first place -- this was
+# a real gap (video_library.py referencing it predates this gitignore
+# entry), not a new exclusion for new content.
+school videos/
 # Real runtime SQLite caches (weather/storm/sounding/model-lab/school
 # library/interactivity), same reasoning as the JSON data files above --
 # regenerated on first real use, never source.
@@ -75,6 +84,19 @@ appdata/cloud9/data/*.db
 # Personal SDR channel configs — reveals real county/location names, not
 # generic sample data. Never belongs in a public repo.
 appdata/media-vault/SDRUno/
+
+# Frank's own real garden layout/location (Howardwick, TX specifics) —
+# personal to him, not generic sample content, never belongs in the
+# public repo. Same reasoning as the SDRUno exclusion above.
+appdata/cockpit/garden.html
+
+# Family photo/video library (Immich) -- real family photos/videos,
+# DB password, and managed storage. Same reasoning as garden.html above:
+# personal to Frank's family, never belongs in the public repo. Kept as
+# a fully standalone, never-included compose file for the same reason.
+family-photos-compose.yml
+.env.family-photos
+appdata/family-photos/
 
 # Empty scaffolding / not-yet-wired staging dirs (see ROADMAP.md Phase 2
 # and Phase 5) — nothing real in them yet, exclude until they hold actual
@@ -93,6 +115,7 @@ appdata/cockpit/project-vigil/
 appdata/media-vault/scanner/
 appdata/media-vault/weather/
 appdata/media-vault/intercept/
+appdata/media-vault/host-metrics/
 
 # WayStation basemap tiles — 300MB+ of binary map data, not source, and
 # tactical_terrain.pmtiles alone exceeds GitHub's 100MB file limit.

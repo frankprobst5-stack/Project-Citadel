@@ -18,6 +18,12 @@
   let state = { kind: "video", search: "", page: 1 };
   let searchDebounce = null;
 
+  const requestedSearch = new URLSearchParams(window.location.search).get("search");
+  if (requestedSearch) {
+    state.search = requestedSearch;
+    searchInput.value = requestedSearch;
+  }
+
   function formatDuration(seconds) {
     if (!seconds) return null;
     const m = Math.floor(seconds / 60);

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demographic Explorer - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/demographic-explorer.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="dex-body">
+  <header class="topbar dex-topbar">
+    <a class="dex-back" href="/society-lab" aria-label="Back to Society Lab">&larr; Society Lab</a>
+    <div class="dex-heading">
+      <span class="dex-icon">&#127757;</span>
+      <span class="dex-title">Demographic Explorer</span>
+    </div>
+  </header>
+
+  <main class="dex-main">
+    <div class="dex-note">Real population and area data for 177 real countries, pulled live -- the same real data Earth Lab's map uses.</div>
+
+    <section class="dex-section">
+      <div class="dex-section-title">Guess Which Has More People</div>
+      <div class="dex-card">
+        <div class="dex-guess-row" id="dex-guess-row">
+          <div class="dex-loading">Loading two real countries&hellip;</div>
+        </div>
+        <div class="dex-feedback" id="dex-feedback"></div>
+        <button type="button" class="dex-btn" id="dex-next-btn">New Pair</button>
+      </div>
+    </section>
+
+    <section class="dex-section">
+      <div class="dex-section-title">Compare Any Two Countries</div>
+      <div class="dex-compare-row">
+        <select id="dex-country-a"></select>
+        <span>vs</span>
+        <select id="dex-country-b"></select>
+        <button type="button" class="dex-btn" id="dex-compare-btn">Compare</button>
+      </div>
+      <div class="dex-compare-result" id="dex-compare-result"></div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Demographic Explorer", activity: "comparing real population data between countries" };</script>
+  <script src="{{ url_for('static', filename='js/demographic-explorer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

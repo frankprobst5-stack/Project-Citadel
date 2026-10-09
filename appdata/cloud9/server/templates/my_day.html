@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Day - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/my-day.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">{{ area.icon }}</span>
+      <span class="area-heading-title">{{ area.title }}</span>
+    </div>
+    <div class="area-heading-tagline">{{ area.tagline }}</div>
+  </header>
+
+  <main class="area-main">
+    <div class="area-hero" style="--area-img: url('{{ url_for('static', filename=area.hero_img) }}');"></div>
+
+    <div class="md-field">
+      <div class="md-field-label">Active Missions</div>
+      <div class="md-missions" id="md-missions"></div>
+      <div class="md-empty" id="md-missions-empty" hidden>No missions in progress -- start one in Missions.</div>
+    </div>
+
+    <div class="md-field">
+      <div class="md-field-label">Today's Schedule</div>
+      <div class="md-schedule" id="md-schedule"></div>
+      <div class="md-empty" id="md-schedule-empty" hidden>Nothing scheduled yet -- lay out the week in Parent Tools.</div>
+    </div>
+
+    <div class="md-field">
+      <div class="md-field-label">Due for Review</div>
+      <div class="md-reviews" id="md-reviews"></div>
+      <div class="md-empty" id="md-reviews-empty" hidden>Nothing due for review right now -- go practice something in a Lab and it'll show up here.</div>
+    </div>
+
+    <div class="md-field">
+      <div class="md-field-label">In-Progress Projects</div>
+      <div class="md-projects" id="md-projects"></div>
+      <div class="md-empty" id="md-projects-empty" hidden>No active projects -- start one in Project Workshop.</div>
+    </div>
+
+    <div class="area-destinations">
+      {% for dest in area.destinations %}
+      {% if dest.kind == 'modal' %}
+      <a class="area-destination" href="/?open={{ dest.id }}">
+      {% elif dest.kind == 'external' %}
+      <a class="area-destination" href="{{ dest.href }}" target="_blank" rel="noopener">
+      {% else %}
+      <a class="area-destination" href="{{ dest.href }}">
+      {% endif %}
+        <div class="area-destination-icon">{{ dest.icon }}</div>
+        <div class="area-destination-text">
+          <div class="area-destination-title">{{ dest.title }}</div>
+          <div class="area-destination-subtitle">{{ dest.subtitle }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/my-day.js') }}"></script>
+</body>
+</html>

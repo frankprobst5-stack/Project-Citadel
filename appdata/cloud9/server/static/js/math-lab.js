@@ -1,6 +1,25 @@
 (function () {
   const TABLE_SIZE = 12;
 
+  // Phase 1 of ROADMAP.md's shared Learning Engine -- Math Lab is the
+  // first real consumer. Fire-and-forget: a failed log never blocks the
+  // quiz itself, matching this app's own "never let plumbing break the
+  // feature" rule.
+  function recordActivity(activity, concept, difficulty, correct) {
+    fetch("/api/learning/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: "math",
+        activity: activity,
+        concept: concept,
+        source: "cloud9-math-lab",
+        difficulty: difficulty,
+        correct: correct,
+      }),
+    }).catch(function () {});
+  }
+
   // ---- Times Table ------------------------------------------------
   const timesTable = document.getElementById("ml-times-table");
   const timesStudyBtn = document.getElementById("ml-times-study-btn");
@@ -74,13 +93,22 @@
     timesQuizInput.value = "";
     timesQuizFeedback.textContent = "";
     timesQuizInput.focus();
+    // Real, live Ollie Teaching Mode context (ROADMAP.md Phase 1, item 3)
+    // -- not just "the child is in Math Lab," the exact current question,
+    // so a hint Ollie gives actually matches what's on screen right now.
+    if (window.OLLIE_CONTEXT) {
+      window.OLLIE_CONTEXT.state = "Times table quiz, current question: " + currentQuizA + " × " + currentQuizB + " = ?";
+    }
   }
 
   timesQuizForm.addEventListener("submit", function (e) {
     e.preventDefault();
     const answer = Number(timesQuizInput.value);
     const correct = currentQuizA * currentQuizB;
-    if (answer === correct) {
+    const wasCorrect = answer === correct;
+    const factConcept = Math.min(currentQuizA, currentQuizB) + "x" + Math.max(currentQuizA, currentQuizB);
+    recordActivity("times_table_quiz", factConcept, "standard", wasCorrect);
+    if (wasCorrect) {
       timesScore++;
       timesStreak++;
       timesQuizFeedback.textContent = "Correct!";
@@ -92,7 +120,7 @@
     }
     timesScoreEl.textContent = timesScore;
     timesStreakEl.textContent = timesStreak;
-    setTimeout(nextQuizQuestion, correct === answer ? 500 : 1800);
+    setTimeout(nextQuizQuestion, wasCorrect ? 500 : 1800);
   });
 
   timesStudyBtn.addEventListener("click", function () { setTimesMode("study"); });
@@ -123,6 +151,7 @@
   let challengeTimeLeft = 60;
   let challengeIntervalId = null;
   let currentChallengeAnswer = 0;
+  let currentChallengeOp = "add";
 
   difficultyRow.addEventListener("click", function (e) {
     const btn = e.target.closest(".ml-mode-btn");
@@ -146,10 +175,15 @@
     let a = Math.floor(Math.random() * max) + 1;
     let b = Math.floor(Math.random() * max) + 1;
     if (op === "subtract" && b > a) { const t = a; a = b; b = t; }
+    currentChallengeOp = op;
     currentChallengeAnswer = op === "add" ? a + b : a - b;
     challengeQuestion.textContent = a + (op === "add" ? " + " : " − ") + b + " = ?";
     challengeInput.value = "";
     challengeInput.focus();
+    if (window.OLLIE_CONTEXT) {
+      window.OLLIE_CONTEXT.state = "Timed challenge (" + difficulty + " " + op + "), current question: " +
+        a + (op === "add" ? " + " : " − ") + b + " = ?";
+    }
   }
 
   function endChallenge() {
@@ -186,7 +220,9 @@
     e.preventDefault();
     if (!challengeActive) return;
     const answer = Number(challengeInput.value);
-    if (answer === currentChallengeAnswer) {
+    const wasCorrect = answer === currentChallengeAnswer;
+    recordActivity("addition_subtraction_challenge", currentChallengeOp + "_" + difficulty, difficulty, wasCorrect);
+    if (wasCorrect) {
       challengeCorrectCount++;
       challengeStreak++;
       challengeBestStreakCount = Math.max(challengeBestStreakCount, challengeStreak);
@@ -199,6 +235,231 @@
   });
 
   challengeStartBtn.addEventListener("click", startChallenge);
+
+  // ---- Storm Chase Trip Planner (Budget Simulation Engine, first mode) ----
+
+  const tripDistance = document.getElementById("ml-trip-distance");
+  const tripRoundtrip = document.getElementById("ml-trip-roundtrip");
+  const tripMpg = document.getElementById("ml-trip-mpg");
+  const tripGasPrice = document.getElementById("ml-trip-gas-price");
+  const tripNights = document.getElementById("ml-trip-nights");
+  const tripLodging = document.getElementById("ml-trip-lodging");
+  const tripPeople = document.getElementById("ml-trip-people");
+  const tripFood = document.getElementById("ml-trip-food");
+  const tripMisc = document.getElementById("ml-trip-misc");
+  const tripTotalEl = document.getElementById("ml-trip-total");
+  const tripBreakdownEl = document.getElementById("ml-trip-breakdown");
+  const tripLogBtn = document.getElementById("ml-trip-log-btn");
+  const tripLoggedEl = document.getElementById("ml-trip-logged");
+
+  function formatMoney(n) {
+    return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calcTrip() {
+    const distance = Number(tripDistance.value) || 0;
+    const totalMiles = distance * (tripRoundtrip.checked ? 2 : 1);
+    const mpg = Math.max(1, Number(tripMpg.value) || 1);
+    const gasPrice = Number(tripGasPrice.value) || 0;
+    const gallons = totalMiles / mpg;
+    const fuelCost = gallons * gasPrice;
+
+    const nights = Number(tripNights.value) || 0;
+    const lodgingCost = nights * (Number(tripLodging.value) || 0);
+
+    const people = Math.max(1, Number(tripPeople.value) || 1);
+    const days = nights + 1; // travel day(s) plus each night away
+    const foodCost = people * days * (Number(tripFood.value) || 0);
+
+    const miscCost = Number(tripMisc.value) || 0;
+
+    const total = fuelCost + lodgingCost + foodCost + miscCost;
+
+    tripTotalEl.textContent = formatMoney(total);
+
+    const categories = [
+      { label: "Fuel (" + gallons.toFixed(1) + " gal)", value: fuelCost },
+      { label: "Lodging (" + nights + " night" + (nights === 1 ? "" : "s") + ")", value: lodgingCost },
+      { label: "Food (" + people + " people, " + days + " day" + (days === 1 ? "" : "s") + ")", value: foodCost },
+      { label: "Other", value: miscCost },
+    ];
+    tripBreakdownEl.innerHTML = categories
+      .map(function (c) {
+        const pct = total > 0 ? Math.round((c.value / total) * 100) : 0;
+        return (
+          '<div class="ml-trip-bar-row">' +
+          '<div class="ml-trip-bar-label"><span>' + c.label + "</span><span>" + formatMoney(c.value) + "</span></div>" +
+          '<div class="ml-trip-bar-track"><div class="ml-trip-bar-fill" style="width:' + pct + '%"></div></div>' +
+          "</div>"
+        );
+      })
+      .join("");
+
+    tripLoggedEl.hidden = true;
+    return total;
+  }
+
+  [tripDistance, tripRoundtrip, tripMpg, tripGasPrice, tripNights, tripLodging, tripPeople, tripFood, tripMisc].forEach(function (el) {
+    el.addEventListener("input", calcTrip);
+    el.addEventListener("change", calcTrip);
+  });
+
+  tripLogBtn.addEventListener("click", function () {
+    const total = calcTrip();
+    fetch("/api/learning/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: "math",
+        activity: "trip_planner",
+        concept: "cost_calculation",
+        source: "cloud9-math-lab",
+        artifact: "Trip total: " + formatMoney(total),
+        correct: null,
+      }),
+    }).catch(function () {});
+    tripLoggedEl.hidden = false;
+  });
+
+  calcTrip();
+
+  // ---- Recipe Scaler --------------------------------------------------
+
+  const RECIPES = [
+    {
+      id: "pancakes",
+      title: "Basic Pancakes",
+      serves: 4,
+      ingredients: [
+        { qty: 1.5, unit: "cups", name: "flour" },
+        { qty: 3.5, unit: "tsp", name: "baking powder" },
+        { qty: 0.25, unit: "tsp", name: "salt" },
+        { qty: 1, unit: "tbsp", name: "sugar" },
+        { qty: 1.25, unit: "cups", name: "milk" },
+        { qty: 1, unit: "", name: "egg" },
+        { qty: 3, unit: "tbsp", name: "melted butter" },
+      ],
+    },
+    {
+      id: "cookies",
+      title: "Chocolate Chip Cookies",
+      serves: 24,
+      ingredients: [
+        { qty: 2.25, unit: "cups", name: "flour" },
+        { qty: 1, unit: "tsp", name: "baking soda" },
+        { qty: 1, unit: "tsp", name: "salt" },
+        { qty: 1, unit: "cup", name: "softened butter" },
+        { qty: 0.75, unit: "cup", name: "sugar" },
+        { qty: 0.75, unit: "cup", name: "brown sugar" },
+        { qty: 2, unit: "", name: "eggs" },
+        { qty: 1, unit: "tsp", name: "vanilla" },
+        { qty: 2, unit: "cups", name: "chocolate chips" },
+      ],
+    },
+  ];
+
+  const SCALE_OPTIONS = [
+    { label: "1/2x", value: 0.5 },
+    { label: "3/4x", value: 0.75 },
+    { label: "1x", value: 1 },
+    { label: "1 1/2x", value: 1.5 },
+    { label: "2x", value: 2 },
+    { label: "3x", value: 3 },
+  ];
+
+  const recipeSelect = document.getElementById("ml-recipe-select");
+  const recipeScaleRow = document.getElementById("ml-recipe-scale-row");
+  const recipeTable = document.getElementById("ml-recipe-table");
+  const recipeServes = document.getElementById("ml-recipe-serves");
+  const recipeLogBtn = document.getElementById("ml-recipe-log-btn");
+  const recipeLoggedEl = document.getElementById("ml-recipe-logged");
+
+  let currentRecipe = RECIPES[0];
+  let currentScale = 1;
+
+  function gcd(a, b) { return b < 1e-9 ? a : gcd(b, a % b); }
+
+  function toFraction(value) {
+    const whole = Math.floor(value + 1e-9);
+    const frac = value - whole;
+    if (frac < 0.02) return whole ? String(whole) : "0";
+    if (frac > 0.98) return String(whole + 1);
+    const denominators = [2, 3, 4, 8];
+    let best = null;
+    denominators.forEach(function (d) {
+      const num = Math.round(frac * d);
+      if (num === 0 || num === d) return;
+      const diff = Math.abs(frac - num / d);
+      if (!best || diff < best.diff) {
+        const g = Math.round(gcd(num, d));
+        best = { num: num / g, den: d / g, diff: diff };
+      }
+    });
+    if (!best) return value.toFixed(2);
+    const fracStr = best.num + "/" + best.den;
+    return whole ? whole + " " + fracStr : fracStr;
+  }
+
+  function renderRecipe() {
+    recipeTable.innerHTML = currentRecipe.ingredients
+      .map(function (ing) {
+        const scaled = ing.qty * currentScale;
+        return (
+          "<tr><td>" + toFraction(scaled) + (ing.unit ? " " + ing.unit : "") + "</td>" +
+          "<td>" + ing.name + "</td></tr>"
+        );
+      })
+      .join("");
+    const servings = currentRecipe.serves * currentScale;
+    recipeServes.textContent = "Makes about " + toFraction(servings) + (currentRecipe.id === "cookies" ? " cookies" : " servings") + " at this scale.";
+    recipeLoggedEl.hidden = true;
+  }
+
+  function buildScaleRow() {
+    recipeScaleRow.innerHTML = "";
+    SCALE_OPTIONS.forEach(function (opt) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ml-recipe-scale-btn" + (opt.value === currentScale ? " ml-recipe-scale-active" : "");
+      btn.textContent = opt.label;
+      btn.addEventListener("click", function () {
+        currentScale = opt.value;
+        buildScaleRow();
+        renderRecipe();
+      });
+      recipeScaleRow.appendChild(btn);
+    });
+  }
+
+  RECIPES.forEach(function (r) {
+    const opt = document.createElement("option");
+    opt.value = r.id;
+    opt.textContent = r.title;
+    recipeSelect.appendChild(opt);
+  });
+  recipeSelect.addEventListener("change", function () {
+    currentRecipe = RECIPES.find(function (r) { return r.id === recipeSelect.value; });
+    renderRecipe();
+  });
+
+  recipeLogBtn.addEventListener("click", function () {
+    fetch("/api/learning/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: "math",
+        activity: "recipe_scaler",
+        concept: "fraction_scaling",
+        source: "cloud9-math-lab",
+        artifact: currentRecipe.title + " at " + currentScale + "x",
+        correct: null,
+      }),
+    }).catch(function () {});
+    recipeLoggedEl.hidden = false;
+  });
+
+  buildScaleRow();
+  renderRecipe();
 
   // ---- Math Sandbox (GeoGebra) --------------------------------------
   window.addEventListener("load", function () {

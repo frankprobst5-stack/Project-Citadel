@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Missions - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/areas.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/missions.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body>
+  <header class="topbar area-topbar">
+    <div class="brand">
+      <a class="area-back" href="/" aria-label="Back to Cloud9">← Cloud9</a>
+    </div>
+    <div class="area-heading">
+      <span class="area-heading-icon">🚀</span>
+      <span class="area-heading-title">Missions</span>
+    </div>
+    <div class="area-heading-tagline">One real event, every subject working together.</div>
+  </header>
+
+  <main class="area-main mi-main">
+    <!-- List view -->
+    <div id="mi-list-view">
+      <div class="mi-section-label">Start a Mission</div>
+      <div class="mi-templates" id="mi-templates"></div>
+
+      <div class="mi-section-label">In Progress</div>
+      <div class="mi-runs" id="mi-active-runs"></div>
+      <div class="mi-empty" id="mi-active-empty" hidden>No missions in progress -- start one above.</div>
+
+      <div class="mi-section-label">Completed</div>
+      <div class="mi-runs" id="mi-history-runs"></div>
+      <div class="mi-empty" id="mi-history-empty" hidden>Nothing completed yet.</div>
+    </div>
+
+    <!-- Detail view -->
+    <div id="mi-detail-view" hidden>
+      <button type="button" class="mi-detail-back" id="mi-detail-back">← All Missions</button>
+      <div class="mi-detail-header">
+        <span class="mi-detail-icon" id="mi-detail-icon"></span>
+        <div>
+          <div class="mi-detail-title" id="mi-detail-title"></div>
+          <div class="mi-detail-desc" id="mi-detail-desc"></div>
+        </div>
+      </div>
+      <div class="mi-detail-progress" id="mi-detail-progress"></div>
+      <div class="mi-tasks" id="mi-tasks"></div>
+      <div class="mi-complete-banner" id="mi-complete-banner" hidden>🎉 Mission complete! Great work pulling that all together.</div>
+    </div>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Missions", activity: "working through a real cross-subject mission" };</script>
+  <script src="{{ url_for('static', filename='js/missions.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>

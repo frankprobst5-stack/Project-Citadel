@@ -1,0 +1,229 @@
+:root {
+  --spl-accent: #8fa8ff;
+  --spl-accent-dim: #2a3561;
+}
+
+body.spl-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.spl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.spl-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.spl-back:hover {
+  border-color: var(--spl-accent);
+  color: var(--text);
+}
+
+.spl-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.spl-icon { font-size: 1.5rem; }
+
+.spl-explorer-link {
+  margin-left: auto;
+  color: var(--spl-accent);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.spl-explorer-link:hover {
+  text-decoration: underline;
+}
+
+.spl-main {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spl-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.spl-location {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.spl-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.spl-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--spl-accent);
+  margin-bottom: 14px;
+}
+
+.spl-moon-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.spl-moon-emoji {
+  font-size: 3rem;
+}
+
+.spl-moon-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.spl-moon-pct {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.spl-sun-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.spl-sun-item {
+  text-align: center;
+  flex: 1;
+}
+
+.spl-sun-label {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.spl-sun-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.spl-iss-pass {
+  padding: 10px 0;
+  border-top: 1px solid var(--panel-border);
+}
+
+.spl-iss-pass:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.spl-iss-time {
+  font-weight: 700;
+}
+
+.spl-iss-detail {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.spl-empty {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.spl-source-note {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  margin-top: 10px;
+}
+
+.spl-missions {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+
+.spl-missions-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--spl-accent);
+  margin-bottom: 6px;
+}
+
+.spl-missions-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+}
+
+.spl-mission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spl-mission-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.spl-mission-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.spl-mission-blurb {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.spl-mission-start-btn {
+  background: var(--spl-accent);
+  color: #10163a;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.spl-mission-start-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

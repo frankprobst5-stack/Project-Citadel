@@ -1,0 +1,102 @@
+:root {
+  --scl-accent: #4fd1c5;
+  --scl-accent-dim: #1f4d49;
+}
+
+body.scl-body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.scl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.scl-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.scl-back:hover {
+  border-color: var(--scl-accent);
+  color: var(--text);
+}
+
+.scl-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.scl-icon { font-size: 1.5rem; }
+
+.scl-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+}
+
+.scl-note {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-bottom: 20px;
+}
+
+.scl-loading {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.scl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.scl-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 22px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.scl-card:not(.scl-card-disabled):hover {
+  border-color: var(--scl-accent);
+}
+
+.scl-card-disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.scl-card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.scl-card-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+
+.scl-card-subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}

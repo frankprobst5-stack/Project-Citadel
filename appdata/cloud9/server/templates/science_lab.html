@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Science Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/science-lab.css') }}">
+</head>
+<body class="scl-body">
+  <header class="topbar scl-topbar">
+    <a class="scl-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="scl-heading">
+      <span class="scl-icon">&#129514;</span>
+      <span class="scl-title">Science Lab</span>
+    </div>
+  </header>
+
+  <main class="scl-main">
+    <div class="scl-note">Weather Labs stays the real flagship science environment -- this just gives it real company.</div>
+    <div class="scl-grid" id="scl-grid">
+      <div class="scl-loading">Loading&hellip;</div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/science-lab.js') }}"></script>
+</body>
+</html>

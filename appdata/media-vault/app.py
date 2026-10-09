@@ -24,6 +24,9 @@ import news_hazard_adapters
 import news_nws_alerts
 import news_location
 import news_matcher
+import situation_matcher
+import situation_ai
+import news_nws_weather
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -172,6 +175,21 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_news_articles_published ON news_articles (published_at)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_news_articles_cap ON news_articles (cap_event, cap_expires_at)')
 
+    # video_url/media_type: added after this table already had real rows,
+    # same real ALTER TABLE reasoning as inventory.min_qty above. Ported
+    # from Masthead's own extractPlayableEnclosure() -- a feed's actual
+    # playable video (an <enclosure>/media:content the feed itself
+    # provides), not a scraped guess. media_type stays NULL for a plain
+    # article, 'video' when video_url is set -- a separate column rather
+    # than inferring from video_url's mere presence, so a future 'audio'
+    # case (podcasts) has somewhere to go without another migration.
+    cursor.execute("PRAGMA table_info(news_articles)")
+    existing_cols = [row[1] for row in cursor.fetchall()]
+    if "video_url" not in existing_cols:
+        cursor.execute("ALTER TABLE news_articles ADD COLUMN video_url TEXT")
+    if "media_type" not in existing_cols:
+        cursor.execute("ALTER TABLE news_articles ADD COLUMN media_type TEXT")
+
     # The manual "Local News Log" half -- hand-typed local reports for
     # exactly the window when no new syndicated news can arrive at all.
     cursor.execute('''
@@ -190,6 +208,122 @@ def init_db():
         CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL
+        )
+    ''')
+
+    # Global Situation Monitor (added 2026-10-08) -- same real
+    # feedparser-based ingestion as News Archive above (news_feed_parser
+    # reused as-is), but a fully separate source list and article table:
+    # this tracks geopolitical/defense feeds against a fixed escalation
+    # watch-list (situation_matcher.py), not general or hazard news, and
+    # mixing the two streams would make both worse. `theater` tags which
+    # region a source is mainly relevant to, for the dashboard's grouped
+    # view -- purely informational, doesn't restrict which indicators can
+    # match against it.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_sources (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            feed_url TEXT NOT NULL UNIQUE,
+            theater TEXT NOT NULL DEFAULT 'global',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            fetch_interval_minutes INTEGER NOT NULL DEFAULT 60,
+            last_fetched_at TEXT,
+            next_due_at TEXT,
+            last_error TEXT,
+            created_at TEXT NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_events (
+            id TEXT PRIMARY KEY,
+            source_id TEXT NOT NULL,
+            dedupe_key TEXT NOT NULL,
+            title TEXT NOT NULL,
+            url TEXT NOT NULL,
+            body TEXT,
+            published_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            matched_indicators TEXT,
+            UNIQUE(source_id, dedupe_key)
+        )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_situation_events_published ON situation_events (published_at)')
+
+    # Status is always a human judgment call, never auto-computed from
+    # keyword matches (see situation_matcher.py's own docstring for why)
+    # -- this table is just the household's own log of when they looked
+    # at the evidence and what they concluded, so the dashboard can show
+    # "as of <when>, we assessed <status> because <reason>" instead of a
+    # live, unreviewed, algorithm-driven claim about something this
+    # consequential.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_log (
+            id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        )
+    ''')
+
+    # Off-Grid AI (Ollama) assisted briefings -- see situation_ai.py's own
+    # docstring for the real scope limits. Stored with the model name and
+    # the exact event count it was built from, so an old briefing is
+    # honestly dated against a smaller/different source set, not silently
+    # presented as if it reflects today's picture.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_briefings (
+            id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            window_days INTEGER NOT NULL,
+            event_count INTEGER NOT NULL,
+            model_used TEXT NOT NULL,
+            briefing_text TEXT NOT NULL
+        )
+    ''')
+
+    # AI-suggested keyword gap-finder (added 2026-10-08, Frank's own
+    # request after a design discussion about whether the AI should
+    # flag "keep an eye on" items directly -- deliberately NOT built
+    # that way. The AI only ever SUGGESTS a candidate indicator from
+    # unmatched headlines; a human approves or rejects it here. Approving
+    # inserts a row into situation_custom_indicators below, which is what
+    # actually changes future matching -- the suggestion row itself never
+    # does. This keeps the same auditability the fixed INDICATORS list in
+    # situation_matcher.py already has: every live indicator, custom or
+    # not, is something a human looked at and accepted, not something
+    # the model silently started matching on.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_keyword_suggestions (
+            id TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            source_title TEXT NOT NULL,
+            source_url TEXT,
+            theater TEXT NOT NULL,
+            tier TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            label TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            reviewed_at TEXT
+        )
+    ''')
+
+    # Household-approved indicators, same dict shape as
+    # situation_matcher.INDICATORS (theater/tier/label/keywords) but
+    # editable at runtime since these came from a suggestion rather than
+    # being checked into code. Passed as `extra_indicators` to
+    # situation_matcher.match_indicators()/indicator_by_id() everywhere
+    # the fixed list is used, so a custom indicator behaves identically
+    # to a built-in one for matching, display, and briefings.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS situation_custom_indicators (
+            id TEXT PRIMARY KEY,
+            theater TEXT NOT NULL,
+            tier TEXT NOT NULL,
+            label TEXT NOT NULL,
+            keywords TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            approved_from_suggestion_id TEXT
         )
     ''')
 
@@ -1140,17 +1274,30 @@ def api_list_news_articles():
     """?limit=50&offset=0 -- newest first. Location filtering happens
     here (not at ingest time) so a later station-location change
     re-scopes existing history instead of only affecting future
-    fetches."""
+    fetches.
+
+    Diversified across sources, not a raw recency cut -- real bug found
+    live 2026-10-09 (Frank's own report): during an active hurricane,
+    NHC Atlantic alone can post 10-20+ real distinct products a day
+    (advisories, graphics, maps, each a genuinely separate feed entry),
+    which was completely burying every other source -- the top-40 feed
+    was 40/40 NHC with nothing from Fox News or anywhere else. A pool 6x
+    the requested limit is pulled first, then capped per-source before
+    re-sorting back to recency order, so one prolific source can't
+    crowd out the rest."""
     limit = min(int(request.args.get("limit", 50)), 200)
     offset = int(request.args.get("offset", 0))
+    MAX_PER_SOURCE = 8
 
     conn = _get_db()
     lat, lon = _station_coords()
     county_fips, nws_zone_ugc = news_location.get_cached_zone_codes(conn)
 
     rows = conn.execute(
-        "SELECT * FROM news_articles ORDER BY published_at DESC LIMIT ? OFFSET ?",
-        (limit * 3 if (lat and lon) else limit, offset),
+        "SELECT news_articles.*, news_sources.name AS source_name FROM news_articles "
+        "LEFT JOIN news_sources ON news_sources.id = news_articles.source_id "
+        "ORDER BY news_articles.published_at DESC LIMIT ? OFFSET ?",
+        (limit * 6, offset),
     ).fetchall()
     conn.close()
 
@@ -1159,7 +1306,22 @@ def api_list_news_articles():
         articles = [a for a in articles if news_matcher.is_relevant_to_station(
             a, lat, lon, county_fips, nws_zone_ugc
         )]
-    return jsonify(articles[:limit])
+
+    per_source_count = {}
+    diversified = []
+    overflow = []
+    for a in articles:
+        sid = a.get("source_id")
+        if per_source_count.get(sid, 0) < MAX_PER_SOURCE:
+            diversified.append(a)
+            per_source_count[sid] = per_source_count.get(sid, 0) + 1
+        else:
+            overflow.append(a)
+    if len(diversified) < limit:
+        diversified.extend(overflow[:limit - len(diversified)])
+    diversified.sort(key=lambda a: a["published_at"], reverse=True)
+
+    return jsonify(diversified[:limit])
 
 
 @app.route('/api/news/active-alerts', methods=['GET'])
@@ -1221,12 +1383,13 @@ def _insert_articles(conn, source_id, items):
         try:
             conn.execute(
                 "INSERT INTO news_articles (id, source_id, dedupe_key, title, url, body, "
-                "image_url, published_at, created_at, cap_event, cap_severity, cap_urgency, "
+                "image_url, video_url, media_type, published_at, created_at, cap_event, cap_severity, cap_urgency, "
                 "cap_certainty, cap_area_desc, cap_expires_at, cap_geocodes, latitude, longitude) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     str(uuid.uuid4()), source_id, item["dedupe_key"], item["title"], item["url"],
-                    item.get("body"), item.get("image_url"), item["published_at"],
+                    item.get("body"), item.get("image_url"), item.get("video_url"), item.get("media_type"),
+                    item["published_at"],
                     datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
                     item.get("cap_event"), item.get("cap_severity"), item.get("cap_urgency"),
                     item.get("cap_certainty"), item.get("cap_area_desc"), item.get("cap_expires_at"),
@@ -1330,6 +1493,645 @@ def api_news_prune():
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "deleted": deleted})
+
+
+# ---------------------------------------------------------------------
+# Global Situation Monitor (added 2026-10-08). Real design decisions,
+# worked through with Frank before any of this was written:
+#   - Reuses news_feed_parser.fetch_feed() as-is (same real
+#     feedparser-based ingestion as News Archive) against a fully
+#     separate source list/article table -- see init_db()'s own comment
+#     for why these two streams stay apart.
+#   - Matching against situation_matcher.INDICATORS is a deterministic
+#     keyword search, not an LLM classifier -- auditable, no
+#     hallucination risk.
+#   - The displayed GLOBAL SITUATION status is ALWAYS a manual entry
+#     (situation_log), never computed from matched events. The matched-
+#     event timeline is evidence for a human to review, not a verdict.
+# ---------------------------------------------------------------------
+
+def _load_custom_indicators(conn):
+    """Household-approved indicators from situation_custom_indicators, in
+    the same dict shape as situation_matcher.INDICATORS, ready to pass as
+    `extra_indicators` anywhere the fixed list is used."""
+    rows = conn.execute("SELECT * FROM situation_custom_indicators").fetchall()
+    return [{
+        "id": r["id"],
+        "theater": r["theater"],
+        "tier": r["tier"],
+        "label": r["label"],
+        "keywords": json.loads(r["keywords"]),
+        "custom": True,
+    } for r in rows]
+
+
+@app.route('/api/situation/indicators', methods=['GET'])
+def api_situation_indicators():
+    conn = _get_db()
+    custom = _load_custom_indicators(conn)
+    conn.close()
+    return jsonify({
+        "theaters": situation_matcher.THEATERS,
+        "tiers": situation_matcher.TIERS,
+        "indicators": situation_matcher.INDICATORS + custom,
+    })
+
+
+@app.route('/api/situation/sources', methods=['GET'])
+def api_list_situation_sources():
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT id, name, feed_url, theater, is_active, fetch_interval_minutes, "
+        "last_fetched_at, next_due_at, last_error FROM situation_sources ORDER BY name"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/situation/sources', methods=['POST'])
+def api_add_situation_source():
+    """Body: {"name": "...", "feed_url": "...", "theater": "...",
+    "fetch_interval_minutes": 60}. New sources are immediately due, same
+    reasoning as News Archive's own api_add_news_source."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    feed_url = (data.get("feed_url") or "").strip()
+    theater = (data.get("theater") or "global").strip()
+    if not name or not feed_url:
+        return jsonify({"error": "name and feed_url are both required"}), 400
+    if theater not in situation_matcher.THEATERS and theater != "global":
+        theater = "global"
+
+    interval = data.get("fetch_interval_minutes")
+    if not isinstance(interval, int) or interval < 1:
+        interval = 60
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    conn = _get_db()
+    try:
+        conn.execute(
+            "INSERT INTO situation_sources (id, name, feed_url, theater, is_active, "
+            "fetch_interval_minutes, next_due_at, created_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?)",
+            (str(uuid.uuid4()), name, feed_url, theater, interval, now, now),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "a source with this feed_url already exists"}), 409
+    finally:
+        conn.close()
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/situation/sources/<source_id>', methods=['DELETE'])
+def api_delete_situation_source(source_id):
+    conn = _get_db()
+    conn.execute("DELETE FROM situation_sources WHERE id = ?", (source_id,))
+    conn.execute("DELETE FROM situation_events WHERE source_id = ?", (source_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/situation/events', methods=['GET'])
+def api_list_situation_events():
+    """?theater=europe_nato_russia&tier=red&limit=100 -- any combination,
+    all optional. tier filters by looking at each event's own
+    matched_indicators against situation_matcher's indicator->tier map,
+    since tier isn't a stored column (an event can match indicators of
+    different tiers; filtering is done in Python rather than denormalizing
+    a single "tier" column that wouldn't capture that)."""
+    theater = request.args.get("theater")
+    tier = request.args.get("tier")
+    limit = min(int(request.args.get("limit", 100)), 500)
+
+    conn = _get_db()
+    if theater:
+        rows = conn.execute(
+            "SELECT situation_events.*, situation_sources.name AS source_name, "
+            "situation_sources.theater AS source_theater FROM situation_events "
+            "LEFT JOIN situation_sources ON situation_sources.id = situation_events.source_id "
+            "WHERE situation_sources.theater = ? ORDER BY situation_events.published_at DESC LIMIT ?",
+            (theater, limit * 2),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT situation_events.*, situation_sources.name AS source_name, "
+            "situation_sources.theater AS source_theater FROM situation_events "
+            "LEFT JOIN situation_sources ON situation_sources.id = situation_events.source_id "
+            "ORDER BY situation_events.published_at DESC LIMIT ?",
+            (limit * 2,),
+        ).fetchall()
+    custom = _load_custom_indicators(conn)
+    conn.close()
+
+    events = []
+    for r in rows:
+        d = dict(r)
+        indicator_ids = json.loads(d.get("matched_indicators") or "[]")
+        indicators = [situation_matcher.indicator_by_id(i, extra_indicators=custom) for i in indicator_ids]
+        indicators = [i for i in indicators if i]
+        if tier and not any(i["tier"] == tier for i in indicators):
+            continue
+        d["indicators"] = indicators
+        events.append(d)
+        if len(events) >= limit:
+            break
+
+    return jsonify(events)
+
+
+@app.route('/api/situation/status', methods=['GET'])
+def api_situation_status():
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT * FROM situation_log ORDER BY created_at DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return jsonify({
+            "status": "not_set",
+            "reason": "No assessment has been logged yet.",
+            "created_at": None,
+        })
+    return jsonify(dict(row))
+
+
+@app.route('/api/situation/status', methods=['POST'])
+def api_set_situation_status():
+    """Body: {"status": "normal|elevated|multi_region|confrontation|war",
+    "reason": "..."}. Always a manual entry -- see this section's own
+    header comment. Appends to the log rather than overwriting, so the
+    history itself is a real record of how the household's own
+    assessment changed over time."""
+    data = request.get_json(silent=True) or {}
+    status = (data.get("status") or "").strip()
+    reason = (data.get("reason") or "").strip()
+    valid_statuses = {"normal", "elevated", "multi_region", "confrontation", "war"}
+    if status not in valid_statuses:
+        return jsonify({"error": f"status must be one of {sorted(valid_statuses)}"}), 400
+
+    conn = _get_db()
+    conn.execute(
+        "INSERT INTO situation_log (id, status, reason, created_at) VALUES (?, ?, ?, ?)",
+        (str(uuid.uuid4()), status, reason, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/situation/status/history', methods=['GET'])
+def api_situation_status_history():
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT * FROM situation_log ORDER BY created_at DESC LIMIT 50"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+def _insert_situation_events(conn, source_id, items, custom_indicators=None):
+    inserted = 0
+    for item in items:
+        matched = situation_matcher.match_indicators(item["title"], item.get("body"), extra_indicators=custom_indicators)
+        try:
+            conn.execute(
+                "INSERT INTO situation_events (id, source_id, dedupe_key, title, url, body, "
+                "published_at, created_at, matched_indicators) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    str(uuid.uuid4()), source_id, item["dedupe_key"], item["title"], item["url"],
+                    item.get("body"), item["published_at"],
+                    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+                    json.dumps(matched),
+                ),
+            )
+            inserted += 1
+        except sqlite3.IntegrityError:
+            pass  # already have this one -- expected, not an error
+    return inserted
+
+
+@app.route('/api/situation/fetch-due', methods=['POST'])
+def api_situation_fetch_due():
+    """Real, periodic fetch -- called by scripts/situation-scheduled.sh
+    (a systemd timer, same pattern as news-scheduled.sh). Only fetches
+    sources whose own next_due_at has passed."""
+    conn = _get_db()
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    due = conn.execute(
+        "SELECT * FROM situation_sources WHERE is_active = 1 AND (next_due_at IS NULL OR next_due_at <= ?)",
+        (now,),
+    ).fetchall()
+    custom_indicators = _load_custom_indicators(conn)
+
+    results = []
+    for source in due:
+        source = dict(source)
+        try:
+            items = news_feed_parser.fetch_feed(source["feed_url"])
+            inserted = _insert_situation_events(conn, source["id"], items, custom_indicators=custom_indicators)
+            next_due = (now_dt + timedelta(
+                minutes=source["fetch_interval_minutes"]
+            )).strftime("%Y-%m-%d %H:%M:%S")
+            conn.execute(
+                "UPDATE situation_sources SET last_fetched_at = ?, next_due_at = ?, last_error = NULL WHERE id = ?",
+                (now, next_due, source["id"]),
+            )
+            results.append({"source": source["name"], "fetched": len(items), "inserted": inserted})
+        except Exception as e:
+            conn.execute(
+                "UPDATE situation_sources SET last_error = ? WHERE id = ?",
+                (str(e), source["id"]),
+            )
+            results.append({"source": source["name"], "error": str(e)})
+
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "results": results})
+
+
+def _matched_situation_events(conn, window_days, min_tier=None):
+    """Real matched events (indicator list non-empty) from the last
+    window_days, grouped by each matched indicator's own theater -- an
+    event can land in more than one theater bucket if it matched
+    indicators from different theaters. Shared by both the briefing
+    generator and could be reused by any future summary view.
+
+    min_tier='active' restricts to events with at least one red/orange
+    indicator -- routine/green-only matches (a mentioned exercise, an
+    intercept) are excluded. This is what keeps the AI Briefing from
+    spending a real generation narrating routine activity; see
+    api_situation_briefing_generate's own docstring for the "why" Frank
+    asked for this split (2026-10-08)."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=window_days)).strftime("%Y-%m-%d %H:%M:%S")
+    rows = conn.execute(
+        "SELECT situation_events.*, situation_sources.name AS source_name FROM situation_events "
+        "LEFT JOIN situation_sources ON situation_sources.id = situation_events.source_id "
+        "WHERE situation_events.published_at >= ? ORDER BY situation_events.published_at DESC",
+        (cutoff,),
+    ).fetchall()
+    custom = _load_custom_indicators(conn)
+
+    by_theater = {t: [] for t in situation_matcher.THEATERS}
+    for r in rows:
+        d = dict(r)
+        indicator_ids = json.loads(d.get("matched_indicators") or "[]")
+        indicators = [situation_matcher.indicator_by_id(i, extra_indicators=custom) for i in indicator_ids]
+        indicators = [i for i in indicators if i]
+        if not indicators:
+            continue
+        if min_tier == "active" and not any(i["tier"] in ("red", "orange") for i in indicators):
+            continue
+        d["indicators"] = indicators
+        for ind in indicators:
+            if min_tier == "active" and ind["tier"] not in ("red", "orange"):
+                continue
+            by_theater.setdefault(ind["theater"], []).append(d)
+
+    return by_theater
+
+
+@app.route('/api/situation/briefing/generate', methods=['POST'])
+def api_situation_briefing_generate():
+    """Gathers recently matched watch-list events -- active (red/orange)
+    tier ONLY, see _matched_situation_events's own docstring -- asks the
+    local Off-Grid AI (Ollama) to organize/summarize them
+    (situation_ai.py), and stores the result. See situation_ai.py's own
+    docstring for the real scope limits -- this never asks the model to
+    judge probability of war or suggest a status. Honestly refuses to
+    call Ollama at all when there's nothing active to summarize, rather
+    than prompting a small local model to invent analysis from an empty
+    input, or spending a generation narrating routine/green-tier
+    activity that doesn't need one -- see /api/situation/monitor for
+    that lower tier instead."""
+    data = request.get_json(silent=True) or {}
+    window_days = data.get("window_days", 7)
+    if not isinstance(window_days, int) or window_days < 1:
+        window_days = 7
+
+    conn = _get_db()
+    by_theater = _matched_situation_events(conn, window_days, min_tier="active")
+    event_count = sum(len(v) for v in by_theater.values())
+
+    if event_count == 0:
+        conn.close()
+        return jsonify({
+            "status": "error",
+            "detail": f"No active (orange/red) watch-list matches in the last {window_days} day(s) -- "
+                      f"nothing has escalated enough to need a full briefing. Check 'Keep An Eye On' "
+                      f"for any routine-tier activity instead. Nothing was sent to the AI.",
+        }), 400
+
+    prompt = situation_ai.build_prompt(by_theater, situation_matcher.THEATERS)
+    try:
+        briefing_text = situation_ai.generate_briefing(prompt)
+    except requests.RequestException as e:
+        conn.close()
+        return jsonify({"status": "error", "detail": f"Off-Grid AI (Ollama) unreachable or failed: {e}"}), 502
+
+    briefing_id = str(uuid.uuid4())
+    created_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "INSERT INTO situation_briefings (id, created_at, window_days, event_count, model_used, briefing_text) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (briefing_id, created_at, window_days, event_count, situation_ai.OLLAMA_MODEL, briefing_text),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "id": briefing_id,
+        "created_at": created_at,
+        "window_days": window_days,
+        "event_count": event_count,
+        "model_used": situation_ai.OLLAMA_MODEL,
+        "briefing_text": briefing_text,
+    })
+
+
+@app.route('/api/situation/briefing/latest', methods=['GET'])
+def api_situation_briefing_latest():
+    conn = _get_db()
+    row = conn.execute("SELECT * FROM situation_briefings ORDER BY created_at DESC LIMIT 1").fetchone()
+    conn.close()
+    if row is None:
+        return jsonify({"status": "not_set"})
+    return jsonify(dict(row))
+
+
+@app.route('/api/situation/briefing/history', methods=['GET'])
+def api_situation_briefing_history():
+    conn = _get_db()
+    rows = conn.execute("SELECT * FROM situation_briefings ORDER BY created_at DESC LIMIT 20").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+# ---------------------------------------------------------------------
+# AI-suggested keyword gap-finder (added 2026-10-08). Deliberately NOT
+# the AI directly populating "Keep An Eye On" -- see this section's own
+# module-level comment near situation_keyword_suggestions' CREATE TABLE
+# for the real reasoning Frank and I worked through: a small local model
+# (llama3.2:1b) already showed it adds unsupported detail even on an
+# easy, narrow summarization task, so letting it freely decide what's
+# "worth watching" from the full unfiltered article pool would be a much
+# riskier, harder judgment call for it, AND would erode the auditability
+# every other part of this feature was built around (you can always
+# answer "why did this match?" by reading situation_matcher.py or now
+# situation_custom_indicators). This keeps the model in a narrower,
+# safer job: proposing candidates from headlines that didn't match
+# anything, for a human to accept or reject -- same shape as the CBRN
+# gap we found and added by hand, just assisted.
+# ---------------------------------------------------------------------
+
+@app.route('/api/situation/suggest-keywords', methods=['POST'])
+def api_situation_suggest_keywords():
+    """Gathers recent UNMATCHED events (nothing in the fixed or custom
+    indicator list matched them), asks the AI to propose watch-list
+    candidates among them, and stores each parsed candidate as a pending
+    suggestion for /api/situation/suggestions to list. Does not touch
+    matching behavior at all by itself -- only approving a suggestion
+    (see below) does that."""
+    data = request.get_json(silent=True) or {}
+    window_days = data.get("window_days", 2)
+    if not isinstance(window_days, int) or window_days < 1:
+        window_days = 2
+    batch_size = 40  # keeps the prompt a reasonable size for a 1B model
+
+    conn = _get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=window_days)).strftime("%Y-%m-%d %H:%M:%S")
+    rows = conn.execute(
+        "SELECT * FROM situation_events WHERE published_at >= ? AND "
+        "(matched_indicators IS NULL OR matched_indicators = '[]') "
+        "ORDER BY published_at DESC LIMIT ?",
+        (cutoff, batch_size),
+    ).fetchall()
+    unmatched = [dict(r) for r in rows]
+
+    if not unmatched:
+        conn.close()
+        return jsonify({
+            "status": "error",
+            "detail": f"No unmatched articles in the last {window_days} day(s) to scan. Nothing was sent to the AI.",
+        }), 400
+
+    prompt = situation_ai.build_suggest_prompt(unmatched)
+    try:
+        response_text = situation_ai.generate_suggestions_raw(prompt)
+    except requests.RequestException as e:
+        conn.close()
+        return jsonify({"status": "error", "detail": f"Off-Grid AI (Ollama) unreachable or failed: {e}"}), 502
+
+    parsed = situation_ai.parse_suggestions(response_text, unmatched)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    created = []
+    for s in parsed:
+        suggestion_id = str(uuid.uuid4())
+        conn.execute(
+            "INSERT INTO situation_keyword_suggestions (id, created_at, source_title, source_url, "
+            "theater, tier, keyword, label, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
+            (suggestion_id, now, s["source_title"], s["source_url"], s["theater"], s["tier"], s["keyword"], s["label"]),
+        )
+        created.append({**s, "id": suggestion_id, "created_at": now, "status": "pending"})
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "scanned": len(unmatched),
+        "suggested": len(created),
+        "suggestions": created,
+    })
+
+
+@app.route('/api/situation/suggestions', methods=['GET'])
+def api_list_situation_suggestions():
+    """?status=pending (default) | approved | rejected | all"""
+    status = request.args.get("status", "pending")
+    conn = _get_db()
+    if status == "all":
+        rows = conn.execute("SELECT * FROM situation_keyword_suggestions ORDER BY created_at DESC LIMIT 100").fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM situation_keyword_suggestions WHERE status = ? ORDER BY created_at DESC LIMIT 100",
+            (status,),
+        ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/situation/suggestions/<suggestion_id>/approve', methods=['POST'])
+def api_approve_situation_suggestion(suggestion_id):
+    """Turns a pending suggestion into a real, live custom indicator --
+    the only action in this whole feature that actually changes future
+    matching. Optional body overrides (theater/tier/keyword/label) let
+    the household tweak the AI's proposal before accepting it rather
+    than being stuck with exactly what it suggested."""
+    data = request.get_json(silent=True) or {}
+    conn = _get_db()
+    row = conn.execute(
+        "SELECT * FROM situation_keyword_suggestions WHERE id = ? AND status = 'pending'", (suggestion_id,)
+    ).fetchone()
+    if row is None:
+        conn.close()
+        return jsonify({"error": "no pending suggestion with that id"}), 404
+    row = dict(row)
+
+    theater = (data.get("theater") or row["theater"]).strip()
+    tier = (data.get("tier") or row["tier"]).strip()
+    keyword = (data.get("keyword") or row["keyword"]).strip().lower()
+    label = (data.get("label") or row["label"]).strip()
+    if theater not in situation_matcher.THEATERS or tier not in situation_matcher.TIERS:
+        conn.close()
+        return jsonify({"error": "invalid theater or tier"}), 400
+
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    custom_id = f"custom-{uuid.uuid4()}"
+    conn.execute(
+        "INSERT INTO situation_custom_indicators (id, theater, tier, label, keywords, created_at, "
+        "approved_from_suggestion_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (custom_id, theater, tier, label, json.dumps([keyword]), now, suggestion_id),
+    )
+    conn.execute(
+        "UPDATE situation_keyword_suggestions SET status = 'approved', reviewed_at = ? WHERE id = ?",
+        (now, suggestion_id),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "custom_indicator_id": custom_id})
+
+
+@app.route('/api/situation/suggestions/<suggestion_id>/reject', methods=['POST'])
+def api_reject_situation_suggestion(suggestion_id):
+    conn = _get_db()
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    cur = conn.execute(
+        "UPDATE situation_keyword_suggestions SET status = 'rejected', reviewed_at = ? WHERE id = ? AND status = 'pending'",
+        (now, suggestion_id),
+    )
+    conn.commit()
+    conn.close()
+    if cur.rowcount == 0:
+        return jsonify({"error": "no pending suggestion with that id"}), 404
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/situation/custom-indicators', methods=['GET'])
+def api_list_custom_indicators():
+    conn = _get_db()
+    result = _load_custom_indicators(conn)
+    conn.close()
+    return jsonify(result)
+
+
+@app.route('/api/situation/custom-indicators/<custom_id>', methods=['DELETE'])
+def api_delete_custom_indicator(custom_id):
+    """Lets a household un-approve a custom indicator later if it turns
+    out to be noisy -- same undo-ability every other list in this app
+    has (sources, suggestions)."""
+    conn = _get_db()
+    cur = conn.execute("DELETE FROM situation_custom_indicators WHERE id = ?", (custom_id,))
+    conn.commit()
+    conn.close()
+    if cur.rowcount == 0:
+        return jsonify({"error": "no custom indicator with that id"}), 404
+    return jsonify({"status": "success"})
+
+
+@app.route('/api/situation/prune', methods=['POST'])
+def api_situation_prune():
+    """Same 1-year retention policy as News Archive's own api_news_prune
+    -- these events are low-volume enough (a handful of watched feeds,
+    most entries never matching any indicator) that a year of history
+    costs essentially nothing to keep."""
+    conn = _get_db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d %H:%M:%S")
+    cur = conn.execute("DELETE FROM situation_events WHERE published_at < ?", (cutoff,))
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "deleted": deleted})
+
+
+# ---------------------------------------------------------------------
+# Master Situation Board (added 2026-10-09) -- a single-page "everything
+# at a glance" dashboard pulling together data this app already tracks
+# (Global Situation, local hazards, supply status) plus two genuinely
+# new real-time sources added specifically for this: host system
+# metrics and live weather conditions. Both follow the same
+# daemon-writes-state/API-reads-state pattern already established for
+# /api/scanner, /api/radar, and the local-weather-capture /api/weather
+# above -- an honest "no_data" default rather than a fabricated reading
+# when the backing daemon hasn't run yet.
+# ---------------------------------------------------------------------
+
+@app.route('/api/metrics', methods=['GET'])
+def api_host_metrics():
+    """Reads whatever scripts/host-metrics.py (a host-level systemd
+    service, NOT a container -- a container only sees its own
+    cgroup-limited view, not true host-wide CPU/RAM/disk/network) has
+    written to the shared state file. Honest "no_data" default until
+    that service is actually installed and running."""
+    json_path = "/app/host-metrics/metrics_state.json"
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as f:
+            return jsonify(json.load(f))
+    return jsonify({
+        "status": "no_data",
+        "updated_at": None,
+        "detail": "Host metrics collector not running -- install scripts/host-metrics.py as a systemd service.",
+    })
+
+
+@app.route('/api/weather/conditions', methods=['GET'])
+def api_weather_conditions():
+    """Serves the cached NWS conditions (settings key 'weather_current',
+    refreshed by /api/weather/refresh below on a schedule). Never
+    fetches live on request -- a page polling this every refresh cycle
+    would otherwise hammer NWS's API for no reason; conditions don't
+    change on a per-page-load cadence anyway."""
+    conn = _get_db()
+    row = conn.execute("SELECT value FROM settings WHERE key = 'weather_current'").fetchone()
+    conn.close()
+    if row is None:
+        return jsonify({"status": "not_fetched", "detail": "Weather has not been fetched yet."})
+    return jsonify(json.loads(row["value"]))
+
+
+@app.route('/api/weather/refresh', methods=['POST'])
+def api_weather_refresh():
+    """Real fetch -- called by scripts/weather-scheduled.sh (a systemd
+    timer), not by the browser. Stores the result (success or error) in
+    the settings cache regardless, so a transient NWS outage shows as an
+    honest stale/error state on the board rather than silently keeping
+    old data forever with no indication anything's wrong."""
+    lat, lon = _station_coords()
+    conn = _get_db()
+    result = news_nws_weather.fetch_conditions(conn, lat, lon)
+    result["cached_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES ('weather_current', ?) "
+        "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (json.dumps(result),),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify(result)
+
+
+@app.route('/api/media/counts', methods=['GET'])
+def api_media_counts():
+    """Real library counts (videos/mp3s/pdfs) for the board's media tile
+    -- same scan_media_folder() the existing /videos, /mp3, /pdf pages
+    already use, just reduced to counts instead of full file listings."""
+    counts = {}
+    for kind in ('videos', 'mp3s', 'pdfs'):
+        data = scan_media_folder(kind)
+        counts[kind] = sum(len(files) for files in data.values())
+    return jsonify(counts)
 
 
 if __name__ == '__main__':

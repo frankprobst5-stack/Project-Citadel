@@ -6,6 +6,7 @@
   <title>Weather Labs - Cloud9</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/weather-labs.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
 </head>
 <body>
   <header class="wl-topbar">
@@ -205,6 +206,8 @@
   <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
   <script src="https://unpkg.com/protomaps-themes-base@3.1.0/dist/protomaps-themes-base.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+  <script>window.OLLIE_CONTEXT = { lab: "Weather Labs", activity: "looking at real, live NOAA/NWS weather data" };</script>
   <script src="{{ url_for('static', filename='js/weather-labs.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
 </body>
 </html>

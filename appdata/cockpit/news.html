@@ -16,10 +16,18 @@
         body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
         .container { max-width: 1400px; margin: 0 auto; }
 
-        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; }
         h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
         .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
         .action-btn:hover { background: var(--accent); color: var(--bg); }
+
+        /* Tabs */
+        .tab-bar { display: flex; gap: 4px; margin: 20px 0; border-bottom: 1px solid var(--border-dim); }
+        .tab-btn { background: none; border: none; color: var(--text-faint); padding: 10px 18px; font-family: monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
 
         .panel { background: var(--panel); border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--border), 0 4px 12px rgba(0,0,0,0.5); }
         .panel.alerts { box-shadow: 0 0 0 1px var(--accent-bright), 0 0 0 3px var(--red), 0 4px 12px rgba(0,0,0,0.5); }
@@ -44,6 +52,12 @@
         .log-form { display: flex; gap: 10px; margin-bottom: 16px; }
         .log-form textarea { flex-grow: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 4px; font-family: inherit; resize: vertical; min-height: 44px; }
 
+        .live-stream-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 800px) { .live-stream-row { grid-template-columns: 1fr; } }
+        .live-stream-box { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; }
+        .live-stream-label { padding: 8px 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-bright); border-bottom: 1px solid var(--border-dim); }
+        .live-stream-box iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
+
         .sources-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
         .source-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; font-size: 0.85rem; }
         .source-row .err { color: var(--red); font-size: 0.75rem; }
@@ -52,6 +66,41 @@
         .add-source-form input[name="name"] { flex: 1; min-width: 150px; }
         .add-source-form input[name="feed_url"] { flex: 2; min-width: 250px; }
         .del-btn { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 3px; padding: 2px 8px; font-size: 0.7rem; cursor: pointer; }
+
+        /* --- Newspaper-style layout (pattern reused from Frank's own masthead/news-hub projects, re-themed to Citadel's palette) --- */
+        .paper-section-title { color: var(--accent-bright); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1.5px; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+        .paper-section-title:first-child { margin-top: 0; }
+
+        .hero-card { position: relative; border-radius: 8px; overflow: hidden; min-height: 320px; display: flex; align-items: flex-end; background-color: var(--panel-alt); background-size: cover; background-position: center; box-shadow: 0 0 0 1px var(--border); }
+        .hero-card .overlay { background: linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.1) 70%); width: 100%; padding: 28px; box-sizing: border-box; }
+        .hero-card .meta-tag { display: inline-block; background: var(--accent); color: var(--bg); font-size: 0.7rem; font-weight: bold; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; margin-bottom: 10px; letter-spacing: 0.5px; }
+        .hero-card .video-tag { background: var(--red); }
+        .hero-card h2 { color: #fff; border: none; margin: 0 0 8px; font-size: 1.5rem; line-height: 1.25; text-transform: none; letter-spacing: normal; }
+        .hero-card h2 a { color: inherit; text-decoration: none; }
+        .hero-card h2 a:hover { color: var(--accent-bright); }
+        .hero-card p { color: #d8e4ee; font-size: 0.9rem; margin: 0; max-width: 700px; }
+
+        .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+        @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+        .feature-card { position: relative; border-radius: 6px; overflow: hidden; min-height: 150px; background-color: var(--panel-alt); background-size: cover; background-position: center; display: flex; align-items: flex-end; box-shadow: 0 0 0 1px var(--border-dim); }
+        .feature-card .overlay { background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.05) 65%); width: 100%; padding: 12px; box-sizing: border-box; }
+        .feature-card .meta-tag { font-size: 0.65rem; color: var(--accent-bright); text-transform: uppercase; display: block; margin-bottom: 3px; }
+        .feature-card h4 { margin: 0; font-size: 0.9rem; line-height: 1.3; color: #fff; }
+        .feature-card h4 a { color: inherit; text-decoration: none; }
+
+        .feed-grid-stream { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+        .feed-card { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+        .thumb-box { width: 100%; height: 150px; background: var(--panel-alt); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; color: var(--text-faint); font-size: 0.8rem; text-align: center; padding: 10px; box-sizing: border-box; }
+        .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-box video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        .play-badge { position: absolute; top: 8px; right: 8px; background: var(--red); color: #fff; font-size: 0.65rem; font-weight: bold; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; z-index: 2; pointer-events: none; }
+        .feed-card .card-content { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
+        .feed-card .meta-tag { font-size: 0.7rem; color: var(--accent-bright); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .feed-card h4 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.3; }
+        .feed-card h4 a { color: var(--text); text-decoration: none; }
+        .feed-card h4 a:hover { color: var(--accent-bright); }
+        .feed-card .meta-date { font-size: 0.72rem; color: var(--text-faint); margin: 0 0 8px; }
+        .feed-card .card-excerpt { font-size: 0.82rem; color: var(--text-dim); margin: 0; flex: 1; }
     </style>
 </head>
 <body>
@@ -61,32 +110,54 @@
             <button class="action-btn" onclick="window.location.href='index.html'">⬅ Cockpit Matrix</button>
         </div>
 
-        <div class="panel alerts">
-            <h2>⚠ Active Alerts</h2>
-            <div id="alertsBody" class="empty-state">Checking…</div>
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabBtnNews" onclick="switchTab('news')">📰 News</button>
+            <button class="tab-btn" id="tabBtnSettings" onclick="switchTab('settings')">⚙️ Feed Settings</button>
         </div>
 
-        <div class="panel">
-            <h2>📝 Local News Log</h2>
-            <div class="log-form">
-                <textarea id="logEntryText" placeholder="Type a local update — no syndicated feed can reach you right now, this is exactly what this is for."></textarea>
-                <button class="action-btn" onclick="submitLogEntry()">Add Entry</button>
+        <div class="tab-panel active" id="tabNews">
+            <div class="panel alerts">
+                <h2>⚠ Active Alerts</h2>
+                <div id="alertsBody" class="empty-state">Checking…</div>
             </div>
-            <div id="logBody" class="empty-state">Checking…</div>
+
+            <div class="panel">
+                <h2>📝 Local News Log</h2>
+                <div class="log-form">
+                    <textarea id="logEntryText" placeholder="Type a local update — no syndicated feed can reach you right now, this is exactly what this is for."></textarea>
+                    <button class="action-btn" onclick="submitLogEntry()">Add Entry</button>
+                </div>
+                <div id="logBody" class="empty-state">Checking…</div>
+            </div>
+
+            <div class="panel">
+                <h2>📡 Live Streams — Real America's Voice</h2>
+                <div class="live-stream-row">
+                    <div class="live-stream-box">
+                        <div class="live-stream-label">Channel 1</div>
+                        <iframe src="https://www.youtube.com/embed/uV7ACCiTz58?autoplay=0" title="Real America's Voice Ch1" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                    <div class="live-stream-box">
+                        <div class="live-stream-label">Channel 2</div>
+                        <iframe src="https://www.youtube.com/embed/3sZo7nNmVgs?autoplay=0" title="Real America's Voice Ch2" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <div id="paperBody">
+                <div class="empty-state">Checking…</div>
+            </div>
         </div>
 
-        <div class="panel">
-            <h2>📡 Cached News</h2>
-            <div id="articlesBody" class="empty-state">Checking…</div>
-        </div>
-
-        <div class="panel">
-            <h2>⚙ Manage Sources</h2>
-            <div id="sourcesBody" class="sources-list"></div>
-            <div class="add-source-form">
-                <input type="text" name="name" id="newSourceName" placeholder="Source name">
-                <input type="text" name="feed_url" id="newSourceUrl" placeholder="Feed URL (RSS/Atom)">
-                <button class="action-btn" onclick="addSource()">Add</button>
+        <div class="tab-panel" id="tabSettings">
+            <div class="panel">
+                <h2>⚙ Manage Feed Sources</h2>
+                <div id="sourcesBody" class="sources-list"></div>
+                <div class="add-source-form">
+                    <input type="text" name="name" id="newSourceName" placeholder="Source name">
+                    <input type="text" name="feed_url" id="newSourceUrl" placeholder="Feed URL (RSS/Atom)">
+                    <button class="action-btn" onclick="addSource()">Add</button>
+                </div>
             </div>
         </div>
     </div>
@@ -99,6 +170,38 @@
 
         function escapeHtml(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function switchTab(name) {
+            document.getElementById('tabNews').classList.toggle('active', name === 'news');
+            document.getElementById('tabSettings').classList.toggle('active', name === 'settings');
+            document.getElementById('tabBtnNews').classList.toggle('active', name === 'news');
+            document.getElementById('tabBtnSettings').classList.toggle('active', name === 'settings');
+        }
+
+        function excerpt(body, len) {
+            const text = String(body ?? '').replace(/<[^>]*>/g, '');
+            return text.length > len ? text.slice(0, len).trim() + '…' : text;
+        }
+
+        function formatDate(iso) {
+            try {
+                return new Date(iso.replace(' ', 'T') + 'Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (e) { return iso; }
+        }
+
+        function mediaBg(article) {
+            return article.image_url ? `background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('${escapeHtml(article.image_url)}');` : '';
+        }
+
+        function thumbInner(article) {
+            if (article.media_type === 'video' && article.video_url) {
+                return `<video controls preload="none" ${article.image_url ? `poster="${escapeHtml(article.image_url)}"` : ''}><source src="${escapeHtml(article.video_url)}"></video><span class="play-badge">▶ Video</span>`;
+            }
+            if (article.image_url) {
+                return `<img src="${escapeHtml(article.image_url)}" alt="" loading="lazy">`;
+            }
+            return escapeHtml(article.title);
         }
 
         async function loadAlerts() {
@@ -124,24 +227,64 @@
         }
 
         async function loadArticles() {
-            const body = document.getElementById('articlesBody');
+            const container = document.getElementById('paperBody');
             try {
-                const res = await fetch('/api/news/articles?limit=30&t=' + Date.now());
+                const res = await fetch('/api/news/articles?limit=40&t=' + Date.now());
                 const articles = await res.json();
-                if (!articles.length) {
-                    body.innerHTML = '<div class="empty-state">No cached articles yet — add a source below, or wait for the next scheduled fetch.</div>';
+                // Hazard/CAP items already have their own Active Alerts panel above --
+                // the newspaper layout below is for the general syndicated feed stream.
+                const feed = articles.filter(a => !a.cap_event);
+
+                if (!feed.length) {
+                    container.innerHTML = '<div class="panel"><div class="empty-state">No cached articles yet — add a source in Feed Settings, or wait for the next scheduled fetch.</div></div>';
                     return;
                 }
-                body.innerHTML = articles.map(a => `
-                    <div class="article-row ${a.cap_event ? 'alert' : ''}">
-                        <div class="meta">${escapeHtml(a.published_at)}</div>
-                        <div class="title">${a.cap_severity ? `<span class="severity-tag severity-${escapeHtml(a.cap_severity)}">${escapeHtml(a.cap_severity)}</span>` : ''}
-                            <a href="${escapeHtml(a.url)}" target="_blank">${escapeHtml(a.title)}</a></div>
-                        <div class="body">${escapeHtml((a.body || '').slice(0, 200))}</div>
+
+                const hero = feed[0];
+                const grid = feed.slice(1, 5);
+                const stream = feed.slice(5, 40);
+
+                let html = '';
+
+                html += `
+                    <div class="hero-card" style="${mediaBg(hero)}">
+                        <div class="overlay">
+                            <span class="meta-tag ${hero.media_type === 'video' ? 'video-tag' : ''}">${escapeHtml(hero.source_name || 'News')}${hero.media_type === 'video' ? ' · ▶ Video' : ''}</span>
+                            <h2><a href="${escapeHtml(hero.url)}" target="_blank" rel="noopener">${escapeHtml(hero.title)}</a></h2>
+                            <p>${escapeHtml(excerpt(hero.body, 160))}</p>
+                        </div>
                     </div>
-                `).join('');
+                `;
+
+                if (grid.length) {
+                    html += '<div class="feature-grid">' + grid.map(a => `
+                        <div class="feature-card" style="${mediaBg(a)}">
+                            <div class="overlay">
+                                <span class="meta-tag">${escapeHtml(a.source_name || 'News')}${a.media_type === 'video' ? ' · ▶' : ''}</span>
+                                <h4><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></h4>
+                            </div>
+                        </div>
+                    `).join('') + '</div>';
+                }
+
+                if (stream.length) {
+                    html += '<div class="paper-section-title">More Updates</div>';
+                    html += '<div class="feed-grid-stream">' + stream.map(a => `
+                        <article class="feed-card">
+                            <div class="thumb-box">${thumbInner(a)}</div>
+                            <div class="card-content">
+                                <span class="meta-tag">${escapeHtml(a.source_name || 'News')}</span>
+                                <h4><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title)}</a></h4>
+                                <p class="meta-date">${escapeHtml(formatDate(a.published_at))}</p>
+                                <p class="card-excerpt">${escapeHtml(excerpt(a.body, 110))}</p>
+                            </div>
+                        </article>
+                    `).join('') + '</div>';
+                }
+
+                container.innerHTML = html;
             } catch (err) {
-                body.innerHTML = `<div class="empty-state">Not connected: ${escapeHtml(err.message)}</div>`;
+                container.innerHTML = `<div class="panel"><div class="empty-state">Not connected: ${escapeHtml(err.message)}</div></div>`;
             }
         }
 

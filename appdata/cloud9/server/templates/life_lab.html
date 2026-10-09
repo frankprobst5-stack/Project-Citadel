@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Life Lab - Cloud9</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/life-lab.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ollie-widget.css') }}">
+</head>
+<body class="lil-body">
+  <header class="topbar lil-topbar">
+    <a class="lil-back" href="/" aria-label="Back to Cloud9">&larr; Cloud9</a>
+    <div class="lil-heading">
+      <span class="lil-icon">&#129520;</span>
+      <span class="lil-title">Life Lab</span>
+    </div>
+  </header>
+
+  <main class="lil-main">
+    <section class="lil-section">
+      <div class="lil-section-title">Cooking</div>
+      <a class="lil-link-card" href="/missions">Open Missions -- start "Let's Cook Something" &rarr;</a>
+    </section>
+
+    <section class="lil-section">
+      <div class="lil-section-title">Money Basics</div>
+      <div class="lil-section-note">Real videos about budgeting, already in your School Library.</div>
+      <a class="lil-link-card" id="lil-finance-link" href="#">Open budget videos &rarr;</a>
+    </section>
+
+    <section class="lil-section">
+      <div class="lil-section-title">First Aid &amp; Preparedness</div>
+      <div class="lil-section-note">What do you do first? Based on real Red Cross guidance and Scouting America's First Aid Adventure. For the serious cases, the real right answer is always the same: get an adult, call for real help.</div>
+      <div class="lil-card">
+        <div class="lil-scenario-situation" id="lil-situation">Loading&hellip;</div>
+        <div class="lil-scenario-options" id="lil-options"></div>
+        <div class="lil-feedback" id="lil-feedback"></div>
+        <button type="button" class="lil-btn" id="lil-next-btn">Next Scenario &rarr;</button>
+      </div>
+      <button type="button" class="lil-btn lil-btn-secondary" id="lil-kit-btn">Start "My First Aid Kit" Project</button>
+      <div class="lil-kit-feedback" id="lil-kit-feedback"></div>
+    </section>
+  </main>
+
+  <script>window.OLLIE_CONTEXT = { lab: "Life Lab", activity: "learning real first aid basics and practical life skills" };</script>
+  <script src="{{ url_for('static', filename='js/life-lab.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ollie-widget.js') }}"></script>
+</body>
+</html>
