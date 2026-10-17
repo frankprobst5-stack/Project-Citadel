@@ -1200,26 +1200,31 @@ dependencies — no CDN scripts, no Google Fonts, nothing — everything is
 already vendored locally (e.g. MapLibre under `appdata/cockpit/vendor/`).
 Nothing to fix there.
 
-## Phase 4 — Resolve the Project Vigil version-drift question
+## Phase 4 — Project Vigil version-drift question ✅ resolved 2026-10-17
 
 `appdata/project-vigil/` in this repo is a full embedded copy of Project
-Vigil, which also has its own separately published, actively-tracked
-GitHub repo. The two have already diverged — the standalone repo has
-gained `vigil_kernel.py`, `vigil_state.json`, and `vigil_grid_ledger.json`
-that this embedded copy doesn't have. This needs a real decision, not a
-default:
+Vigil, which also has its own separately published GitHub repo. This
+phase's original framing (the standalone repo had gained real files the
+embedded copy lacked) turned out to be backwards, confirmed by directly
+diffing both working trees before deciding anything: the standalone
+`project-vigil` repo is frozen at a single commit from **2026-07-19**
+with nothing since, while the embedded copy has had substantial real
+work land *after* that date — `camera_bridge.py`, `ibris_motion.py`
+(motion detection), Docker support (`Dockerfile.vigil`/
+`Dockerfile.camera`), real tests, a `vigil_kernel.py` that grew from
+7.7KB to 22KB, and this repo's own 2026-10-06 rebrand fix to
+`index.html`/`manual.html`. None of those exist in the standalone repo.
 
-- **Keep embedding a copy** (current approach) — simplest for a "clone
-  and `docker compose up`" experience, but needs a real process for
-  pulling updates from the standalone repo instead of silently drifting
-  further apart, which is what's already started happening.
-- **Reference the standalone repo instead** (a git submodule, or an
-  install-time `git clone` step) — stays in sync automatically, but adds
-  real friction (anyone cloning Citadel needs to know to initialize the
-  submodule) that cuts against the "just run install.sh" pitch.
-
-Whichever is chosen, the immediate fix either way is bringing this copy
-back in sync with what the standalone repo actually has.
+**Decision: keep embedding** (not a change — confirming what was
+already happening is in fact the right call, now that the real file
+history is known rather than assumed). The embedded copy is where all
+the real development has actually occurred; the standalone repo is a
+stale snapshot, not a parallel development track to reconcile against.
+Real follow-up, Frank's own call, not done here: periodically push the
+embedded copy's improvements *out* to the standalone repo if he wants
+it to represent something current for anyone who finds it on GitHub --
+sync flows the opposite direction from what this phase originally
+assumed.
 
 ## Phase 6 — Real per-container memory limits ✅ done 2026-09-14
 
