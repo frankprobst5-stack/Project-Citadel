@@ -16,6 +16,8 @@
 // in WayStation's own Settings → Peer Sync) — shown as a real status,
 // not fake/sample messages either way.
 
+import { fetchJson } from "../fetch-json.js";
+
 const ENDPOINT = "/api/muster/messages";
 
 export async function render(root) {
@@ -29,14 +31,7 @@ export async function render(root) {
     const body = root.querySelector("#messaging-body");
 
     try {
-        const res = await fetch(ENDPOINT);
-        const data = await res.json();
-        if (!res.ok) {
-            // The bridge itself answered, but with a real error (e.g. not
-            // configured yet, or WayStation rejected/unreachable) --
-            // show its actual message, not a generic failure.
-            throw new Error(data.error || `HTTP ${res.status}`);
-        }
+        const data = await fetchJson(ENDPOINT);
         renderMessages(body, data);
     } catch (err) {
         body.innerHTML = `

@@ -8,15 +8,31 @@
 // response would be exactly the kind of "looks live, isn't" failure
 // this whole family's design principles (DESIGN.md) exist to prevent.
 
-const CACHE_NAME = "muster-shell-v1";
+// CACHE_NAME real bug found live 2026-10-09: this never changed from
+// "v1" since the file was written, and the fetch handler below is
+// cache-first -- so a device that loaded Muster once would NEVER see a
+// shell update (a new panel, a bugfix) without someone manually
+// clearing site data. The activate handler's own old-cache cleanup
+// only runs when this string actually changes. Bump it on every real
+// shell change (any file in SHELL_FILES, or the list itself) -- there's
+// no automatic versioning here, this is a manual discipline the cache-
+// first strategy depends on.
+//
+// SHELL_FILES real gap found the same day: js/panels/home.js (the Home
+// Monitor panel, added after this list was first written) was missing
+// entirely -- that panel silently had no offline support. js/fetch-json.js
+// (new shared fetch helper, added the same pass) is included from the start.
+const CACHE_NAME = "muster-shell-v2";
 const SHELL_FILES = [
     "./",
     "./index.html",
     "./manifest.json",
     "./css/muster.css",
     "./js/app.js",
+    "./js/fetch-json.js",
     "./js/panels/messaging.js",
     "./js/panels/map.js",
+    "./js/panels/home.js",
     "./icons/icon-32.png",
     "./icons/icon-128.png",
     "./icons/icon-256.png",

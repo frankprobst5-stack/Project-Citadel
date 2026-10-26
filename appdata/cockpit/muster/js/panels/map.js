@@ -14,6 +14,8 @@
 // been backwards. This list is honest, functioning UI for what exists
 // today, not a placeholder pretending to be a map.
 
+import { fetchJson } from "../fetch-json.js";
+
 const ENDPOINT = "/api/muster/markers";
 
 export async function render(root) {
@@ -27,9 +29,7 @@ export async function render(root) {
     const body = root.querySelector("#map-body");
 
     try {
-        const res = await fetch(ENDPOINT);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const data = await fetchJson(ENDPOINT);
         renderMarkers(body, data);
     } catch (err) {
         body.innerHTML = `

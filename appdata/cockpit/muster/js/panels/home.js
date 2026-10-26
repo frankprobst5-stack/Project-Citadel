@@ -13,6 +13,8 @@
 // Honest by design: with no devices registered yet, this shows that
 // plainly rather than fake camera tiles or sample telemetry.
 
+import { fetchJson } from "../fetch-json.js";
+
 const STATE_ENDPOINT = "/api/vigil/state";
 const DISCOVER_ENDPOINT = "/api/vigil/discover";
 
@@ -32,9 +34,7 @@ export async function render(root) {
     const camerasBody = root.querySelector("#home-cameras");
 
     try {
-        const res = await fetch(STATE_ENDPOINT);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const data = await fetchJson(STATE_ENDPOINT);
         renderTelemetry(telemetryBody, data);
     } catch (err) {
         telemetryBody.innerHTML = `
@@ -44,9 +44,7 @@ export async function render(root) {
     }
 
     try {
-        const res = await fetch(DISCOVER_ENDPOINT);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const data = await fetchJson(DISCOVER_ENDPOINT);
         renderCameras(camerasBody, data.devices || []);
     } catch (err) {
         camerasBody.innerHTML = `
