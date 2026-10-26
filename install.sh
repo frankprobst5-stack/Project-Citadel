@@ -89,25 +89,16 @@ fi
 # in .env, which install.sh treats as existing config, not a template to
 # regenerate.
 #
-# Skips the picker entirely in a non-interactive shell (`[ -t 0 ]` is
-# false when stdin isn't a real terminal -- a CI runner, a `curl | bash`
-# pipe, a Dockerfile RUN step) so automated installs never hang waiting
-# on a prompt that can never be answered; those get every module enabled,
-# matching this project's behavior before the module picker existed.
-MODULE_NAMES=(vigil camera ai knowledge notes hardware audio education recipes muster)
-
-# Real Raspberry Pi / ARM detection, ROADMAP.md Phase 1 -- `uname -m` is
-# the standard, portable way to ask the kernel what CPU architecture this
-# actually is, no /proc/cpuinfo string-matching needed. This only changes
-# *suggested defaults* below, never blocks anything -- an operator with a
-# beefy ARM server or a Pi they've decided to push hard can still say yes
-# to everything, same as choosing "y" against a requires_hardware module
-# they don't actually have yet.
-IS_ARM="false"
-case "$(uname -m)" in
-    aarch64|armv7l|armv6l) IS_ARM="true" ;;
-esac
-
+# Delegates to scripts/pi-tier-picker.sh (vendored from the standalone
+# frankprobst5-stack/pi-tier-picker tool, extracted 2026-10-26 from this
+# exact logic) -- it auto-discovers modules from modules/*/manifest.json
+# instead of a hardcoded array (so adding a module needs no edit here),
+# applies the same requires_hardware/heavy_on_pi + real `uname -m` ARM
+# detection this file used to carry inline, and already handles the
+# non-interactive-shell case (a CI runner, `curl | bash`, a Dockerfile
+# RUN step) the same way this file used to: computed from the same
+# manifest flags rather than a second, separately-hardcoded profile
+# string that had to be kept in sync by hand.
 if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
     if [ -t 0 ]; then
         echo ""
@@ -115,66 +106,15 @@ if ! grep -q "^COMPOSE_PROFILES=" .env 2>/dev/null; then
         echo "Docker container, or a small group of them -- see modules/<name>/"
         echo "manifest.json for exactly what each one is.) Answer y/n for each;"
         echo "just press Enter to accept the suggested default."
-        if [ "$IS_ARM" = "true" ]; then
-            echo ""
-            echo "ARM hardware detected (Raspberry Pi or similar) -- Ollama and"
-            echo "Kolibri default to 'no' below, since together they can reserve"
-            echo "over 5GB of RAM (see ROADMAP.md Phase 1). Say 'y' anyway if this"
-            echo "board genuinely has the RAM to spare."
-        fi
         echo ""
-        SELECTED=()
-        for name in "${MODULE_NAMES[@]}"; do
-            manifest="modules/$name/manifest.json"
-            title="$name"
-            requires_hw="false"
-            heavy_on_pi="false"
-            if [ -f "$manifest" ]; then
-                title=$(grep -o '"title"[[:space:]]*:[[:space:]]*"[^"]*"' "$manifest" | sed -E 's/.*"title"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/')
-                requires_hw=$(grep -o '"requires_hardware"[[:space:]]*:[[:space:]]*[a-z]*' "$manifest" | sed -E 's/.*: *//')
-                heavy_on_pi=$(grep -o '"heavy_on_pi"[[:space:]]*:[[:space:]]*[a-z]*' "$manifest" | sed -E 's/.*: *//')
-            fi
-            # Hardware-dependent modules (a real RTL-SDR dongle, a real
-            # webcam) default to "no" -- most people don't have the
-            # device yet, and there's nothing this script can check for
-            # that's more reliable than just asking honestly.
-            default="y"
-            prompt_suffix="[Y/n]"
-            if [ "$requires_hw" = "true" ]; then
-                default="n"
-                prompt_suffix="[y/N] (needs real hardware passed through)"
-            elif [ "$heavy_on_pi" = "true" ] && [ "$IS_ARM" = "true" ]; then
-                default="n"
-                prompt_suffix="[y/N] (heavy -- see ROADMAP.md Phase 1)"
-            fi
-            read -r -p "  $title ($name) $prompt_suffix: " answer
-            answer="${answer:-$default}"
-            if [[ "$answer" =~ ^[Yy] ]]; then
-                SELECTED+=("$name")
-            fi
-        done
-        PROFILES=$(IFS=,; echo "${SELECTED[*]}")
-        if [ -z "$PROFILES" ]; then
-            echo "COMPOSE_PROFILES=" >> .env
-        else
-            echo "COMPOSE_PROFILES=$PROFILES" >> .env
-        fi
-        echo ""
-        echo "Selected modules: ${PROFILES:-(none)}"
-    else
-        if [ "$IS_ARM" = "true" ]; then
-            echo "Non-interactive install detected on ARM hardware -- enabling"
-            echo "every module EXCEPT Ollama/Kolibri by default (heavy on a Pi's"
-            echo "shared RAM, see ROADMAP.md Phase 1). Edit COMPOSE_PROFILES in"
-            echo ".env afterward to add them back if this board can carry it."
-            echo "COMPOSE_PROFILES=vigil,knowledge,notes,audio,recipes,muster" >> .env
-        else
-            echo "Non-interactive install detected -- enabling every module by"
-            echo "default (edit COMPOSE_PROFILES in .env afterward for a lighter"
-            echo "install, e.g. a Raspberry Pi)."
-            echo "COMPOSE_PROFILES=vigil,ai,knowledge,notes,audio,education,recipes,muster" >> .env
-        fi
     fi
+    PROFILES="$(scripts/pi-tier-picker.sh --modules-dir modules)"
+    if [ -z "$PROFILES" ]; then
+        echo "COMPOSE_PROFILES=" >> .env
+    else
+        echo "COMPOSE_PROFILES=$PROFILES" >> .env
+    fi
+    echo "Selected modules: ${PROFILES:-(none)}"
 
     # Remote-Ollama-host support, ROADMAP.md v2 backlog -- ollama itself
     # lives under its own "ollama-local" profile now (see
