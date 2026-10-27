@@ -1336,3 +1336,77 @@ first:**
 5. **Preservation/pantry method tracking** (canning, freezing,
    fermenting, drying, root cellar) with per-item guidance, extending the
    existing Food/Freezer ledgers rather than a new tab.
+
+## Phase 8 — Content discoverability: three real libraries, zero cross-links, not started
+
+Real grid-down gap analysis, 2026-10-27 (Frank's own framing: "picture grid down, no net,
+Citadel is your lifeline, you don't have tons of books as backup — what's missing?"). First
+pass guessed at real gaps (medical depth, water treatment, repair knowledge, navigation,
+food preservation). **Second pass, checking actual current state instead of guessing,
+found almost all of it already exists** — just scattered across three places that don't
+know about each other:
+
+1. **Kiwix** (`knowledge.html`, generic "Knowledge Base" tile) — **61 real archives**
+   already loaded on this machine: Wikipedia, MedlinePlus, WikiMed Medical Encyclopedia,
+   Military Medicine, NHS Medicines A-Z, Water Treatment Library, iFixit, Motor Vehicle
+   Mechanics, Home Improvement Q&A, CD3WD Project, Survivor Library, USDA Guide to Home
+   Canning, Ready.gov, Learning Self-Reliance, and more — real, substantial, not the
+   empty-by-default state the page's own first-run message describes.
+2. **Digital Media Vault's Document library** (`/pdf`, served by `vault-api`) — **73 real
+   PDFs across 12 categories**: Military Manuals (26, including `FM-21-26-Map-Reading-and-
+   Land-Navigation`, `FM-21-10-Field-Hygiene-and-Sanitation`, `FM-3-4-NBC-Protection`),
+   Survival (15, FEMA/DoD/LDS/Boy Scout Handbook/Estonia & Sweden & Norway civil-defense
+   guides), Nuclear & Radiation Survival (9), Emergency Checklists (4), Maps (4), Medical
+   (6), Cook Books (3), Ham Radio (1).
+3. **Digital Media Vault's Video library** (`/videos`, same `vault-api`) — **40 real videos
+   across 10 categories**: Medical (10), Education (10), Cooking (8), Plant ID (6), Ham
+   Radio (4), How To (2) — Gardening/Herbal Remedies/Preparedness categories exist but are
+   currently empty.
+4. **`medical.html`'s own "Medical Reference Library" upload section** — a fourth, separate
+   slot for PDFs/videos, currently empty (no files found), redundant with #2/#3's own
+   Medical categories.
+
+**Real corrected gap list, after actually checking** (compare to the first-pass guesses
+above): water treatment ✅ covered (Kiwix), general repair knowledge ✅ covered (Kiwix +
+Vault), land navigation ✅ covered (`FM-21-26` in the Vault, missed on the first pass
+entirely), food preservation ✅ covered (Kiwix + Cook Books), medical depth ✅ covered
+(Kiwix + Vault's own Medical categories), secure credential/document vault ✅ already
+built (`crypto.html` — real password manager, text encryption, Shamir's-secret-sharing-
+style key splitting). **Genuinely still missing**, not found anywhere in this pass: a
+written household emergency plan (who does what, where you meet — personal to this
+family, nothing generic covers it), weather prediction without a live data feed, and
+veterinary reference specifically (may be partially inside CD3WD/Survivor Library,
+unconfirmed).
+
+**The real problem isn't missing content — it's that four places hold real content and
+none of them know the others exist.** `medical.html` doesn't link to Kiwix's Military
+Medicine/MedlinePlus or the Vault's own Medical PDFs/videos. Logistics' Water Storage
+ledger doesn't link to Kiwix's Water Treatment Library. Its Food/Freezer ledgers don't
+link to the Vault's Cook Books or Kiwix's USDA Canning Guide. Nothing links to the Vault's
+own Military Manuals at all — a household member would have to already know `FM-21-26`
+exists to go find it. A future Baneward won't know the Vault's "Plant ID"/"Herbal
+Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist either.
+
+**Deferred, not started — real next steps, roughly in order**:
+1. **A single "what do we have and where" index page** — the cheapest real win. One page
+   listing every real source (Kiwix's 61 archives by name, the Vault's PDF/video
+   categories with counts, `medical.html`'s own library) so a household member under
+   stress has one place to start instead of three to guess between.
+2. **Contextual cross-links from feature pages** — `medical.html` links to the Vault's
+   Medical PDFs/videos and Kiwix's Military Medicine/MedlinePlus; Logistics' Water Storage
+   ledger links to Water Treatment Library; its Food/Freezer ledgers link to Cook Books and
+   the USDA Canning Guide; garden.html and the future Baneward link to Plant ID/Herbal
+   Remedies videos and CD3WD/Survivor Library content.
+3. **Unified search across all three real sources** — one search box querying Kiwix's own
+   catalog API, the Vault's PDF/video filenames and categories, and (once built) Baneward,
+   returning one combined result list regardless of which backend actually holds the
+   answer. Bigger lift than #1/#2, real payoff.
+4. **Fix the stale `knowledge` module manifest description** — still reads "Browse full
+   phonetic alphabets, Morse code reference manuals, and offline tutorials," written before
+   the real 61-archive library existed; actively undersells what's actually there.
+5. **Document the real Kiwix archive list and Vault category structure** as a reproducible
+   reference (names, approximate sizes, where to get them) — this specific curation only
+   exists as this one machine's live state today; worth preserving before a rebuild or a
+   second fleet site has to rediscover it from scratch. Real follow-up to the "starter ZIM
+   pack" idea raised during an earlier GitHub-reuse scanning session, now grounded in what's
+   actually already chosen rather than guessed at.
