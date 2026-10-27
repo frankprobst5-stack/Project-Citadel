@@ -1277,3 +1277,62 @@ machine.
 - `citadel.jpeg` exists at both the repo root and inside
   `appdata/cockpit/` (identical file, used in two different contexts) —
   fine as-is, just noting it's intentional duplication, not a bug.
+
+## Phase 7 — Homestead Logistics: real feature ideas from a GitHub reuse
+scan, not started
+
+A 2026-10-27 GitHub scan for preparedness/gardening projects (part of the
+ecosystem's broader "study external projects, build our own version if it
+helps" policy — see `citadel-ecosystem/MASTER_ROADMAP.md`) turned up two
+real, substantial, actually-run-and-verified candidates:
+[`BEKO2210/Prepper_Log`](https://github.com/BEKO2210/Prepper_Log)
+("PrepTrack" — offline-first supply/pantry PWA, barcode scanning, OCR
+expiry-date reading) and
+[`mniedermaier/gardener`](https://github.com/mniedermaier/gardener) (a
+self-hosted garden + livestock + self-sufficiency planner). Both were
+cloned, built, and actually run against this machine's real Docker before
+drawing any conclusion.
+
+**Real decision: neither replaces anything here, and neither gets embedded
+as a separate app either.** `garden.html` is not a generic planner — it's
+a hand-built, hardcoded reference for this project's own real 16-bed
+layout (real companion-planting notes per actual bed, real fertilizer
+guidance, this fall's real horse-manure soil history, real Donley County
+frost dates, the real existing asparagus/blackberries/roses/grapevines).
+No generic tool could replace that without losing real, specific
+knowledge — it stays untouched. `logistics.html` ("Homestead Logistics
+Matrix") already has real structure (4 tabs: Food & Water, Livestock,
+Orchard & Garden, Equipment & Supplies; editable ledgers for food,
+freezer, water, fuel, PPE, livestock/breeding, a year-over-year garden
+matrix) — running gardener and/or Prepper_Log alongside it as separate
+iframe tiles (the pattern Kiwix/Flatnotes/Mealie already use) would just
+mean three unsynced inventory systems instead of one. The right move is
+porting the genuinely new ideas in natively, matching this file's own
+hand-rolled style, same as every other module here.
+
+**Deferred, not started — priority order, smallest/most self-contained
+first:**
+
+1. **Crisis-Readiness Score**, from Prepper_Log's `src/lib/
+   preparedness.ts`: household size + target days → a 0–100 readiness
+   score, a precise water-ration target (Germany's real BBK
+   civil-protection rule), and an auto-generated shopping list. Small,
+   self-contained, nothing like it exists in Citadel today — add to the
+   Food & Water tab.
+2. **Barcode scan + offline OCR for expiry dates** on the Food Provisions
+   ledger, which is hand-typed only today. Prepper_Log's own approach:
+   `@zxing/browser` for the barcode, bundled Tesseract.js for fully
+   offline expiry-date OCR, Open Food Facts API for product lookup/images
+   (the one real external call either tool makes, and only the barcode
+   is transmitted).
+3. **Self-sufficiency nutrition calculator + winter gap analysis**, from
+   gardener: monthly calorie/protein/vitamin coverage computed from this
+   project's own already-tracked food/livestock data, falling back to
+   estimates when real production numbers aren't in yet.
+4. **Richer Livestock tab analytics**: production trend charts, feed-cost
+   ROI per animal, overdue health-record warnings (vaccinations,
+   deworming) — today's Livestock tab is a flat registry table, no
+   analytics at all.
+5. **Preservation/pantry method tracking** (canning, freezing,
+   fermenting, drying, root cellar) with per-item guidance, extending the
+   existing Food/Freezer ledgers rather than a new tab.
