@@ -227,6 +227,7 @@
             { key: 'mealie', title: "Recipes & Meal Planner", desc: "Import recipes by URL or hand-enter them, build a weekly meal plan, generate a shopping list, and check a recipe's ingredients against your Food Inventory and Freezer Foods ledgers.", meta: "Engine: Mealie", icon: "🍲", action: "http://localhost:8097", profile: 'recipes' },
             { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html", profile: null },
             { key: 'static', title: "Garden Planner", desc: "A real spring/summer/fall crop plan for the 16-bed garden — laid out to match the actual fence and compass orientation. Click any bed to see what's growing, spacing, and timing.", meta: "Storage: Botanical Core", icon: "🥕", action: "garden.html", profile: null },
+            { key: 'baneward', title: "Wild Plant Database", desc: "Launch Baneward — offline ID for 35,326 real US wild plants, with red-alert poison warnings, curated dangerous-lookalike comparisons (e.g. poison hemlock vs. wild carrot), a trait-based ID wizard, and local-AI-assisted search. Every claim starts unverified until a human confirms it.", meta: "Engine: Baneward", icon: "🌿", action: "baneward://open", profile: null },
             { key: 'static', title: "First Aid", desc: "Deploy immediate emergency trauma guidance, surgical field manuals, and medical reference charts.", meta: "Storage: Trauma Guide", icon: "🩸", action: "medical.html", profile: null },
             { key: 'ai', title: "Off-Grid AI", desc: "Query localized, non-networked Large Language Models for secure tactical data analysis.", meta: "Engine: Offline LLM Core", icon: "🧠", action: "ai.html", profile: 'ai' },
             { key: 'power', title: "Home Monitor Matrix", desc: "Manage local camera feeds, control hardware relays, view real solar/security telemetry, and scan your LAN for Tasmota/Shelly/ESPHome devices to bring under control.", meta: "Engine: Vigil Kernel", icon: "🏠", action: "/project-vigil/index.html", profile: 'vigil' },
@@ -295,13 +296,17 @@
         }
 
         function handleModuleClick(action) {
-            if (action.startsWith('waystation://')) {
-                // Custom URI scheme registered by the WayStation desktop app
-                // (see tauri-plugin-deep-link) -- the OS launches or focuses
-                // the native app, it does not navigate this page anywhere.
-                // The browser will likely show a one-time "open this link
-                // with WayStation?" confirmation the first time; that's
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(action) && !action.startsWith('http')) {
+                // Custom URI scheme registered by a native ecosystem app
+                // (WayStation, Baneward, ... -- see each one's own
+                // tauri-plugin-deep-link registration) -- the OS launches or
+                // focuses the native app, it does not navigate this page
+                // anywhere. The browser will likely show a one-time "open
+                // this link with X?" confirmation the first time; that's
                 // normal external-protocol-handler behavior, not an error.
+                // Generalized from a literal 'waystation://' check so a new
+                // ecosystem app's tile works without editing this function
+                // again -- any non-http custom scheme gets the same handoff.
                 window.location.href = action;
             } else if (action.startsWith('http')) {
                 window.open(action, '_blank');
@@ -337,6 +342,7 @@
             { key: 'network', name: 'Network', profile: null },
             { key: 'storage', name: 'Storage', unmonitored: true, profile: null },
             { key: 'waystation', name: 'Waystation', unmonitored: true, profile: null },
+            { key: 'baneward', name: 'Baneward', unmonitored: true, profile: null },
             { key: 'maps',    name: 'Maps', profile: null },
             { key: 'kiwix',   name: 'Kiwix', profile: 'knowledge' },
             { key: 'mealie',  name: 'Mealie', profile: 'recipes' },
