@@ -212,6 +212,17 @@ services:
       - ./appdata:/citadel-appdata
       - ./.env:/citadel-appdata-env
       - ./backups:/citadel-backups
+      # Baneward range map tie-in (2026-11-03): read-only on purpose --
+      # this container only ever queries Baneward's own live database
+      # directly (no export/sync step, see app.py's /api/baneward/*
+      # routes), it must never be able to write into a user's real
+      # claims/field-notes data. BANEWARD_DATA_PATH is the real per-OS
+      # Tauri app-data directory Baneward itself writes to (not this
+      # repo) -- same "set once in .env, not hand-edited here" pattern
+      # as CITADEL_HOST_PATH above. Left unset, the mount source doesn't
+      # exist and the new routes fail closed (sqlite3 "unable to open
+      # database file"), not silently serve stale/wrong data.
+      - ${BANEWARD_DATA_PATH:-/citadel-baneward-path-unset}:/baneward-data:ro
     environment:
       # Lets /api/pantry-check (app.py) call the mealie container below
       # server-to-server -- see that route's own comment for why this

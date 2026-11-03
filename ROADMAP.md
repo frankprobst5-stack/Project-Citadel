@@ -1410,3 +1410,34 @@ Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist
    second fleet site has to rediscover it from scratch. Real follow-up to the "starter ZIM
    pack" idea raised during an earlier GitHub-reuse scanning session, now grounded in what's
    actually already chosen rather than guessed at.
+
+## Phase 9 — Baneward range map tie-in ✅ done 2026-11-03
+
+Real cross-repo feature, designed and built the same day. Full detail lives in Baneward's
+own `ROADMAP.md`, not duplicated here — this is the compressed, Citadel-side summary.
+
+**Real architecture**: vault-api (`appdata/media-vault/app.py`) queries Baneward's own live
+SQLite database directly, read-only (`docker-compose.yml`'s new `BANEWARD_DATA_PATH` mount,
+documented in `.env.example`) — no export, no sync step, always current. Two new routes,
+`/api/baneward/species/<symbol>/counties` and `/api/baneward/county/<name>/species`, proxied
+through nginx the same direct style as every other vault-api route.
+
+**Real gap found and fixed**: checked the existing `.pmtiles` basemap's own `boundaries`
+layer before assuming it could be reused — it has no `name` field at all (Natural-Earth-
+derived, state/country level only), so a new real source was needed. Added the real US
+Census Bureau cartographic county boundary file (`cb_2023_us_county_500k`, public domain,
+converted to a 4.2MB GeoJSON, `appdata/cockpit/boundaries/us_counties.geojson`) — verified
+real string-exact name matches against tricky cases (multi-word "San Saba", unusually-cased
+"DeWitt") before trusting the join.
+
+**Real, honest limitation designed around, not hidden**: Baneward's own county-level rows
+carry only a bare name, no state — county names repeat across states. The reverse lookup
+always has the real state from the clicked polygon and cross-checks it against that
+species' own state-level rows; not airtight for the rare case of a species in two same-
+named counties in two different states it's also native/introduced to both, but a real,
+large improvement over name-only matching.
+
+**Verified live, both directions, against this actual running stack** (`localhost:8085/
+map.html?species=SEAM2`): species→map correctly shaded Texas ragwort's real 69 counties;
+clicking an unrelated county (Coleman, TX) correctly returned all 222 species Baneward has
+documented there, colored by native/introduced. Zero console errors.

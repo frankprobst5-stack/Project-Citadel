@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CITADEL // TACTICAL MAP</title>
     <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
+    <script src="vault-auth.js"></script>
     <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
     <style>
         :root {
@@ -262,9 +263,10 @@
             .addTo(map);
 
         const statusLine = document.getElementById('statusLine');
-        map.on('load', () => {
+        map.on('load', async () => {
             statusLine.textContent = 'Live — comms_base.pmtiles (roads/labels, z0-14) + tactical_terrain.pmtiles (elevation) — served locally, zero internet used.';
             renderPins();
+            await setUpBanewardLayers();
         });
         map.on('error', (e) => {
             // A missing/misnamed tile file surfaces here rather than a
@@ -274,6 +276,172 @@
             statusLine.style.color = 'var(--red)';
             console.error('MapLibre error:', e);
         });
+
+        // ==================================================================
+        // BANEWARD RANGE MAP TIE-IN (added 2026-11-03)
+        // Real, deliberately simple cross-repo design: this page never talks
+        // to Baneward directly (it's a native desktop app, not a server) --
+        // vault-api queries Baneward's own live database directly instead
+        // (read-only mount, see docker-compose.yml + app.py's
+        // /api/baneward/* routes), so what's shown here is always exactly
+        // what's in Baneward's own db right now -- no export/sync step, no
+        // staleness.
+        //
+        // Two real directions:
+        //  - species→map: Baneward's own "Where it grows" section opens
+        //    this page with ?species=<symbol> (tauri-plugin-opener, no new
+        //    protocol); on load, this fetches that species' real
+        //    state/county rows and shades the matching counties.
+        //  - map→species: clicking ANY county (not just a shaded one) asks
+        //    vault-api what's documented there and shows it in a popup.
+        //
+        // County boundaries: boundaries/us_counties.geojson, the real US
+        // Census Bureau cartographic boundary file (cb_2023_us_county_500k,
+        // public domain) -- checked directly before using it: the
+        // basemap's own pmtiles `boundaries` layer has no name field at
+        // all (Natural-Earth-derived, state/country level only), so it
+        // couldn't have supported this at all.
+        //
+        // Real, honest join limitation: Baneward's own county-level rows
+        // carry only a bare name ("Denton"), not a state -- county names
+        // repeat across states. The reverse lookup (map→species) always
+        // has the real state from the clicked polygon and passes it to
+        // vault-api, which cross-checks it against that species' own
+        // state-level rows rather than trusting the bare name alone --
+        // not airtight (a species documented in two same-named counties in
+        // two different states it's ALSO both listed native/introduced to
+        // would still be ambiguous), but a real, large improvement over
+        // name-only matching, and the ambiguity is logged here rather than
+        // hidden.
+        // ==================================================================
+
+        const BANEWARD_NATIVE_COLOR = '#59d67c';
+        const BANEWARD_INTRODUCED_COLOR = '#ffb000';
+        let banewardCountyFeatures = [];
+
+        async function setUpBanewardLayers() {
+            let fc;
+            try {
+                fc = await (await fetch('boundaries/us_counties.geojson')).json();
+            } catch (err) {
+                console.error('Baneward: failed to load county boundaries', err);
+                return;
+            }
+            banewardCountyFeatures = fc.features;
+            map.addSource('baneward-counties', { type: 'geojson', data: fc });
+
+            // Always-present, essentially-invisible fill -- makes every
+            // county a real click target, not just ones Baneward turns out
+            // to have data for (you don't know that until you ask).
+            map.addLayer({
+                id: 'baneward-counties-fill',
+                type: 'fill',
+                source: 'baneward-counties',
+                paint: { 'fill-color': '#000000', 'fill-opacity': 0.001 }
+            });
+            map.addLayer({
+                id: 'baneward-counties-line',
+                type: 'line',
+                source: 'baneward-counties',
+                paint: { 'line-color': '#2a4a66', 'line-width': 0.5, 'line-opacity': 0.25 }
+            });
+            // Species-range highlights -- empty filter (matches nothing)
+            // until loadSpeciesRangeFromUrl() actually has a species.
+            map.addLayer({
+                id: 'baneward-highlight-native',
+                type: 'fill',
+                source: 'baneward-counties',
+                filter: ['==', ['get', 'NAME'], ''],
+                paint: { 'fill-color': BANEWARD_NATIVE_COLOR, 'fill-opacity': 0.45 }
+            });
+            map.addLayer({
+                id: 'baneward-highlight-introduced',
+                type: 'fill',
+                source: 'baneward-counties',
+                filter: ['==', ['get', 'NAME'], ''],
+                paint: { 'fill-color': BANEWARD_INTRODUCED_COLOR, 'fill-opacity': 0.45 }
+            });
+
+            map.on('click', 'baneward-counties-fill', handleBanewardCountyClick);
+            map.on('mouseenter', 'baneward-counties-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', 'baneward-counties-fill', () => { map.getCanvas().style.cursor = ''; });
+
+            await loadSpeciesRangeFromUrl();
+        }
+
+        async function handleBanewardCountyClick(e) {
+            const props = e.features[0].properties;
+            const name = props.NAME, state = props.STATE_NAME;
+            const popup = new maplibregl.Popup({ maxWidth: '280px' })
+                .setLngLat(e.lngLat)
+                .setHTML(`<b>${name}, ${props.STUSPS}</b><br><span style="color:#71899d">Asking Baneward…</span>`)
+                .addTo(map);
+            try {
+                const res = await fetch(`/api/baneward/county/${encodeURIComponent(name)}/species?state=${encodeURIComponent(state)}`);
+                if (!res.ok) throw new Error(await res.text());
+                const species = await res.json();
+                if (species.length === 0) {
+                    popup.setHTML(`<b>${name}, ${props.STUSPS}</b><br>No species documented here in Baneward.`);
+                    return;
+                }
+                const rows = species.map((s) =>
+                    `<div>${s.common_name || s.scientific_name}<br><i style="color:#71899d">${s.scientific_name}</i>` +
+                    (s.nativity_status ? ` — <span style="color:${s.nativity_status === 'native' ? BANEWARD_NATIVE_COLOR : BANEWARD_INTRODUCED_COLOR}">${s.nativity_status}</span>` : '') +
+                    `</div>`
+                ).join('<hr style="border-color:#16283a;margin:4px 0">');
+                popup.setHTML(`<b>${name}, ${props.STUSPS}</b> — ${species.length} species<div style="max-height:220px;overflow-y:auto;margin-top:6px">${rows}</div>`);
+            } catch (err) {
+                popup.setHTML(`<b>${name}, ${props.STUSPS}</b><br><span style="color:var(--red)">Baneward lookup failed — is vault-api's BANEWARD_DATA_PATH mount set?</span>`);
+                console.error('Baneward county lookup failed:', err);
+            }
+        }
+
+        async function loadSpeciesRangeFromUrl() {
+            const symbol = new URLSearchParams(location.search).get('species');
+            if (!symbol) return;
+            try {
+                const res = await fetch(`/api/baneward/species/${encodeURIComponent(symbol)}/counties`);
+                if (!res.ok) throw new Error(await res.text());
+                const rows = await res.json();
+                if (rows.length === 0) {
+                    statusLine.textContent = `Baneward: no range data documented for ${symbol}.`;
+                    return;
+                }
+                const states = rows.filter((r) => r.level === 'state');
+                const counties = rows.filter((r) => r.level === 'county');
+                const stateNames = Array.from(new Set(states.map((s) => s.subdivision_name)));
+                const nativeNames = Array.from(new Set(counties.filter((c) => c.nativity_status === 'native').map((c) => c.subdivision_name)));
+                const introducedNames = Array.from(new Set(counties.filter((c) => c.nativity_status === 'introduced').map((c) => c.subdivision_name)));
+
+                // Real cross-check against this species' own state list,
+                // same disambiguation reasoning as the reverse lookup above
+                // -- only highlight a county if its real state is one this
+                // species is actually documented in, not just a name match.
+                const buildFilter = (names) => names.length
+                    ? ['all', ['in', ['get', 'STATE_NAME'], ['literal', stateNames]], ['in', ['get', 'NAME'], ['literal', names]]]
+                    : ['==', ['get', 'NAME'], ''];
+                map.setFilter('baneward-highlight-native', buildFilter(nativeNames));
+                map.setFilter('baneward-highlight-introduced', buildFilter(introducedNames));
+
+                statusLine.textContent = `Baneward range for ${symbol}: ${states.length} states, ${counties.length} counties — click any county for details.`;
+
+                const highlightNameSet = new Set([...nativeNames, ...introducedNames]);
+                const stateNameSet = new Set(stateNames);
+                const highlighted = banewardCountyFeatures.filter((f) => highlightNameSet.has(f.properties.NAME) && stateNameSet.has(f.properties.STATE_NAME));
+                if (highlighted.length) {
+                    const bounds = new maplibregl.LngLatBounds();
+                    highlighted.forEach((f) => {
+                        const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+                        polys.forEach((poly) => poly[0].forEach((pt) => bounds.extend(pt)));
+                    });
+                    map.fitBounds(bounds, { padding: 40, maxZoom: 7 });
+                }
+            } catch (err) {
+                statusLine.textContent = `Baneward range lookup failed for ${symbol} — is vault-api's BANEWARD_DATA_PATH mount set?`;
+                statusLine.style.color = 'var(--red)';
+                console.error('Baneward species range failed:', err);
+            }
+        }
 
         let terrainOn = true;
         window.toggleTerrain = function () {

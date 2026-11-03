@@ -5,6 +5,7 @@ import json
 import hmac
 import requests
 import threading
+import time
 
 from scanner_config import (
     build_config,
@@ -32,6 +33,14 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 DB_PATH = "/app/citadel.db"
+# Baneward's own live database, read-only bind mount (docker-compose.yml's
+# vault-api volumes) -- queried directly, never copied/synced, so this is
+# always exactly as current as whatever Baneward itself last wrote. Real,
+# deliberate consequence: if BANEWARD_DATA_PATH wasn't set when this
+# container started, the mount source doesn't exist and every query here
+# raises sqlite3.OperationalError, which the routes below turn into a
+# real "not configured" response instead of a silent empty result.
+BANEWARD_DB_PATH = "/baneward-data/baneward.db"
 
 # Real fix for a live-reported vulnerability (2026-09-21, a real
 # tester's own audit, verified directly against this file before fixing
@@ -2132,6 +2141,99 @@ def api_media_counts():
         data = scan_media_folder(kind)
         counts[kind] = sum(len(files) for files in data.values())
     return jsonify(counts)
+
+
+# --- BANEWARD RANGE MAP TIE-IN (added 2026-11-03) ---
+# Real design: query Baneward's own live database directly (read-only
+# mount, see BANEWARD_DB_PATH above) instead of exporting/syncing a copy
+# -- always current, zero duplicated storage. Real risk this exact project
+# hit live during Baneward's own distribution-data ingest session: a
+# transient "database is locked" when two processes touch the file at the
+# same moment. sqlite3.connect(..., timeout=5) already makes SQLite retry
+# internally for up to 5s before raising -- the explicit retry loop below
+# is a second, coarser layer for the rare case the lock outlives even that.
+#
+# Real, deliberate join design: Baneward's own county-level rows carry
+# only a bare county name (e.g. "Denton"), no state -- county names
+# aren't unique across states (many states have a "Washington County").
+# The map always knows the real state of whatever county it clicked
+# (the Census boundary GeoJSON carries it), so
+# /api/baneward/county/<name>/species takes that state as a required
+# query param and cross-checks it against this species' own real
+# state-level rows in the same table, rather than trusting the bare
+# county name alone. Real, honest limitation: a species whose real range
+# includes two same-named counties in two different states it's ALSO
+# both documented native/introduced to would still be ambiguous -- rare,
+# not solved here, not hidden either.
+
+def _baneward_query(sql, params=()):
+    """Runs one query against Baneward's live, read-only-mounted database.
+    Raises FileNotFoundError if BANEWARD_DATA_PATH wasn't set at container
+    start (the mount source won't exist), and retries briefly on a real
+    SQLITE_BUSY before giving up -- see this section's own comment above."""
+    if not os.path.exists(BANEWARD_DB_PATH):
+        raise FileNotFoundError(BANEWARD_DB_PATH)
+    last_err = None
+    for attempt in range(3):
+        try:
+            conn = sqlite3.connect(f"file:{BANEWARD_DB_PATH}?mode=ro", uri=True, timeout=5)
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(sql, params).fetchall()
+            conn.close()
+            return rows
+        except sqlite3.OperationalError as e:
+            last_err = e
+            if 'locked' not in str(e).lower() and 'busy' not in str(e).lower():
+                raise
+            time.sleep(0.5 * (attempt + 1))
+    raise last_err
+
+
+@app.route('/api/baneward/species/<symbol>/counties', methods=['GET'])
+def api_baneward_species_counties(symbol):
+    """Real range data for one species -- species→map. Returns every
+    state/county row Baneward has for this species, exactly as it sits in
+    Baneward's own live database right now."""
+    try:
+        rows = _baneward_query(
+            "SELECT level, subdivision_name, nativity_status FROM distribution "
+            "WHERE species_symbol = ? ORDER BY level, subdivision_name",
+            (symbol,),
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "Baneward data not mounted -- set BANEWARD_DATA_PATH in .env"}), 503
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/baneward/county/<name>/species', methods=['GET'])
+def api_baneward_county_species(name):
+    """Real reverse lookup -- map→species, what's documented in a clicked
+    county. `state` is required (the real full state name, e.g. "Texas" --
+    the same format Baneward's own state-level rows use) specifically to
+    disambiguate same-named counties in different states; see this
+    section's own top comment."""
+    state = request.args.get('state', '').strip()
+    if not state:
+        return jsonify({"error": "state query param is required"}), 400
+    try:
+        rows = _baneward_query(
+            """
+            SELECT DISTINCT d.species_symbol, s.common_name, s.scientific_name, d.nativity_status
+            FROM distribution d
+            JOIN species s ON s.symbol = d.species_symbol
+            WHERE d.level = 'county' AND d.subdivision_name = ?
+              AND EXISTS (
+                  SELECT 1 FROM distribution st
+                  WHERE st.species_symbol = d.species_symbol
+                    AND st.level = 'state' AND st.subdivision_name = ?
+              )
+            ORDER BY s.common_name
+            """,
+            (name, state),
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "Baneward data not mounted -- set BANEWARD_DATA_PATH in .env"}), 503
+    return jsonify([dict(r) for r in rows])
 
 
 if __name__ == '__main__':
