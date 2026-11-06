@@ -27,6 +27,7 @@
     <div class="wl-mode-row">
       <button type="button" class="wl-mode-btn wl-mode-active" id="wl-study-btn">Study Mode</button>
       <button type="button" class="wl-mode-btn" id="wl-practice-btn">Practice Mode</button>
+      <button type="button" class="wl-mode-btn" id="wl-scramble-btn">Word Scramble</button>
     </div>
 
     <!-- Study mode -->
@@ -50,6 +51,23 @@
         <div class="wl-practice-feedback" id="wl-practice-feedback"></div>
       </div>
       <div class="wl-practice-empty" id="wl-practice-empty" hidden>Nothing to practice in this unit yet -- try Study Mode first, or pick another unit.</div>
+    </div>
+
+    <!-- Word Scramble game -->
+    <div id="wl-scramble-panel" hidden>
+      <div class="wl-practice-stats">
+        <div>Score: <span id="wl-scramble-score">0</span></div>
+        <div>Streak: <span id="wl-scramble-streak">0</span></div>
+      </div>
+      <div class="wl-practice-card">
+        <div class="wl-scramble-word" id="wl-scramble-word"></div>
+        <button type="button" class="wl-hear-btn" id="wl-scramble-hear-btn">🔊 Hear the Word</button>
+        <form id="wl-scramble-form">
+          <input type="text" id="wl-scramble-input" placeholder="Unscramble it..." autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button type="submit">Check</button>
+        </form>
+        <div class="wl-practice-feedback" id="wl-scramble-feedback"></div>
+      </div>
     </div>
 
     <div class="wl-note">

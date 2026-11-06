@@ -461,6 +461,136 @@
   buildScaleRow();
   renderRecipe();
 
+  // ---- Weather Math ---------------------------------------------------
+  // Real problems built from a real live reading -- /api/weather/current
+  // is the exact same endpoint Weather Labs itself uses, so these numbers
+  // are never a second, separately-faked set. Only the random offset in
+  // each question (how much it "drops," "rises," etc.) is invented --
+  // that's a normal math-problem parameter, not a claim about a real
+  // forecast, same distinction Trip Planner's own hypothetical costs
+  // already draw.
+  const wmathFetchBtn = document.getElementById("ml-wmath-fetch-btn");
+  const wmathReadout = document.getElementById("ml-wmath-readout");
+  const wmathQuiz = document.getElementById("ml-wmath-quiz");
+  const wmathQuestion = document.getElementById("ml-wmath-question");
+  const wmathForm = document.getElementById("ml-wmath-form");
+  const wmathInput = document.getElementById("ml-wmath-input");
+  const wmathFeedback = document.getElementById("ml-wmath-feedback");
+  const wmathNextBtn = document.getElementById("ml-wmath-next-btn");
+
+  let wmathConditions = null;
+  let wmathCurrentAnswer = null;
+  let wmathCurrentConcept = null;
+
+  function buildWeatherProblem() {
+    if (!wmathConditions) return;
+    wmathForm.hidden = false;
+    wmathNextBtn.hidden = true;
+    wmathFeedback.textContent = "";
+    wmathInput.value = "";
+
+    // Real bug fixed 2026-11-06, caught live: picking `kind` at random
+    // BEFORE checking which of today's three readings actually exist
+    // meant a station with real temperature data but no real wind/
+    // humidity value (confirmed live -- a real METAR station reporting
+    // temperature only) could still roll "wind_change", fall through
+    // every check, and land on the "nothing available" message despite
+    // a real usable reading sitting right there. Build the list of
+    // genuinely available kinds first, then pick among only those.
+    const available = [];
+    if (wmathConditions.temperatureF != null) available.push("temperature_change");
+    if (wmathConditions.windSpeedMph != null) available.push("wind_change");
+    if (wmathConditions.relativeHumidityPct != null) available.push("humidity_change");
+
+    if (available.length === 0) {
+      // Real, honest fallback: none of today's three readings are
+      // available (a real gap, not fabricated placeholder numbers) --
+      // say so instead of silently skipping to a fake question.
+      wmathQuestion.textContent = "Today's real reading doesn't include temperature, wind, or humidity right now -- try again later.";
+      wmathForm.hidden = true;
+      wmathCurrentAnswer = null;
+      return;
+    }
+
+    const kind = available[Math.floor(Math.random() * available.length)];
+
+    if (kind === "temperature_change") {
+      const temp = Math.round(wmathConditions.temperatureF);
+      const delta = Math.floor(Math.random() * 15) + 3;
+      const goingUp = Math.random() < 0.5;
+      wmathQuestion.textContent =
+        "Right now it's " + temp + "°F. If it " + (goingUp ? "rises" : "drops") + " " + delta + " degrees, what will the temperature be?";
+      wmathCurrentAnswer = goingUp ? temp + delta : temp - delta;
+      wmathCurrentConcept = "temperature_change";
+    } else if (kind === "wind_change") {
+      const wind = Math.round(wmathConditions.windSpeedMph);
+      const multiplier = Math.floor(Math.random() * 2) + 2; // 2x or 3x
+      wmathQuestion.textContent =
+        "The wind is blowing at " + wind + " mph. If a stronger gust blew " + multiplier + " times as fast, how fast would that be?";
+      wmathCurrentAnswer = wind * multiplier;
+      wmathCurrentConcept = "wind_math";
+    } else {
+      const humidity = Math.round(wmathConditions.relativeHumidityPct);
+      const delta = Math.floor(Math.random() * 20) + 5;
+      const goingUp = humidity + delta <= 100;
+      wmathQuestion.textContent =
+        "Humidity is " + humidity + "%. If it " + (goingUp ? "rises" : "drops") + " " + delta + " percentage points, what would it be?";
+      wmathCurrentAnswer = goingUp ? humidity + delta : humidity - delta;
+      wmathCurrentConcept = "percent_change";
+    }
+
+    if (window.OLLIE_CONTEXT) {
+      window.OLLIE_CONTEXT.state = "Weather Math, current question: " + wmathQuestion.textContent;
+    }
+  }
+
+  wmathFetchBtn.addEventListener("click", function () {
+    wmathFetchBtn.disabled = true;
+    wmathFetchBtn.textContent = "Loading real weather...";
+    fetch("/api/weather/current")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        wmathConditions = data;
+        const parts = [];
+        if (data.temperatureF != null) parts.push(Math.round(data.temperatureF) + "°F");
+        if (data.windSpeedMph != null) parts.push(Math.round(data.windSpeedMph) + " mph wind");
+        if (data.relativeHumidityPct != null) parts.push(Math.round(data.relativeHumidityPct) + "% humidity");
+        wmathReadout.textContent = parts.length
+          ? "Right now: " + parts.join(", ") + (data.stationName ? " (" + data.stationName + ")" : "")
+          : "Connected, but today's real reading has no temperature, wind, or humidity value yet.";
+        wmathReadout.hidden = false;
+        wmathQuiz.hidden = false;
+        buildWeatherProblem();
+      })
+      .catch(function () {
+        wmathReadout.textContent = "Couldn't reach real weather data right now -- check Weather Labs' own location setting.";
+        wmathReadout.hidden = false;
+      })
+      .finally(function () {
+        wmathFetchBtn.disabled = false;
+        wmathFetchBtn.textContent = "Get today's real numbers";
+      });
+  });
+
+  wmathForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (wmathCurrentAnswer == null) return;
+    const answer = Number(wmathInput.value);
+    const wasCorrect = answer === wmathCurrentAnswer;
+    recordActivity("weather_math", wmathCurrentConcept, "standard", wasCorrect);
+    if (wasCorrect) {
+      wmathFeedback.textContent = "Correct!";
+      wmathFeedback.className = "ml-times-quiz-feedback ml-feedback-correct";
+    } else {
+      wmathFeedback.textContent = "Not quite -- the answer is " + wmathCurrentAnswer + ".";
+      wmathFeedback.className = "ml-times-quiz-feedback ml-feedback-incorrect";
+    }
+    wmathForm.hidden = true;
+    wmathNextBtn.hidden = false;
+  });
+
+  wmathNextBtn.addEventListener("click", buildWeatherProblem);
+
   // ---- Math Sandbox (GeoGebra) --------------------------------------
   window.addEventListener("load", function () {
     if (typeof GGBApplet === "undefined") {

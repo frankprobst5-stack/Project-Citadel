@@ -13,8 +13,10 @@
   const unitRow = document.getElementById("wl-unit-row");
   const studyBtn = document.getElementById("wl-study-btn");
   const practiceBtn = document.getElementById("wl-practice-btn");
+  const scrambleBtn = document.getElementById("wl-scramble-btn");
   const studyPanel = document.getElementById("wl-study-panel");
   const practicePanel = document.getElementById("wl-practice-panel");
+  const scramblePanel = document.getElementById("wl-scramble-panel");
   const wordGrid = document.getElementById("wl-word-grid");
 
   const scoreEl = document.getElementById("wl-score");
@@ -26,6 +28,14 @@
   const feedbackEl = document.getElementById("wl-practice-feedback");
   const practiceEmpty = document.getElementById("wl-practice-empty");
 
+  const scrambleScoreEl = document.getElementById("wl-scramble-score");
+  const scrambleStreakEl = document.getElementById("wl-scramble-streak");
+  const scrambleWordEl = document.getElementById("wl-scramble-word");
+  const scrambleHearBtn = document.getElementById("wl-scramble-hear-btn");
+  const scrambleForm = document.getElementById("wl-scramble-form");
+  const scrambleInput = document.getElementById("wl-scramble-input");
+  const scrambleFeedbackEl = document.getElementById("wl-scramble-feedback");
+
   let currentUnit = UNITS[0];
   let mode = "study";
   let masteryState = {}; // word -> {level, correctStreak, nextReview}
@@ -33,6 +43,10 @@
   let streak = 0;
   let queue = [];
   let currentWord = null;
+  let scrambleScore = 0;
+  let scrambleStreak = 0;
+  let scrambleQueue = [];
+  let scrambleCurrentWord = null;
 
   function speak(word) {
     if (!window.speechSynthesis) return;
@@ -88,10 +102,13 @@
     mode = newMode;
     studyBtn.classList.toggle("wl-mode-active", mode === "study");
     practiceBtn.classList.toggle("wl-mode-active", mode === "practice");
+    scrambleBtn.classList.toggle("wl-mode-active", mode === "scramble");
     studyPanel.hidden = mode !== "study";
     practicePanel.hidden = mode !== "practice";
+    scramblePanel.hidden = mode !== "scramble";
     if (mode === "study") renderStudy();
-    else startPractice();
+    else if (mode === "practice") startPractice();
+    else startScramble();
   }
 
   async function startPractice() {
@@ -184,8 +201,85 @@
     if (currentWord) speak(currentWord);
   });
 
+  // ---- Word Scramble game -------------------------------------------
+  // Real, simple, reuses the exact same word list and recordActivity path
+  // as Practice Mode above -- the only new thing is the shuffle itself.
+  function shuffleLetters(word) {
+    const letters = word.split("");
+    // Re-roll if the shuffle happens to land back on the real word (a
+    // real possibility for very short words) -- an unscrambled "scramble"
+    // isn't a fair question.
+    let scrambled = word;
+    let attempts = 0;
+    while (scrambled === word && attempts < 10) {
+      for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [letters[i], letters[j]] = [letters[j], letters[i]];
+      }
+      scrambled = letters.join("");
+      attempts++;
+    }
+    return scrambled;
+  }
+
+  function startScramble() {
+    scrambleScore = 0;
+    scrambleStreak = 0;
+    scrambleScoreEl.textContent = "0";
+    scrambleStreakEl.textContent = "0";
+    scrambleQueue = currentUnit.words.slice();
+    nextScrambleWord();
+  }
+
+  function nextScrambleWord() {
+    if (!scrambleQueue.length) scrambleQueue = currentUnit.words.slice();
+    scrambleCurrentWord = scrambleQueue.shift();
+    scrambleWordEl.textContent = shuffleLetters(scrambleCurrentWord).toUpperCase();
+    scrambleFeedbackEl.textContent = "";
+    scrambleFeedbackEl.className = "wl-practice-feedback";
+    scrambleInput.value = "";
+    scrambleInput.focus();
+  }
+
+  scrambleForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const answer = scrambleInput.value.trim().toLowerCase();
+    const correct = answer === scrambleCurrentWord.toLowerCase();
+
+    fetch("/api/learning/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: "spelling",
+        activity: "word_scramble",
+        concept: scrambleCurrentWord,
+        source: "cloud9-word-lab",
+        correct: correct,
+      }),
+    }).catch(function () {});
+
+    if (correct) {
+      scrambleScore++;
+      scrambleStreak++;
+      scrambleFeedbackEl.textContent = "Correct!";
+      scrambleFeedbackEl.className = "wl-practice-feedback wl-feedback-correct";
+    } else {
+      scrambleStreak = 0;
+      scrambleFeedbackEl.textContent = "Not quite -- it's spelled \"" + scrambleCurrentWord + "\"";
+      scrambleFeedbackEl.className = "wl-practice-feedback wl-feedback-incorrect";
+    }
+    scrambleScoreEl.textContent = scrambleScore;
+    scrambleStreakEl.textContent = scrambleStreak;
+    setTimeout(nextScrambleWord, correct ? 700 : 2200);
+  });
+
+  scrambleHearBtn.addEventListener("click", function () {
+    if (scrambleCurrentWord) speak(scrambleCurrentWord);
+  });
+
   studyBtn.addEventListener("click", function () { setMode("study"); });
   practiceBtn.addEventListener("click", function () { setMode("practice"); });
+  scrambleBtn.addEventListener("click", function () { setMode("scramble"); });
 
   buildUnitRow();
   loadMasteryState().then(renderStudy);

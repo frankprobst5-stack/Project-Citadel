@@ -165,6 +165,24 @@
       <div class="ml-trip-logged" id="ml-recipe-logged" hidden>Logged -- nice scaling!</div>
     </section>
 
+    <section class="ml-deck" id="ml-deck-weather-math">
+      <div class="ml-deck-header">
+        <span class="ml-deck-title">Weather Math</span>
+      </div>
+      <div class="ml-deck-note">Real math problems built from today's real numbers &mdash; the same live reading Weather Labs shows right now, not made-up practice numbers.</div>
+      <button type="button" class="ml-start-btn" id="ml-wmath-fetch-btn">Get today's real numbers</button>
+      <div class="ml-wmath-readout" id="ml-wmath-readout" hidden></div>
+      <div class="ml-wmath-quiz" id="ml-wmath-quiz" hidden>
+        <div class="ml-times-quiz-question" id="ml-wmath-question"></div>
+        <form class="ml-times-quiz-form" id="ml-wmath-form">
+          <input type="number" step="any" id="ml-wmath-input" autocomplete="off" placeholder="?">
+          <button type="submit">Check</button>
+        </form>
+        <div class="ml-times-quiz-feedback" id="ml-wmath-feedback"></div>
+        <button type="button" class="ml-start-btn" id="ml-wmath-next-btn" hidden>Next problem</button>
+      </div>
+    </section>
+
     <section class="ml-deck" id="ml-deck-sandbox">
       <div class="ml-deck-header">
         <span class="ml-deck-title">Math Sandbox</span>

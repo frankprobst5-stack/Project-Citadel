@@ -110,6 +110,14 @@
   min-height: 1.2em;
 }
 
+.wl-scramble-word {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
 .wl-hear-btn {
   background: #e8a23f;
   color: #241a08;

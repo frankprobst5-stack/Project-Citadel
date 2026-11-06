@@ -163,8 +163,15 @@ demand it:
    same `/api/learning/record` Math Lab already used. **Word Builder
    skipped on purpose** — Dictionary's own Guided Missions already cover
    synonyms/antonyms/word families for real, no need to rebuild it.
-   **Still real, named v2 work**: Reading Lab, Personal Bookshelf,
-   Spelling Games.
+   **Spelling Games done, 2026-11-06**: a real Word Scramble mode added alongside Study/
+   Practice — reuses the exact same real 50-word list and `/api/learning/record` path,
+   the only new logic is a real Fisher-Yates letter shuffle (re-rolled if it happens to
+   land back on the real word). **Still real, named v2 work, honestly not yet
+   scoped**: Reading Lab and Personal Bookshelf — unlike Weather Math and Word Scramble
+   below, neither has a real concrete design behind it yet (no identified content
+   source, no confirmed age-appropriate source checked the way History Library's own
+   Gutenberg sourcing was) — real design work needed before either gets a build slot,
+   not built speculatively here.
 2. ✅ **Trip Planner + Recipe Scaler done, 2026-09-28.** Trip Planner
    reframed "Storm Chase Trip Planner" (real, deliberate, ties to his
    actual interest) — first real mode of the Budget Simulation Engine,
@@ -172,9 +179,21 @@ demand it:
    percentages/profit-margin level named in `LEARNING_PATH.md`, not now.
    Recipe Scaler: two real recipes, real fraction math (verified by hand
    in Node before trusting the browser), both confirmed live end-to-end.
-   **Still real, named next**: Family/Mayor/Business modes (same reusable
-   engine, later when he's at that math level), and Weather-to-Math
-   activities pulling live numbers from Weather Labs.
+   **Weather Math done, 2026-11-06**: a new deck in Math Lab, real problems built from
+   `/api/weather/current`'s own live reading (the exact same endpoint Weather Labs itself
+   uses, never a second faked number) — temperature-change, wind-multiplication, and
+   percent-change questions, each using whichever of the three real values the current
+   observation actually has (never fabricated when a value is genuinely missing). Logs
+   through the same `/api/learning/record` path every other Math Lab activity already
+   uses. **Real bug caught live during verification, not left in**: the first version
+   picked a question type at random *before* checking which readings actually existed,
+   so a real station reporting temperature only (confirmed live — a genuine METAR
+   observation with no wind/humidity value that morning) could still roll "wind
+   question," fail every check, and wrongly claim nothing was available. Fixed by
+   building the list of genuinely-available kinds first and picking only from those;
+   re-verified live against the real running app afterward, including a correct-answer
+   round-trip. **Still real, named next**: Family/Mayor/Business budget modes (same
+   reusable engine, later when he's at that math level).
 3. **History Explorer** — superseded, 2026-10-01. The Parallel Timeline
    Engine's real blocker was never solved: no reliable "notable event"
    class was ever found on Wikidata (tested against 1969, missed the

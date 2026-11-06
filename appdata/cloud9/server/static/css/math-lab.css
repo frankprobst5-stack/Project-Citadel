@@ -451,6 +451,20 @@ body {
   margin-bottom: 14px;
 }
 
+/* Weather Math */
+.ml-wmath-readout {
+  margin: 14px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--math-accent-dim);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.ml-wmath-quiz {
+  margin-top: 10px;
+}
+
 /* Sandbox */
 .ml-sandbox-container {
   width: 100%;
