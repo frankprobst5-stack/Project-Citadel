@@ -3,7 +3,7 @@
     "profile": "knowledge",
     "title": "Knowledge Base",
     "icon": "📚",
-    "description": "Browse full phonetic alphabets, Morse code reference manuals, and offline tutorials.",
+    "description": "61 real offline ZIM archives -- Ready.gov, Wikipedia, Khan Academy, Stack Exchange Q&A for woodworking/gardening/mechanics, Project Gutenberg, and more.",
     "engine": "Wiki Core (Kiwix)",
     "cockpit_tile": true,
     "requires_hardware": false,

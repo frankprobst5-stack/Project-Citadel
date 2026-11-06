@@ -1313,12 +1313,23 @@ hand-rolled style, same as every other module here.
 **Deferred, not started — priority order, smallest/most self-contained
 first:**
 
-1. **Crisis-Readiness Score**, from Prepper_Log's `src/lib/
-   preparedness.ts`: household size + target days → a 0–100 readiness
-   score, a precise water-ration target (Germany's real BBK
-   civil-protection rule), and an auto-generated shopping list. Small,
-   self-contained, nothing like it exists in Citadel today — add to the
-   Food & Water tab.
+1. ~~**Crisis-Readiness Score**~~ — ✅ **done, 2026-11-06.** Read Prepper_Log's real source
+   (`src/lib/preparedness.ts`) before building anything, not just the pitch — confirmed the
+   real BBK figures (2L water/person/day, ~2200 kcal/person/day) and its scoring formula.
+   **Real, honest scope correction found along the way**: Prepper_Log's own algorithm
+   reconciles targets against tracked liters/kcal, but Citadel's `inventory` table has no
+   `unit` or `kcal_per_unit` field (confirmed by reading the live `/api/inventory` response
+   before building, not assumed) — porting that exact reconciliation would have meant
+   comparing a liters target against a plain item count as if `qty` meant liters, a real
+   fabrication. Built the honest version instead: the water/food targets are a real
+   standalone BBK calculation, clearly labeled as not reconciled against stock; the 0–100
+   score is computed from what Citadel genuinely tracks — whether water/food/freezer have
+   anything logged at all, the real fraction of items at or above their own `min_qty`
+   threshold, and the real fraction with an unexpired date on file — reusing the page's own
+   existing `expiryStatus()` parser rather than a new one. Pure client-side JS against data
+   `logistics.html` already loads, no new backend route. Verified live against this
+   machine's real pantry data: 44/100, correctly flagged water and freezer as nothing
+   logged, and produced a real 140-row low-stock shopping list from actual tracked items.
 2. **Barcode scan + offline OCR for expiry dates** on the Food Provisions
    ledger, which is hand-typed only today. Prepper_Log's own approach:
    `@zxing/browser` for the barcode, bundled Tesseract.js for fully
@@ -1388,10 +1399,17 @@ exists to go find it. A future Baneward won't know the Vault's "Plant ID"/"Herba
 Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist either.
 
 **Deferred, not started — real next steps, roughly in order**:
-1. **A single "what do we have and where" index page** — the cheapest real win. One page
-   listing every real source (Kiwix's 61 archives by name, the Vault's PDF/video
-   categories with counts, `medical.html`'s own library) so a household member under
-   stress has one place to start instead of three to guess between.
+1. ~~**A single "what do we have and where" index page**~~ — ✅ **done, 2026-11-06.** New
+   `sources.html`, a real cockpit tile ("🧭 What We Have & Where"). Live-fetches Kiwix's own
+   OPDS catalog directly (`/catalog/v2/entries?count=500` — the default call only returns
+   10 at a time, confirmed by checking `<totalResults>` before trusting the first response;
+   all **61 real archives** render, title + category + real article count, filterable) and
+   the Vault's real `/api/media/pdfs`/`videos`/`counts` routes (PDF/video categories with
+   live counts, clickable straight into each category), plus a direct link into
+   `medical.html`. Verified live against this machine's real running stack. **Also fixed
+   the stale Knowledge Base tile description while in the area** (already named as a real,
+   separate gap below) — it read "phonetic alphabets, Morse code reference manuals" from
+   before the real 61-archive library existed; now names real archives.
 2. **Contextual cross-links from feature pages** — `medical.html` links to the Vault's
    Medical PDFs/videos and Kiwix's Military Medicine/MedlinePlus; Logistics' Water Storage
    ledger links to Water Treatment Library; its Food/Freezer ledgers link to Cook Books and
@@ -1401,9 +1419,11 @@ Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist
    catalog API, the Vault's PDF/video filenames and categories, and (once built) Baneward,
    returning one combined result list regardless of which backend actually holds the
    answer. Bigger lift than #1/#2, real payoff.
-4. **Fix the stale `knowledge` module manifest description** — still reads "Browse full
-   phonetic alphabets, Morse code reference manuals, and offline tutorials," written before
-   the real 61-archive library existed; actively undersells what's actually there.
+4. ~~**Fix the stale `knowledge` module manifest description**~~ — ✅ **done, 2026-11-06.**
+   Fixed in both real places it lived: `modules/knowledge/manifest.json`'s own
+   `description` field and the cockpit's `coreModules` tile text in `index.html` — found
+   while building the new sources.html index page above, which needed the real archive
+   count anyway.
 5. **Document the real Kiwix archive list and Vault category structure** as a reproducible
    reference (names, approximate sizes, where to get them) — this specific curation only
    exists as this one machine's live state today; worth preserving before a rebuild or a

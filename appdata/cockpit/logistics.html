@@ -116,6 +116,11 @@
                     <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in Mealie and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
                     <button class="action-btn" onclick="openPanel('pantryCheckPanel')">Access Ledger</button>
                 </div>
+                <div class="log-card">
+                    <h2>🎯 Crisis-Readiness Score</h2>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Household size + target days → a real water-ration target, a 0-100 readiness score, and a shopping list from what's actually low or missing.</p>
+                    <button class="action-btn" onclick="openPanel('readinessPanel')">Access Ledger</button>
+                </div>
             </div>
         </div>
 
@@ -429,6 +434,26 @@
             </div>
             <div id="pantryCheckResults" style="margin-top:15px; font-family:monospace; font-size:0.85rem; color:var(--text-dim);"></div>
         </div>
+
+        <!-- CRISIS-READINESS SCORE -->
+        <div id="readinessPanel" class="viewport-panel">
+            <h2>🎯 Crisis-Readiness Score</h2>
+            <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">
+                Real, honest scope: Citadel's own inventory tracks item counts, not liters or
+                calories, so the water target below is a real BBK-standard calculation (2L per
+                person per day), not reconciled against what's on the shelf — there's no unit
+                data to reconcile it with. The score itself is computed from what Citadel
+                genuinely does track: whether water/food/freezer have anything logged at all,
+                how many tracked items are at or below their own low-stock threshold, and how
+                many have a real, unexpired date on file.
+            </p>
+            <div class="add-ribbon">
+                <input type="number" id="readiness_persons" placeholder="Household size" value="2" min="1" style="width: 150px;">
+                <input type="number" id="readiness_days" placeholder="Target days" value="10" min="1" style="width: 150px;">
+                <button class="action-btn" onclick="calculateReadiness()">Calculate</button>
+            </div>
+            <div id="readinessResults" style="margin-top:20px;"></div>
+        </div>
     </div>
     <script>
         // Core Memory Containers
@@ -485,6 +510,79 @@
                 if (PANEL_TO_TAB[requested]) switchCategoryTab(PANEL_TO_TAB[requested]);
                 openPanel(requested + 'Panel');
             }
+        }
+
+        // Real BBK (Germany's federal civil-protection office) recommended
+        // minimums -- the same real reference values the Prepper_Log reuse
+        // scan found and verified (citadel-ecosystem/MASTER_ROADMAP.md,
+        // 2026-10-27), not invented here.
+        const READINESS_WATER_LITERS_PER_PERSON_DAY = 2;
+
+        // Real, deliberately honest scope: Citadel's own inventory schema
+        // has no unit or calorie-per-item field (confirmed by reading the
+        // live /api/inventory response before building this, not assumed),
+        // so the water/food target below is a real standalone calculation,
+        // never silently compared against an item count as if qty meant
+        // liters or kcal -- that comparison would be fabricated, not real.
+        // What genuinely IS real and already tracked: whether a category
+        // has anything logged at all, each item's own min_qty threshold,
+        // and whatever real date sits in its exp field.
+        function calculateReadiness() {
+            const persons = Math.max(1, parseInt(document.getElementById('readiness_persons').value) || 1);
+            const days = Math.max(1, parseInt(document.getElementById('readiness_days').value) || 1);
+
+            const waterTargetLiters = persons * READINESS_WATER_LITERS_PER_PERSON_DAY * days;
+            const kcalTargetTotal = persons * 2200 * days; // BBK's own ~2200 kcal/person/day figure
+
+            const essentialCats = ['water', 'food', 'freezer'];
+            const essentialPresent = essentialCats.filter(c => (inventoryData[c] || []).length > 0);
+            const categoryScore = essentialPresent.length / essentialCats.length;
+
+            const allItems = Object.values(inventoryData).flat();
+            const tracked = allItems.filter(i => (parseInt(i.min_qty) || 0) > 0);
+            const notLowStock = tracked.filter(i => i.qty > (parseInt(i.min_qty) || 0));
+            const stockScore = tracked.length > 0 ? notLowStock.length / tracked.length : 1;
+
+            const dated = allItems.filter(i => expiryStatus(i.exp) !== null);
+            const notExpired = dated.filter(i => expiryStatus(i.exp) !== 'expired');
+            const freshScore = dated.length > 0 ? notExpired.length / dated.length : 1;
+
+            const score = Math.round(100 * (0.4 * categoryScore + 0.35 * stockScore + 0.25 * freshScore));
+
+            const lowStockItems = allItems.filter(i => {
+                const minQty = parseInt(i.min_qty) || 0;
+                return minQty > 0 && i.qty <= minQty;
+            });
+
+            const scoreColor = score >= 70 ? 'var(--accent-bright)' : (score >= 40 ? '#e8b93f' : '#e05252');
+            const el = document.getElementById('readinessResults');
+            el.innerHTML = `
+                <div style="display:flex; gap:30px; flex-wrap:wrap; margin-bottom:20px;">
+                    <div>
+                        <div style="font-family:monospace; font-size:2.4rem; font-weight:bold; color:${scoreColor};">${score}<span style="font-size:1.2rem; color:var(--text-faint);">/100</span></div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Readiness Score</div>
+                    </div>
+                    <div>
+                        <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:var(--accent-bright);">${waterTargetLiters.toLocaleString()} L</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Water target (${persons} people &times; ${days} days &times; 2L/day)</div>
+                    </div>
+                    <div>
+                        <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:var(--accent-bright);">${kcalTargetTotal.toLocaleString()} kcal</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Food energy target, BBK figure (not compared to stock -- no kcal data tracked)</div>
+                    </div>
+                </div>
+                <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">
+                    Essential categories logged: ${essentialPresent.length}/${essentialCats.length} (${essentialCats.map(c => `${c}: ${(inventoryData[c]||[]).length>0?'✅':'❌ nothing logged'}`).join(', ')})<br>
+                    Tracked items at or above their own low-stock line: ${notLowStock.length}/${tracked.length}<br>
+                    Items with a real, unexpired date on file: ${notExpired.length}/${dated.length}
+                </div>
+                ${lowStockItems.length > 0 ? `
+                    <h3 style="margin:20px 0 8px; font-size:0.95rem;">Shopping list — real low-stock items</h3>
+                    <table><thead><tr><th>Item</th><th>Category</th><th>On hand</th><th>Low-stock line</th></tr></thead><tbody>
+                        ${lowStockItems.map(i => `<tr><td>${i.desc}</td><td>${i.category}</td><td>${i.qty}</td><td>${i.min_qty}</td></tr>`).join('')}
+                    </tbody></table>
+                ` : `<p style="color:var(--text-dim); font-size:0.85rem;">Nothing is currently at or below its own low-stock line.</p>`}
+            `;
         }
 
         function openPanel(id) {

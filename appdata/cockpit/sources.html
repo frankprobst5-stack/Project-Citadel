@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="vault-auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // WHAT WE HAVE &amp; WHERE</title>
+    <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
+    <style>
+        :root {
+            /* Citadel Ecosystem brand palette -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252; --gray: #5b7386;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header-box { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 2px; }
+        .subtitle { color: var(--text-faint); font-size: 0.85rem; margin: 4px 0 0; }
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; font-family: monospace; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); }
+
+        .panel { background: var(--panel); border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 0 1px var(--border); }
+        h2 { color: var(--amber); margin-top: 0; font-size: 1.2rem; border-bottom: 1px dashed var(--border); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between; }
+        .count-tag { font-family: monospace; font-size: 0.75rem; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+        .panel-note { color: var(--text-dim); font-size: 0.85rem; margin: 0 0 14px; }
+
+        .search-bar { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 4px; font-family: inherit; font-size: 0.9rem; box-sizing: border-box; margin-bottom: 14px; }
+
+        .kiwix-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+        .kiwix-card { background: var(--bg); border: 1px solid var(--border-dim); border-left: 3px solid var(--accent-bright); border-radius: 4px; padding: 10px 12px; text-decoration: none; color: inherit; display: block; }
+        .kiwix-card:hover { border-left-color: var(--amber); background: var(--panel-alt); }
+        .kiwix-card .kc-title { font-weight: bold; font-size: 0.85rem; margin-bottom: 3px; }
+        .kiwix-card .kc-meta { font-size: 0.72rem; color: var(--text-faint); }
+        .kiwix-card .kc-cat { display: inline-block; background: var(--panel-alt); color: var(--accent-bright); font-size: 0.65rem; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; margin-top: 4px; }
+
+        .vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+        .vault-card { background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 12px 14px; }
+        .vault-card .vc-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 6px; }
+        .vault-cat-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); padding: 3px 0; border-top: 1px solid var(--border-dim); }
+        .vault-cat-row:first-of-type { border-top: none; }
+        .vault-cat-row a { color: var(--text-dim); text-decoration: none; }
+        .vault-cat-row a:hover { color: var(--accent-bright); }
+        .vault-cat-row .vc-count { font-family: monospace; color: var(--accent-bright); }
+
+        .pointer-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 14px 16px; margin-bottom: 8px; }
+        .pointer-row .pr-text { font-size: 0.9rem; }
+        .pointer-row .pr-desc { font-size: 0.78rem; color: var(--text-faint); margin-top: 2px; }
+
+        .empty-state { font-family: monospace; color: var(--text-faint); padding: 20px; text-align: center; }
+        .err-state { font-family: monospace; color: var(--red); padding: 20px; text-align: center; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-box">
+            <div>
+                <h1>📚 What We Have &amp; Where</h1>
+                <p class="subtitle">One real page listing every reference source on this machine, instead of three to guess between.</p>
+            </div>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ Cockpit Matrix</button>
+        </div>
+
+        <div class="panel">
+            <h2>🚑 First Aid &amp; Medical Support <span class="count-tag">dedicated page</span></h2>
+            <p class="panel-note">Citadel's own guided first-aid support — not a library to search, a real dedicated tool for an active emergency.</p>
+            <div class="pointer-row">
+                <div>
+                    <div class="pr-text">First Aid &amp; Medical Support</div>
+                    <div class="pr-desc">medical.html — Citadel's own emergency-mode first aid and medical reference</div>
+                </div>
+                <button class="action-btn" onclick="window.location.href='medical.html'">Open</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>📦 The Vault — PDFs &amp; Videos <span class="count-tag" id="vaultCountTag">loading…</span></h2>
+            <p class="panel-note">Real files uploaded into the Digital Media Vault, grouped by category. Click a category to open it directly.</p>
+            <div id="vaultBody" class="empty-state">Checking…</div>
+        </div>
+
+        <div class="panel">
+            <h2>📖 Kiwix Offline Library <span class="count-tag" id="kiwixCountTag">loading…</span></h2>
+            <p class="panel-note">Real offline ZIM archives served by this machine's own Kiwix container — search by title, category, or topic.</p>
+            <input type="text" class="search-bar" id="kiwixSearch" placeholder="🔍 Filter by title or category…" oninput="renderKiwix(this.value)" disabled>
+            <div id="kiwixBody" class="empty-state">Checking…</div>
+        </div>
+    </div>
+
+    <script>
+        let kiwixEntries = [];
+
+        async function loadVault() {
+            const el = document.getElementById('vaultBody');
+            const tag = document.getElementById('vaultCountTag');
+            try {
+                const [pdfs, videos, counts] = await Promise.all([
+                    fetch('/api/media/pdfs').then(r => r.json()),
+                    fetch('/api/media/videos').then(r => r.json()),
+                    fetch('/api/media/counts').then(r => r.json()),
+                ]);
+                tag.textContent = `${counts.pdfs} PDFs, ${counts.videos} videos, ${counts.mp3s} audio files`;
+
+                const cards = [];
+                cards.push(renderVaultCard('📄 PDFs', pdfs, 'pdf'));
+                cards.push(renderVaultCard('🎬 Videos', videos, 'videos'));
+                el.outerHTML = `<div class="vault-grid">${cards.join('')}</div>`;
+            } catch (err) {
+                tag.textContent = '';
+                el.outerHTML = '<div class="err-state">Could not reach the Vault API — check vault-api is running.</div>';
+                console.error('loadVault failed:', err);
+            }
+        }
+
+        function renderVaultCard(title, categories, linkBase) {
+            const rows = Object.entries(categories)
+                .sort((a, b) => b[1].length - a[1].length)
+                .map(([cat, files]) => `
+                    <div class="vault-cat-row">
+                        <a href="${linkBase}.html?category=${encodeURIComponent(cat)}">${cat}</a>
+                        <span class="vc-count">${files.length}</span>
+                    </div>
+                `).join('');
+            return `<div class="vault-card"><div class="vc-title">${title}</div>${rows || '<p style="color:var(--text-faint); font-size:0.8rem;">Nothing uploaded yet.</p>'}</div>`;
+        }
+
+        async function loadKiwix() {
+            const el = document.getElementById('kiwixBody');
+            const tag = document.getElementById('kiwixCountTag');
+            const searchBox = document.getElementById('kiwixSearch');
+            try {
+                const res = await fetch('http://' + location.hostname + ':8095/catalog/v2/entries?count=500');
+                const xmlText = await res.text();
+                const xml = new window.DOMParser().parseFromString(xmlText, 'application/xml');
+                const entries = Array.from(xml.getElementsByTagName('entry'));
+                kiwixEntries = entries.map(e => ({
+                    title: e.getElementsByTagName('title')[0]?.textContent || 'Untitled',
+                    summary: e.getElementsByTagName('summary')[0]?.textContent || '',
+                    category: e.getElementsByTagName('category')[0]?.textContent || '',
+                    articleCount: e.getElementsByTagName('articleCount')[0]?.textContent || '',
+                    name: e.getElementsByTagName('name')[0]?.textContent || '',
+                })).sort((a, b) => a.title.localeCompare(b.title));
+                tag.textContent = `${kiwixEntries.length} real archives`;
+                searchBox.disabled = false;
+                renderKiwix('');
+            } catch (err) {
+                tag.textContent = '';
+                el.outerHTML = '<div class="err-state">Could not reach Kiwix on port 8095 — the knowledge module may not be running.</div>';
+                console.error('loadKiwix failed:', err);
+            }
+        }
+
+        function renderKiwix(query) {
+            const el = document.getElementById('kiwixBody');
+            const q = query.trim().toLowerCase();
+            const filtered = q
+                ? kiwixEntries.filter(e => e.title.toLowerCase().includes(q) || e.category.toLowerCase().includes(q))
+                : kiwixEntries;
+            if (filtered.length === 0) {
+                el.outerHTML = '<div class="empty-state" id="kiwixBody">No archives match that search.</div>';
+                return;
+            }
+            el.outerHTML = `<div class="kiwix-grid" id="kiwixBody">${filtered.map(e => `
+                <a class="kiwix-card" href="http://${location.hostname}:8095/viewer#${e.name}" target="_blank">
+                    <div class="kc-title">${e.title}</div>
+                    <div class="kc-meta">${e.articleCount ? Number(e.articleCount).toLocaleString() + ' articles' : ''}</div>
+                    ${e.category ? `<span class="kc-cat">${e.category}</span>` : ''}
+                </a>
+            `).join('')}</div>`;
+        }
+
+        loadVault();
+        loadKiwix();
+    </script>
+</body>
+</html>
