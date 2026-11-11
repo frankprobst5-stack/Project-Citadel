@@ -227,6 +227,35 @@ forgotten:
   apt package is a known, avoidable build snag — install it properly
   rather than hand-building SPIR-V headers the way his own first attempt
   needed to).
+  **Investigated and closed as hardware-blocked, 2026-11-08**: this
+  machine's real iGPU is an Intel Xeon E3-1200 v3 (Haswell, ~2013,
+  `Intel(R) HD Graphics 4600 (HSW GT2)`) — not the AMD Radeon Keith's
+  reference setup used. Real `lspci`/`/dev/dri` check found the device
+  present; `vulkaninfo --summary` (after installing `vulkan-tools`,
+  `mesa-vulkan-drivers` was already present) showed Mesa's own ANV driver
+  printing `MESA-INTEL: warning: Haswell Vulkan support is incomplete` and
+  enumerating the GPU with `fp16: 0`. Rather than stop at the warning, built
+  a scratch `whisper.cpp` from source with `GGML_VULKAN=ON` (hit and fixed
+  the exact same missing-`spirv-headers` snag Keith's own notes flagged —
+  `spirv-headers`+`spirv-tools-dev` from apt, not a hand-built SPIR-V
+  toolchain) and ran it for real against the engine's own standard
+  `jfk.wav` sample with `/dev/dri` passed through via
+  `docker run --device /dev/dri`. **Real result: hard failure, not a
+  tuning problem** — `ggml_vulkan: device Vulkan0 does not support 16-bit
+  storage.` / `error: failed to initialize whisper context`. Traced to
+  `ggml/src/ggml-vulkan/ggml-vulkan.cpp:4677`: ggml-vulkan unconditionally
+  requires the Vulkan 1.1 `storageBuffer16BitAccess` feature
+  (`VK_KHR_16bit_storage`) and throws if it's absent — no CLI flag, no
+  fp32-only fallback path exists in upstream ggml-vulkan. This specific
+  2013-era Intel iGPU generation genuinely does not expose that feature
+  through Mesa's ANV driver. **Conclusion: not viable on this hardware as
+  scoped — closing this item as hardware-blocked** rather than continuing
+  to chase it. `citadel-whisper` stays CPU-only (confirmed fine at ~10x
+  realtime on `base.en` on the real i7-4770/Xeon E3-1200 v3 CPU, from the
+  original 2026-09-07 sizing test). The dictation feature below and
+  Muster's transcription use still stand on their own merits — they just
+  run on CPU like `citadel-whisper` already does, with no GPU-offload
+  speed boost available on this specific host.
 - **Dictation/hotkey accessibility feature** `[DISCOVERY]`, 2026-09-15 —
   the more important half of the same conversation: Keith built his
   GPU-offload trick specifically for accessibility, after 40 years of IT

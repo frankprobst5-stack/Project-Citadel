@@ -49,10 +49,23 @@ services:
       # remote-Ollama-host support -- defaults to the local container's
       # own hostname exactly as before if OLLAMA_REMOTE_HOST isn't set.
       - OLLAMA_BASE_URL=http://${OLLAMA_REMOTE_HOST:-citadel-ollama}:11434
-    # Real memory cap, added 2026-09-14 -- measured ~50-700MB in real
-    # use (it grows with chat history/session count); 512m covers normal
-    # household use without being unbounded.
-    mem_limit: 512m
+    # Real memory cap, added 2026-09-14, raised 2026-11-10 -- the
+    # original 512m was already tight against this same comment's own
+    # measured 700MB steady-state ceiling, and a real Undercroft Pocket
+    # validation run confirmed it directly: `docker stats` showed
+    # citadel-webui sitting at 470.8MiB/512MiB (91.95%) with the kernel's
+    # own `Memory cgroup out of memory` repeatedly killing its process
+    # (anon-rss ~515-520MB, right at the old ceiling) during startup,
+    # in a tight crash-restart loop, even on a host with multiple real
+    # gigabytes of system-wide memory free the whole time -- a
+    # per-container cgroup limit, not a system-wide shortage. Confirmed
+    # fixed live first (`docker update --memory 1536m`) before changing
+    # this file: real steady-state usage settled at 638.8MiB/1.5GiB
+    # (41.59%), zero further OOM kills. 1536m gives real headroom over
+    # both the startup spike and this comment's own documented 700MB
+    # steady-state ceiling, same generous-headroom-over-measured-usage
+    # philosophy `ollama`'s own mem_limit above already uses.
+    mem_limit: 1536m
     networks:
       - citadel-net
     # depends_on: [ollama] removed 2026-09-16 -- ollama now lives in its
