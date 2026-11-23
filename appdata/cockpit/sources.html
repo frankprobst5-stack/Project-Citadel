@@ -64,6 +64,13 @@
         </div>
 
         <div class="panel">
+            <h2>🔎 Search Everything <span class="count-tag" id="unifiedSearchCountTag"></span></h2>
+            <p class="panel-note">One search box across all three real sources below — Kiwix's offline library, the Vault's PDFs/videos, and (if installed) Baneward's wild plant database — instead of checking each separately.</p>
+            <input type="text" class="search-bar" id="unifiedSearch" placeholder="🔍 Search Kiwix, the Vault, and Baneward at once…" oninput="runUnifiedSearch(this.value)">
+            <div id="unifiedSearchResults"></div>
+        </div>
+
+        <div class="panel">
             <h2>🚑 First Aid &amp; Medical Support <span class="count-tag">dedicated page</span></h2>
             <p class="panel-note">Citadel's own guided first-aid support — not a library to search, a real dedicated tool for an active emergency.</p>
             <div class="pointer-row">
@@ -90,6 +97,56 @@
     </div>
 
     <script>
+        // --- UNIFIED SEARCH (Phase 8 #3) ---
+        const SOURCE_LABELS = { kiwix: 'Kiwix', vault_pdf: 'Vault PDF', vault_videos: 'Vault Video', baneward: 'Baneward' };
+        let unifiedSearchDebounce = null;
+
+        function runUnifiedSearch(query) {
+            clearTimeout(unifiedSearchDebounce);
+            const el = document.getElementById('unifiedSearchResults');
+            const tag = document.getElementById('unifiedSearchCountTag');
+            if (query.trim().length < 2) {
+                el.innerHTML = '';
+                tag.textContent = '';
+                return;
+            }
+            // A real debounce, not a search-on-every-keystroke hammer --
+            // this queries three real backends (one of them a live HTTP
+            // call to Kiwix) per search, not a client-side filter over
+            // already-fetched data like kiwixSearch above.
+            unifiedSearchDebounce = setTimeout(async () => {
+                el.innerHTML = '<div class="empty-state">Searching…</div>';
+                try {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+                    const results = await res.json();
+                    tag.textContent = `${results.length} result${results.length === 1 ? '' : 's'}`;
+                    if (results.length === 0) {
+                        el.innerHTML = '<div class="empty-state">Nothing matches that in Kiwix, the Vault, or Baneward.</div>';
+                        return;
+                    }
+                    el.innerHTML = `<div class="kiwix-grid">${results.map(r => {
+                        // __HOST__ is a real server-side placeholder (see
+                        // app.py's own unified_search comment) -- the
+                        // backend only knows Kiwix on the internal
+                        // container network, not the real LAN-facing
+                        // hostname a browser needs; substituted here,
+                        // same real constraint every other Kiwix link in
+                        // this page already works around.
+                        const href = r.link.replace('__HOST__', location.hostname);
+                        return `
+                        <a class="kiwix-card" href="${href}" target="_blank">
+                            <div class="kc-title">${r.title}</div>
+                            <div class="kc-meta">${r.subtitle}</div>
+                            <span class="kc-cat">${SOURCE_LABELS[r.source] || r.source}</span>
+                        </a>
+                    `;}).join('')}</div>`;
+                } catch (err) {
+                    el.innerHTML = '<div class="err-state">Search failed — check vault-api is running.</div>';
+                    console.error('runUnifiedSearch failed:', err);
+                }
+            }, 300);
+        }
+
         let kiwixEntries = [];
 
         async function loadVault() {

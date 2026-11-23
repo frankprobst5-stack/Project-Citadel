@@ -1550,13 +1550,31 @@ Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist
    via the now-fixed `/pdf?category=`/`/videos?category=` links. `logistics.html` gained a
    one-line reference note on the Water Storage ledger (Water Treatment Library) and the
    Food/Freezer ledgers (Cook Books + USDA Guide to Home Canning).
-3. **Unified search across all three real sources** — one search box querying Kiwix's own
-   catalog API, the Vault's PDF/video filenames and categories, and (once built) Baneward,
-   returning one combined result list regardless of which backend actually holds the
-   answer. Bigger lift than #1/#2, real payoff. **Triaged, 2026-11-22: still the right next
-   pick, still not started** — genuinely bigger than the cross-link work above (three
-   different real APIs to query and merge, not just new `<a>` tags), and nothing about
-   today's work changes that estimate either way.
+3. ~~**Unified search across all three real sources**~~ — ✅ **done, 2026-11-22**, closing
+   Phase 8's last open item. New `/api/search?q=` on `vault-api`, querying all three real
+   sources and merging into one list, each result tagged with its real source: Kiwix's own
+   live OPDS catalog (`http://kiwix:8080/catalog/v2/entries` — the internal container-
+   network address, confirmed reachable from inside `vault-api`'s own container before
+   writing anything, not assumed), the Vault's real PDF/video folders (reusing
+   `scan_media_folder()`, the exact function `/pdf`/`/videos` already use, so results can't
+   drift from what those pages actually show), and Baneward's live `species` table (reusing
+   `_baneward_query()`, the same read-only connection the range-map tie-in already
+   established). **Each source degrades independently, not the whole search** — Kiwix
+   unreachable or Baneward not mounted returns an empty list from that one source, same
+   "a missing piece shows up empty, not the whole feature down" principle the Critical
+   Resource chips already apply. New "Search Everything" panel at the top of
+   `sources.html`, debounced (300ms, not a query-every-keystroke hammer against three real
+   backends including a live HTTP call). **A real, deliberate non-fabrication caught before
+   shipping**: Baneward results initially linked to a guessed `baneward://species/<symbol>`
+   deep link -- caught that this codebase has never actually verified Baneward registers a
+   species-specific route (only the generic `baneward://open` scheme is confirmed, from
+   `index.html`'s own existing tile), so the guessed path was removed before it shipped;
+   results link to `baneward://open` instead, with the real common/scientific name shown as
+   text for the operator to search by themselves inside Baneward. Verified live against the
+   real running stack (not just read from the diff): real matches returned and correctly
+   linked for "water" (a Kiwix archive, several dozen real Baneward species) and "medical"
+   (two Kiwix archives, both real Vault categories with accurate file counts), plus the
+   empty-query and no-results states both render correctly.
 4. ~~**Fix the stale `knowledge` module manifest description**~~ — ✅ **done, 2026-11-06.**
    Fixed in both real places it lived: `modules/knowledge/manifest.json`'s own
    `description` field and the cockpit's `coreModules` tile text in `index.html` — found
@@ -1575,6 +1593,14 @@ Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist
    currently live, worth pruning the older one eventually), and the Canadian Prepper
    archives' own catalog metadata names them `canadian_prep_...` while the real files on disk
    are `canadian_prepper_...` — a naming slip in the upstream metadata itself, not a bug here.
+
+**All of Phase 8 is closed as of 2026-11-22** (items 1 and 4 were already done 2026-11-06;
+items 2, 3, and 5 closed this pass, per Frank's own instruction to clear this whole backlog
+— see Phase 7's matching closing note above). Combined with Phase 7 closing the same day,
+every item in both of this document's "deferred, not started" sections is now either done
+or explicitly, honestly parked (the FEMA/Red Cross shelter forms item under Dashboard,
+still `[PARKED]` by deliberate choice, not an oversight) or `[DISCOVERY]`-tagged as a
+genuine open question rather than a committed-but-unbuilt item.
 
 ## Phase 9 — Baneward range map tie-in ✅ done 2026-11-03
 

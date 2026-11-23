@@ -19,6 +19,7 @@ from transcription import is_safe_filename, list_recordings, transcribe_file
 import backup as backup_module
 import modules_manager
 import uuid
+from urllib.parse import quote as urlquote
 from datetime import datetime, timezone, timedelta
 import news_feed_parser
 import news_hazard_adapters
@@ -2404,6 +2405,115 @@ def api_baneward_county_species(name):
     except FileNotFoundError:
         return jsonify({"error": "Baneward data not mounted -- set BANEWARD_DATA_PATH in .env"}), 503
     return jsonify([dict(r) for r in rows])
+
+# --- UNIFIED SEARCH (Phase 8 #3) ---
+# Real, bigger lift than the per-page cross-links above, same reasoning
+# ROADMAP.md's own 2026-11-22 triage entry gave for leaving it for last:
+# three genuinely different real data sources, merged into one list,
+# not just a new link. Each source is queried defensively -- a module
+# that's off or a service that's down degrades that source to an empty
+# list rather than failing the whole search, same "a missing piece
+# shows up empty, not the whole feature down" principle this project
+# already applies elsewhere (e.g. the Critical Resource chips).
+
+KIWIX_INTERNAL_URL = "http://kiwix:8080"
+
+def _search_kiwix(query):
+    """Real OPDS catalog search -- same /catalog/v2/entries feed
+    sources.html's own Kiwix card already renders, reached over the
+    container network (not the LAN-facing :8095 port, since this call
+    happens server-side inside vault-api's own container)."""
+    try:
+        res = requests.get(f"{KIWIX_INTERNAL_URL}/catalog/v2/entries", params={"count": -1}, timeout=5)
+        res.raise_for_status()
+    except requests.RequestException:
+        return []  # Kiwix module off or unreachable -- an empty result, not a search failure
+    import re as _re
+    results = []
+    q = query.lower()
+    for entry in _re.findall(r"<entry>.*?</entry>", res.text, _re.S):
+        title_m = _re.search(r"<title>([^<]*)</title>", entry)
+        name_m = _re.search(r"<name>([^<]*)</name>", entry)
+        if not title_m or not name_m or name_m.group(1) == "openZIM":
+            continue
+        title = title_m.group(1)
+        if q in title.lower():
+            results.append({
+                "source": "kiwix",
+                "title": title,
+                "subtitle": "Kiwix offline archive",
+                # __HOST__ is a real placeholder, not a bug -- this
+                # server only knows Kiwix as kiwix:8080 on the internal
+                # container network; the real LAN-facing hostname the
+                # browser needs (same :8095 port sources.html's own
+                # kiwix-card links already use) is only known client-side.
+                # The frontend substitutes it from location.hostname
+                # before using the link, same real constraint every other
+                # Kiwix link in this app already works around.
+                "link": f"http://__HOST__:8095/viewer#{name_m.group(1)}",
+            })
+    return results
+
+def _search_vault(query):
+    """Real filename + category search across the Vault's own PDF and
+    video folders -- the same scan_media_folder() the /pdf and /videos
+    routes already use, so this never drifts from what those pages
+    actually show."""
+    results = []
+    q = query.lower()
+    for kind, link_base in (("pdfs", "pdf"), ("videos", "videos")):
+        categories = scan_media_folder(kind)
+        for category, files in categories.items():
+            if q in category.lower():
+                results.append({
+                    "source": f"vault_{link_base}",
+                    "title": category,
+                    "subtitle": f"Vault {('PDF' if link_base == 'pdf' else 'Video')} category ({len(files)} files)",
+                    "link": f"/{link_base}?category={urlquote(category)}",
+                })
+                continue  # category itself already matched -- don't also list every file in it
+            for f in files:
+                if q in f.lower():
+                    results.append({
+                        "source": f"vault_{link_base}",
+                        "title": f,
+                        "subtitle": f"Vault {('PDF' if link_base == 'pdf' else 'Video')} — {category}",
+                        "link": f"/{link_base}?category={urlquote(category)}",
+                    })
+    return results
+
+def _search_baneward(query):
+    """Real species-name search against Baneward's own live database --
+    same _baneward_query helper the range-map tie-in already uses.
+    Empty (not an error) if Baneward isn't mounted on this install."""
+    try:
+        rows = _baneward_query(
+            "SELECT symbol, common_name, scientific_name FROM species "
+            "WHERE common_name LIKE ? OR scientific_name LIKE ? LIMIT 25",
+            (f"%{query}%", f"%{query}%"),
+        )
+    except FileNotFoundError:
+        return []
+    return [{
+        "source": "baneward",
+        "title": r["common_name"],
+        "subtitle": r["scientific_name"],
+        # Real, confirmed scheme only (index.html's own Baneward tile
+        # already uses baneward://open) -- a species-specific deep link
+        # (e.g. baneward://species/<symbol>) isn't something this
+        # codebase has verified Baneward actually registers, so this
+        # doesn't invent one. Opens Baneward generally; the operator
+        # searches by the real symbol/common name shown here.
+        "link": "baneward://open",
+    } for r in rows]
+
+@app.route('/api/search', methods=['GET'])
+def unified_search():
+    query = request.args.get('q', '').strip()
+    if len(query) < 2:
+        return jsonify({"error": "q must be at least 2 characters"}), 400
+    results = _search_kiwix(query) + _search_vault(query) + _search_baneward(query)
+    return jsonify(results)
 
 
 if __name__ == '__main__':
