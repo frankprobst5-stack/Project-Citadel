@@ -29,6 +29,7 @@ import news_matcher
 import situation_matcher
 import situation_ai
 import news_nws_weather
+import wiki
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -383,6 +384,13 @@ def init_db():
             approved_from_suggestion_id TEXT
         )
     ''')
+
+    # Unified Wiki (see wiki.py's own module docstring) -- replaces the
+    # folder-scan media gallery, Mealie, and the static manual.html with
+    # one real set of tables. Kept as its own module's own CREATE TABLE
+    # calls rather than inlined here, so wiki.py stays testable against
+    # a throwaway in-memory db with zero Flask/app.py dependency.
+    wiki.create_wiki_tables(conn)
 
     conn.commit()
     conn.close()
@@ -2507,13 +2515,166 @@ def _search_baneward(query):
         "link": "baneward://open",
     } for r in rows]
 
+def _search_wiki(query):
+    """Real title/body/tag search over wiki_pages -- the one source
+    this function's three siblings above never covered: recipes,
+    manual pages, and general notes all live here now."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        pages = wiki.search_wiki_pages(conn, query)
+    finally:
+        conn.close()
+    return [{
+        "source": f"wiki_{p['section']}",
+        "title": p["title"],
+        "subtitle": f"Wiki — {p['section']}",
+        "link": f"/wiki.html#{p['id']}",
+    } for p in pages]
+
 @app.route('/api/search', methods=['GET'])
 def unified_search():
     query = request.args.get('q', '').strip()
     if len(query) < 2:
         return jsonify({"error": "q must be at least 2 characters"}), 400
-    results = _search_kiwix(query) + _search_vault(query) + _search_baneward(query)
+    results = _search_kiwix(query) + _search_vault(query) + _search_baneward(query) + _search_wiki(query)
     return jsonify(results)
+
+
+# --- Unified Wiki API ----------------------------------------------------
+# See wiki.py's own module docstring for what this replaces (Mealie, the
+# folder-scan media gallery, static manual.html) and why.
+
+@app.route('/api/wiki/pages', methods=['GET'])
+def api_list_wiki_pages():
+    section = request.args.get('section') or None
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        pages = wiki.list_wiki_pages(conn, section=section)
+    finally:
+        conn.close()
+    return jsonify(pages)
+
+@app.route('/api/wiki/pages/<page_id>', methods=['GET'])
+def api_get_wiki_page(page_id):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        page = wiki.get_wiki_page(conn, page_id)
+    finally:
+        conn.close()
+    if page is None:
+        return jsonify({"error": f"no wiki page with id {page_id}"}), 404
+    return jsonify(page)
+
+@app.route('/api/wiki/pages', methods=['POST'])
+def api_create_wiki_page():
+    data = request.json or {}
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        page = wiki.upsert_wiki_page(
+            conn, None,
+            section=data.get('section'),
+            title=data.get('title'),
+            body_markdown=data.get('body_markdown', ''),
+            tags=data.get('tags'),
+            recipe_meta=data.get('recipe_meta'),
+            source_url=data.get('source_url'),
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
+    return jsonify(page), 201
+
+@app.route('/api/wiki/pages/<page_id>', methods=['PUT'])
+def api_update_wiki_page(page_id):
+    data = request.json or {}
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        page = wiki.upsert_wiki_page(
+            conn, page_id,
+            section=data.get('section'),
+            title=data.get('title'),
+            body_markdown=data.get('body_markdown', ''),
+            tags=data.get('tags'),
+            recipe_meta=data.get('recipe_meta'),
+            source_url=data.get('source_url'),
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
+    return jsonify(page)
+
+@app.route('/api/wiki/pages/<page_id>', methods=['DELETE'])
+def api_delete_wiki_page(page_id):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        wiki.delete_wiki_page(conn, page_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+@app.route('/api/wiki/attachments', methods=['GET'])
+def api_list_wiki_attachments():
+    page_id = request.args.get('page_id') or None
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        attachments = wiki.list_wiki_attachments(conn, page_id=page_id)
+    finally:
+        conn.close()
+    return jsonify(attachments)
+
+@app.route('/api/wiki/attachments', methods=['POST'])
+def api_add_wiki_attachment():
+    data = request.json or {}
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        attachment = wiki.add_wiki_attachment(
+            conn,
+            kind=data.get('kind'),
+            filename=data.get('filename'),
+            page_id=data.get('page_id'),
+            title=data.get('title'),
+            tags=data.get('tags'),
+            size_bytes=data.get('size_bytes'),
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        conn.close()
+    return jsonify(attachment), 201
+
+@app.route('/api/wiki/attachments/<attachment_id>', methods=['DELETE'])
+def api_delete_wiki_attachment(attachment_id):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        wiki.delete_wiki_attachment(conn, attachment_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+@app.route('/api/wiki/import-recipe', methods=['POST'])
+def api_import_recipe():
+    """Paste a link, get a structured recipe -- the one Mealie feature
+    worth keeping (see wiki.py's own module docstring). Returns the
+    extracted recipe for the operator to review/edit before saving;
+    doesn't save it itself, since a bad scrape (wrong recipe on a
+    multi-recipe roundup page, missing steps) should be something the
+    operator catches before it becomes a permanent wiki page, not
+    something auto-committed."""
+    data = request.json or {}
+    url = (data.get('url') or '').strip()
+    if not url:
+        return jsonify({"error": "a url is required"}), 400
+    try:
+        recipe = wiki.import_recipe_from_url(url)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 422
+    except requests.RequestException as e:
+        return jsonify({"error": f"couldn't fetch that page: {e}"}), 502
+    recipe["body_markdown"] = wiki.recipe_to_markdown(recipe)
+    recipe["source_url"] = url
+    return jsonify(recipe)
 
 
 if __name__ == '__main__':
