@@ -190,10 +190,20 @@
                 <input type="number" id="add_food_qty" placeholder="Qty..." style="width: 80px;">
                 <input type="text" id="add_food_exp" placeholder="Exp Date / Status..." style="flex-grow:1;">
                 <input type="number" id="add_food_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <input type="number" id="add_food_kcal" placeholder="kcal/unit (optional)" style="width: 140px;" min="0">
+                <select id="add_food_preservation" style="width: 140px;">
+                    <option value="">Preservation —</option>
+                    <option value="Canned">Canned</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Fermented">Fermented</option>
+                    <option value="Dried/Dehydrated">Dried/Dehydrated</option>
+                    <option value="Root Cellar">Root Cellar</option>
+                    <option value="Fresh/Unprocessed">Fresh/Unprocessed</option>
+                </select>
                 <button class="action-btn" onclick="addNewItem('food')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th>Low-Stock At</th><th>kcal/unit</th><th>Preservation</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="foodTableBody"></tbody>
             </table>
         </div>
@@ -275,10 +285,33 @@
                 <input type="number" id="add_animal_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when head count drops to or below this">
                 <button class="action-btn" onclick="addNewItem('animal')">+ Commit Entry</button>
             </div>
+            <p style="color:var(--text-dim); font-size:0.8rem; margin:0 0 12px;">Health due date, feed cost, and yield value are set per-group in the table below once a group is added -- optional, and the real feed-cost-vs-production-value figure only appears once both feed cost and yield value are entered for a group (never estimated from a guessed market price).</p>
+            <div id="livestockAlerts" style="margin-bottom:12px;"></div>
             <table>
-                <thead><tr><th>Animal Group / Breed</th><th>Feed Log / Ration Metric</th><th>Total Head Count</th><th>Production Yield Info</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Animal Group / Breed</th><th>Feed Log / Ration Metric</th><th>Total Head Count</th><th>Production Yield Info</th><th>Low-Stock At</th><th>Health Due</th><th>Feed Cost</th><th>Yield Value</th><th>Production</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="animalTableBody"></tbody>
             </table>
+        </div>
+
+        <!-- PRODUCTION LOG MODAL (Phase 7 #4) -->
+        <div id="productionLogModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h2 style="margin:0; border:none; padding:0;" id="productionLogTitle">Production Log</h2>
+                    <button class="action-btn" onclick="closeProductionLog()">✕ Close</button>
+                </div>
+                <div class="add-ribbon">
+                    <input type="date" id="prodlog_date" style="flex-grow:1;">
+                    <input type="number" id="prodlog_amount" placeholder="Amount..." step="0.01" style="flex-grow:1;">
+                    <input type="text" id="prodlog_unit" placeholder="Unit (eggs, gal, lbs...)" style="flex-grow:1;">
+                    <button class="action-btn" onclick="submitProductionLog()">+ Log Entry</button>
+                </div>
+                <div id="productionTrendChart" style="margin:16px 0;"></div>
+                <table>
+                    <thead><tr><th>Date</th><th>Amount</th><th>Unit</th><th style="width:80px;">Actions</th></tr></thead>
+                    <tbody id="productionLogBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- WATER LEDGER -->
@@ -359,10 +392,20 @@
                 <input type="number" id="add_freezer_qty" placeholder="Qty..." style="width: 100px;">
                 <input type="text" id="add_freezer_exp" placeholder="Frozen-On / Exp Date..." style="flex-grow:1;">
                 <input type="number" id="add_freezer_min" placeholder="Low-stock at..." style="width: 100px;" title="Alert when quantity drops to or below this">
+                <input type="number" id="add_freezer_kcal" placeholder="kcal/unit (optional)" style="width: 140px;" min="0">
+                <select id="add_freezer_preservation" style="width: 140px;">
+                    <option value="">Preservation —</option>
+                    <option value="Canned">Canned</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Fermented">Fermented</option>
+                    <option value="Dried/Dehydrated">Dried/Dehydrated</option>
+                    <option value="Root Cellar">Root Cellar</option>
+                    <option value="Fresh/Unprocessed">Fresh/Unprocessed</option>
+                </select>
                 <button class="action-btn" onclick="addNewItem('freezer')">+ Commit Entry</button>
             </div>
             <table>
-                <thead><tr><th>Item / Description</th><th>Freezer / Shelf</th><th>Quantity</th><th>Frozen-On / Exp Date</th><th>Low-Stock At</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
+                <thead><tr><th>Item / Description</th><th>Freezer / Shelf</th><th>Quantity</th><th>Frozen-On / Exp Date</th><th>Low-Stock At</th><th>kcal/unit</th><th>Preservation</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
                 <tbody id="freezerTableBody"></tbody>
             </table>
         </div>
@@ -442,17 +485,20 @@
         <div id="readinessPanel" class="viewport-panel">
             <h2>🎯 Crisis-Readiness Score</h2>
             <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">
-                Real, honest scope: Citadel's own inventory tracks item counts, not liters or
-                calories, so the water target below is a real BBK-standard calculation (2L per
-                person per day), not reconciled against what's on the shelf — there's no unit
-                data to reconcile it with. The score itself is computed from what Citadel
-                genuinely does track: whether water/food/freezer have anything logged at all,
-                how many tracked items are at or below their own low-stock threshold, and how
-                many have a real, unexpired date on file.
+                The water target below is still a real BBK-standard calculation (2L per person per
+                day) with no unit data to reconcile it against. The <strong>food energy target now
+                does reconcile against real stock</strong>, Phase 7 #3's own self-sufficiency
+                calculator, below — but only using items that actually have a kcal/unit entered on
+                their own ledger row (Food &amp; Freezer tabs); anything without one is honestly
+                excluded from the total rather than counted as zero calories. The score itself is
+                computed from what Citadel genuinely does track: whether water/food/freezer have
+                anything logged at all, how many tracked items are at or below their own low-stock
+                threshold, and how many have a real, unexpired date on file.
             </p>
             <div class="add-ribbon">
                 <input type="number" id="readiness_persons" placeholder="Household size" value="2" min="1" style="width: 150px;">
                 <input type="number" id="readiness_days" placeholder="Target days" value="10" min="1" style="width: 150px;">
+                <input type="number" id="readiness_winter_days" placeholder="Winter window (days)" value="120" min="1" style="width: 180px;" title="Typical lean-season length to check stock against separately from the short-term target days above">
                 <button class="action-btn" onclick="calculateReadiness()">Calculate</button>
             </div>
             <div id="readinessResults" style="margin-top:20px;"></div>
@@ -522,20 +568,42 @@
         const READINESS_WATER_LITERS_PER_PERSON_DAY = 2;
 
         // Real, deliberately honest scope: Citadel's own inventory schema
-        // has no unit or calorie-per-item field (confirmed by reading the
-        // live /api/inventory response before building this, not assumed),
-        // so the water/food target below is a real standalone calculation,
-        // never silently compared against an item count as if qty meant
-        // liters or kcal -- that comparison would be fabricated, not real.
-        // What genuinely IS real and already tracked: whether a category
-        // has anything logged at all, each item's own min_qty threshold,
-        // and whatever real date sits in its exp field.
+        // had no unit or calorie-per-item field when this was first built
+        // (confirmed by reading the live /api/inventory response, not
+        // assumed) -- the water target below is still a real standalone
+        // calculation for that reason (no unit data to reconcile liters
+        // against). kcal_per_unit now exists (Phase 7 #3), so the food
+        // energy side below genuinely does reconcile against stock --
+        // see foodEnergyCoverage()'s own doc for exactly how, and what it
+        // still can't claim.
+        const BBK_KCAL_PER_PERSON_DAY = 2200;
+
+        // Sums real tracked food energy (qty * kcal_per_unit) across Food
+        // & Freezer, counting only items that actually have a kcal_per_unit
+        // entered -- an item with none is excluded from the total, not
+        // silently treated as 0 kcal (0 would be a real, false claim).
+        // Returns the honest fraction of items this total actually covers
+        // too, so the number on screen never looks more complete than it
+        // is.
+        function foodEnergyCoverage() {
+            const items = [...(inventoryData.food || []), ...(inventoryData.freezer || [])];
+            const withKcal = items.filter(i => i.kcal_per_unit !== null && i.kcal_per_unit !== undefined && i.kcal_per_unit !== '');
+            const totalKcal = withKcal.reduce((sum, i) => sum + (parseFloat(i.kcal_per_unit) || 0) * (parseInt(i.qty) || 0), 0);
+            return { totalKcal, trackedCount: withKcal.length, totalCount: items.length };
+        }
+
         function calculateReadiness() {
             const persons = Math.max(1, parseInt(document.getElementById('readiness_persons').value) || 1);
             const days = Math.max(1, parseInt(document.getElementById('readiness_days').value) || 1);
+            const winterDays = Math.max(1, parseInt(document.getElementById('readiness_winter_days').value) || 1);
 
             const waterTargetLiters = persons * READINESS_WATER_LITERS_PER_PERSON_DAY * days;
-            const kcalTargetTotal = persons * 2200 * days; // BBK's own ~2200 kcal/person/day figure
+            const kcalTargetTotal = persons * BBK_KCAL_PER_PERSON_DAY * days; // BBK's own ~2200 kcal/person/day figure
+            const winterKcalTarget = persons * BBK_KCAL_PER_PERSON_DAY * winterDays;
+
+            const energy = foodEnergyCoverage();
+            const daysOfCoverage = persons > 0 ? Math.floor(energy.totalKcal / (persons * BBK_KCAL_PER_PERSON_DAY)) : 0;
+            const winterGapKcal = winterKcalTarget - energy.totalKcal;
 
             const essentialCats = ['water', 'food', 'freezer'];
             const essentialPresent = essentialCats.filter(c => (inventoryData[c] || []).length > 0);
@@ -571,7 +639,7 @@
                     </div>
                     <div>
                         <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:var(--accent-bright);">${kcalTargetTotal.toLocaleString()} kcal</div>
-                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Food energy target, BBK figure (not compared to stock -- no kcal data tracked)</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Food energy target (${persons} &times; ${days}d &times; ${BBK_KCAL_PER_PERSON_DAY} kcal/day, BBK figure)</div>
                     </div>
                 </div>
                 <div style="font-size:0.85rem; color:var(--text-dim); margin-bottom:10px;">
@@ -579,6 +647,28 @@
                     Tracked items at or above their own low-stock line: ${notLowStock.length}/${tracked.length}<br>
                     Items with a real, unexpired date on file: ${notExpired.length}/${dated.length}
                 </div>
+
+                <h3 style="margin:20px 0 8px; font-size:0.95rem;">🍽 Self-Sufficiency Nutrition Calculator (Phase 7 #3)</h3>
+                <div style="display:flex; gap:30px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div>
+                        <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:var(--accent-bright);">${energy.totalKcal.toLocaleString()} kcal</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Real tracked food energy on hand</div>
+                    </div>
+                    <div>
+                        <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:${daysOfCoverage >= days ? 'var(--green)' : '#e8b93f'};">${daysOfCoverage.toLocaleString()} days</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Covered at ${persons} people &times; ${BBK_KCAL_PER_PERSON_DAY} kcal/day</div>
+                    </div>
+                    <div>
+                        <div style="font-family:monospace; font-size:1.6rem; font-weight:bold; color:${winterGapKcal <= 0 ? 'var(--green)' : 'var(--red)'};">${winterGapKcal <= 0 ? 'Covered' : winterGapKcal.toLocaleString() + ' kcal short'}</div>
+                        <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Winter gap (${winterDays}-day window vs. tracked stock)</div>
+                    </div>
+                </div>
+                <p style="color:var(--text-dim); font-size:0.8rem; margin:0 0 15px;">
+                    ${energy.trackedCount} of ${energy.totalCount} Food/Freezer items have a kcal/unit entered and count toward this total
+                    ${energy.trackedCount < energy.totalCount ? ` — the other ${energy.totalCount - energy.trackedCount} are excluded, not counted as zero, until a kcal/unit value is added on their own row.` : '.'}
+                    Protein and vitamin coverage are deliberately not estimated here: nothing in this inventory tracks either, and guessing would be fabricated precision this project avoids elsewhere too.
+                </p>
+
                 ${lowStockItems.length > 0 ? `
                     <h3 style="margin:20px 0 8px; font-size:0.95rem;">Shopping list — real low-stock items</h3>
                     <table><thead><tr><th>Item</th><th>Category</th><th>On hand</th><th>Low-stock line</th></tr></thead><tbody>
@@ -625,6 +715,12 @@
             return badges.join(' ') || '<span class="badge badge-ok">OK</span>';
         }
 
+        // Phase 7 #5 (preservation/pantry method tracking) -- plain,
+        // optional labels, not a controlled taxonomy beyond what a real
+        // household pantry actually uses. Empty string is the real
+        // "not set" state, rendered as an em-dash.
+        const PRESERVATION_METHODS = ['', 'Canned', 'Frozen', 'Fermented', 'Dried/Dehydrated', 'Root Cellar', 'Fresh/Unprocessed'];
+
         function renderLedger(cat, query = "") {
             const tbody = document.getElementById(`${cat}TableBody`);
             if (!tbody) return;
@@ -637,8 +733,32 @@
                 item.exp.toLowerCase().includes(normalizedQuery)
             );
 
+            // Food & Freezer get real nutrition/preservation columns (Phase
+            // 7 #3 and #5); Livestock gets real health/production columns
+            // (Phase 7 #4) -- every other ledger (fuel, PPE, etc.) keeps
+            // the same plain shape it always had, since none of these
+            // concepts apply there.
+            const showNutrition = cat === 'food' || cat === 'freezer';
+            const showLivestock = cat === 'animal';
+
             filtered.forEach(item => {
                 const tr = document.createElement('tr');
+                let extraCells = '';
+                if (showNutrition) {
+                    extraCells = `
+                        <td><input type="number" class="table-input" value="${item.kcal_per_unit ?? ''}" placeholder="kcal/unit" min="0" step="1" onchange="updateItemValue('${cat}', '${item.id}', 'kcal_per_unit', this.value)"></td>
+                        <td><select class="table-input" onchange="updateItemValue('${cat}', '${item.id}', 'preservation_method', this.value)">
+                            ${PRESERVATION_METHODS.map(m => `<option value="${m}" ${item.preservation_method === m ? 'selected' : ''}>${m || '—'}</option>`).join('')}
+                        </select></td>
+                    `;
+                } else if (showLivestock) {
+                    extraCells = `
+                        <td><input type="date" class="table-input" value="${item.health_due_date || ''}" title="Next vaccination / deworming due" onchange="updateItemValue('${cat}', '${item.id}', 'health_due_date', this.value)"></td>
+                        <td><input type="number" class="table-input" value="${item.feed_cost_monthly ?? ''}" placeholder="$/mo feed" step="0.01" min="0" onchange="updateItemValue('${cat}', '${item.id}', 'feed_cost_monthly', this.value)"></td>
+                        <td><input type="number" class="table-input" value="${item.yield_value_per_unit ?? ''}" placeholder="$/unit yield" step="0.01" min="0" onchange="updateItemValue('${cat}', '${item.id}', 'yield_value_per_unit', this.value)"></td>
+                        <td><button class="action-btn" style="font-size:0.68rem; padding:4px 8px;" onclick="openProductionLog('${item.id}', ${JSON.stringify(item.desc).replace(/"/g, '&quot;')})">Log Yield</button></td>
+                    `;
+                }
                 tr.innerHTML = `
                     <td><input type="text" class="table-input" value="${item.desc}" onchange="updateItemValue('${cat}', '${item.id}', 'desc', this.value)"></td>
                     <td><input type="text" class="table-input" value="${item.loc}" onchange="updateItemValue('${cat}', '${item.id}', 'loc', this.value)"></td>
@@ -649,11 +769,14 @@
                     </td>
                     <td><input type="text" class="table-input" value="${item.exp}" onchange="updateItemValue('${cat}', '${item.id}', 'exp', this.value)"></td>
                     <td><input type="number" class="min-qty-input" value="${item.min_qty || 0}" min="0" onchange="updateItemValue('${cat}', '${item.id}', 'min_qty', this.value)"></td>
+                    ${extraCells}
                     <td>${statusBadges(item)}</td>
                     <td><button class="del-btn" onclick="deleteItem('${cat}', '${item.id}')">Wipe</button></td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            if (showLivestock) refreshLivestockAnalytics();
         }
 
         async function updateItemValue(cat, id, field, value) {
@@ -700,6 +823,13 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
                 min_qty: parseInt(minEl.value) || 0
             };
 
+            // Food & Freezer's optional nutrition/preservation fields --
+            // only present on those two ledgers' add-ribbons.
+            const kcalEl = document.getElementById(`add_${cat}_kcal`);
+            const preservationEl = document.getElementById(`add_${cat}_preservation`);
+            if (kcalEl) newItem.kcal_per_unit = kcalEl.value.trim() || null;
+            if (preservationEl) newItem.preservation_method = preservationEl.value || null;
+
             await fetch('/api/inventory', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -707,12 +837,124 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
             });
 
             descEl.value = ""; locEl.value = ""; qtyEl.value = ""; expEl.value = ""; minEl.value = "";
+            if (kcalEl) kcalEl.value = "";
+            if (preservationEl) preservationEl.value = "";
             fetchCategory(cat);
         }
 
         async function deleteItem(cat, id) {
             await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
             fetchCategory(cat);
+        }
+
+        // --- LIVESTOCK PRODUCTION LOG + ANALYTICS (Phase 7 #4) ---
+
+        let currentProductionItemId = null;
+
+        async function openProductionLog(itemId, desc) {
+            currentProductionItemId = itemId;
+            document.getElementById('productionLogTitle').textContent = `Production Log — ${desc}`;
+            document.getElementById('prodlog_date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('productionLogModal').style.display = 'flex';
+            await refreshProductionLog();
+        }
+
+        function closeProductionLog() {
+            document.getElementById('productionLogModal').style.display = 'none';
+            currentProductionItemId = null;
+        }
+
+        async function refreshProductionLog() {
+            if (!currentProductionItemId) return;
+            const res = await fetch(`/api/livestock/${currentProductionItemId}/production`);
+            const entries = await res.json();
+            const tbody = document.getElementById('productionLogBody');
+            tbody.innerHTML = entries.map(e => `
+                <tr>
+                    <td>${e.logged_date}</td>
+                    <td>${e.amount}</td>
+                    <td>${e.unit || ''}</td>
+                    <td><button class="del-btn" onclick="deleteProductionEntry('${e.id}')">Wipe</button></td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="color:var(--text-faint);">No entries logged yet.</td></tr>';
+            renderProductionTrend(entries);
+        }
+
+        // A real, plain SVG bar chart -- no charting library pulled in for
+        // one simple trend view, same "don't add a dependency for
+        // something this small" judgment call this project already makes
+        // elsewhere (e.g. crypto.html's own hand-rolled Web Crypto use).
+        function renderProductionTrend(entries) {
+            const el = document.getElementById('productionTrendChart');
+            if (entries.length === 0) {
+                el.innerHTML = '';
+                return;
+            }
+            const sorted = [...entries].sort((a, b) => a.logged_date.localeCompare(b.logged_date)).slice(-20);
+            const max = Math.max(...sorted.map(e => e.amount), 1);
+            const w = 560, h = 120, barW = w / sorted.length;
+            const bars = sorted.map((e, i) => {
+                const barH = (e.amount / max) * (h - 20);
+                return `<rect x="${i * barW + 2}" y="${h - barH}" width="${barW - 4}" height="${barH}" fill="var(--accent-bright)">
+                    <title>${e.logged_date}: ${e.amount} ${e.unit || ''}</title>
+                </rect>`;
+            }).join('');
+            el.innerHTML = `
+                <div style="font-size:0.75rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Recent yield trend (last ${sorted.length} entries)</div>
+                <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:${h}px; background:var(--bg); border-radius:4px;">${bars}</svg>
+            `;
+        }
+
+        async function submitProductionLog() {
+            const date = document.getElementById('prodlog_date').value;
+            const amount = parseFloat(document.getElementById('prodlog_amount').value);
+            const unit = document.getElementById('prodlog_unit').value.trim();
+            if (!date || isNaN(amount)) { alert('A real date and a real numeric amount are both required.'); return; }
+
+            await fetch('/api/livestock/production', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_id: currentProductionItemId, logged_date: date, amount, unit }),
+            });
+            document.getElementById('prodlog_amount').value = '';
+            document.getElementById('prodlog_unit').value = '';
+            await refreshProductionLog();
+            refreshLivestockAnalytics();
+        }
+
+        async function deleteProductionEntry(entryId) {
+            await fetch(`/api/livestock/production/${entryId}`, { method: 'DELETE' });
+            await refreshProductionLog();
+            refreshLivestockAnalytics();
+        }
+
+        // Overdue-health and feed-cost-vs-value banners above the
+        // Livestock table -- real only when the underlying data is real
+        // (see api.py's own livestock_analytics doc for the "never
+        // estimate a market price" rule this mirrors on the frontend).
+        async function refreshLivestockAnalytics() {
+            const el = document.getElementById('livestockAlerts');
+            if (!el) return;
+            try {
+                const res = await fetch('/api/livestock/analytics');
+                const rows = await res.json();
+                const overdue = rows.filter(r => r.health_overdue);
+                const withRoi = rows.filter(r => r.roi !== null);
+                let html = '';
+                if (overdue.length > 0) {
+                    html += `<div class="tile-alert-badge" style="display:inline-block; margin:0 6px 6px 0;">⚠ Health record overdue: ${overdue.map(r => r.desc).join(', ')}</div>`;
+                }
+                if (withRoi.length > 0) {
+                    html += withRoi.map(r => `
+                        <div class="resource-chip" style="display:inline-block; margin:0 6px 6px 0; padding:4px 10px; border-radius:10px; background:var(--panel-alt); border:1px solid var(--border); font-size:0.78rem;">
+                            ${r.desc}: ${r.period_production_total} units over ${r.period_days}d &rarr; <strong style="color:${r.roi >= 0 ? 'var(--green)' : 'var(--red)'};">${r.roi >= 0 ? '+' : ''}$${r.roi}</strong> vs. feed cost
+                        </div>
+                    `).join('');
+                }
+                el.innerHTML = html;
+            } catch (err) {
+                console.error('refreshLivestockAnalytics failed:', err);
+            }
         }
 
         // --- GARDEN MATRIX STATE MACHINE BACKENDS ---

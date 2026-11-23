@@ -116,8 +116,55 @@ def init_db():
     # span 50lbs-of-rice to 3-tourniquets to 12-chickens, and a single fixed
     # threshold would misfire constantly across that range.
     cursor.execute("PRAGMA table_info(inventory)")
-    if "min_qty" not in [row[1] for row in cursor.fetchall()]:
+    inventory_columns = [row[1] for row in cursor.fetchall()]
+    if "min_qty" not in inventory_columns:
         cursor.execute("ALTER TABLE inventory ADD COLUMN min_qty INTEGER DEFAULT 0")
+        inventory_columns.append("min_qty")
+
+    # kcal_per_unit (real, optional, per-item): closes the gap the Crisis-
+    # Readiness Score's own comment named explicitly -- "Citadel's own
+    # inventory tracks item counts, not liters or calories... there's no
+    # unit data to reconcile [the BBK target] with." NULL by default, not
+    # 0 -- 0 kcal would be a real, false claim about an item's energy
+    # content; NULL honestly means "not entered yet," and the nutrition
+    # calculator below treats the two differently (excludes NULL items
+    # from its total rather than counting them as zero-calorie).
+    # preservation_method is a plain, optional label (Canned/Frozen/
+    # Fermented/Dried/Root Cellar/Fresh) -- Food & Freezer items only,
+    # Phase 7's own "preservation/pantry method tracking" item.
+    if "kcal_per_unit" not in inventory_columns:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN kcal_per_unit REAL")
+    if "preservation_method" not in inventory_columns:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN preservation_method TEXT")
+    # Livestock-only optional fields (category='animal'): health_due_date
+    # backs the real overdue-health-record warning; feed_cost_monthly and
+    # yield_value_per_unit back a real feed-cost-vs-production-value
+    # figure -- deliberately NOT computed at all unless an operator
+    # supplies both (see api_livestock_analytics), rather than guessing a
+    # market price for whatever this animal group produces.
+    if "health_due_date" not in inventory_columns:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN health_due_date TEXT")
+    if "feed_cost_monthly" not in inventory_columns:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN feed_cost_monthly REAL")
+    if "yield_value_per_unit" not in inventory_columns:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN yield_value_per_unit REAL")
+
+    # Real production log, one row per real logged yield event (eggs
+    # collected, gallons of milk, lbs of honey, whatever unit this animal
+    # group's own entries use) -- the actual time-series data a trend
+    # needs. The flat `inventory` row's own `exp` field ("Production
+    # Yield Info") stays a free-text summary; this table is what a trend
+    # chart or a feed-cost-ROI figure can honestly compute from.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS livestock_production_log (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL,
+            logged_date TEXT NOT NULL,
+            amount REAL NOT NULL,
+            unit TEXT,
+            notes TEXT
+        )
+    ''')
 
     # Table for Botanical Garden Year-Over-Year Records
     cursor.execute('''
@@ -448,10 +495,31 @@ def save_inventory_item():
     except (ValueError, TypeError):
         min_qty_sanitized = 0
 
+    def optional_float(key):
+        # NULL (not 0) when absent/blank -- 0 would be a real, false claim
+        # (e.g. "0 kcal per unit"), see this table's own migration comment.
+        raw = data.get(key)
+        if raw is None or raw == '':
+            return None
+        try:
+            return float(raw)
+        except (ValueError, TypeError):
+            return None
+
+    kcal_per_unit = optional_float('kcal_per_unit')
+    feed_cost_monthly = optional_float('feed_cost_monthly')
+    yield_value_per_unit = optional_float('yield_value_per_unit')
+    preservation_method = (data.get('preservation_method') or '').strip() or None
+    health_due_date = (data.get('health_due_date') or '').strip() or None
+
     cursor.execute('''
-        INSERT OR REPLACE INTO inventory (id, category, desc, loc, qty, exp, min_qty)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (str(data['id']), data['category'], data['desc'], data['loc'], qty_sanitized, data['exp'], min_qty_sanitized))
+        INSERT OR REPLACE INTO inventory
+            (id, category, desc, loc, qty, exp, min_qty, kcal_per_unit, preservation_method,
+             health_due_date, feed_cost_monthly, yield_value_per_unit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (str(data['id']), data['category'], data['desc'], data['loc'], qty_sanitized, data['exp'],
+          min_qty_sanitized, kcal_per_unit, preservation_method, health_due_date, feed_cost_monthly,
+          yield_value_per_unit))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
@@ -461,9 +529,111 @@ def delete_inventory_item(item_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
+    # A deleted animal group's own production history is no longer about
+    # anything real on the registry -- same cascade-delete reasoning any
+    # real foreign-key-backed schema would apply, done by hand here since
+    # this table predates any FK constraints.
+    cursor.execute("DELETE FROM livestock_production_log WHERE item_id = ?", (item_id,))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
+
+# --- LIVESTOCK PRODUCTION LOG + ANALYTICS (Phase 7 #4) ---
+# Real scope decision: "production trend charts" and "feed-cost ROI" both
+# need real time-series production data, which the flat inventory row's
+# own free-text "Production Yield Info" field can't honestly provide --
+# this table is the real structured data a trend or an ROI figure can
+# actually be computed from, not a second guess layered on the same
+# unstructured text.
+
+@app.route('/api/livestock/<item_id>/production', methods=['GET'])
+def get_production_log(item_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM livestock_production_log WHERE item_id = ? ORDER BY logged_date DESC",
+        (item_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/livestock/production', methods=['POST'])
+def add_production_log_entry():
+    data = request.json
+    try:
+        amount = float(data['amount'])
+    except (ValueError, TypeError, KeyError):
+        return jsonify({"error": "amount must be a real number"}), 400
+    if not data.get('item_id') or not data.get('logged_date'):
+        return jsonify({"error": "item_id and logged_date are required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    entry_id = str(data.get('id') or uuid.uuid4())
+    cursor.execute(
+        '''INSERT OR REPLACE INTO livestock_production_log (id, item_id, logged_date, amount, unit, notes)
+           VALUES (?, ?, ?, ?, ?, ?)''',
+        (entry_id, data['item_id'], data['logged_date'], amount, data.get('unit', ''), data.get('notes', '')),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "id": entry_id})
+
+@app.route('/api/livestock/production/<entry_id>', methods=['DELETE'])
+def delete_production_log_entry(entry_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM livestock_production_log WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+@app.route('/api/livestock/analytics', methods=['GET'])
+def livestock_analytics():
+    """One real, honestly-scoped analytics pass over every 'animal'
+    inventory row: an overdue-health-record flag (real once health_due_date
+    is set), and a feed-cost-vs-production-value figure computed ONLY when
+    an operator has supplied both feed_cost_monthly and yield_value_per_unit
+    -- never estimated from a guessed market price. `period_days` (default
+    30, matching feed_cost_monthly's own monthly unit) bounds which
+    production_log rows count toward the current period's value."""
+    period_days = request.args.get('period_days', 30, type=int)
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=period_days)).strftime('%Y-%m-%d')
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    animals = cursor.execute("SELECT * FROM inventory WHERE category = 'animal'").fetchall()
+
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    results = []
+    for a in animals:
+        a = dict(a)
+        overdue = bool(a.get('health_due_date')) and a['health_due_date'] < today
+        period_total = cursor.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM livestock_production_log WHERE item_id = ? AND logged_date >= ?",
+            (a['id'], cutoff),
+        ).fetchone()[0]
+        roi = None
+        if a.get('feed_cost_monthly') is not None and a.get('yield_value_per_unit') is not None:
+            # Scales the monthly feed cost to the real requested window
+            # rather than assuming period_days is always exactly 30.
+            scaled_cost = a['feed_cost_monthly'] * (period_days / 30.0)
+            roi = round((period_total * a['yield_value_per_unit']) - scaled_cost, 2)
+        results.append({
+            "id": a['id'], "desc": a['desc'],
+            "health_due_date": a.get('health_due_date'),
+            "health_overdue": overdue,
+            "period_days": period_days,
+            "period_production_total": period_total,
+            "feed_cost_monthly": a.get('feed_cost_monthly'),
+            "yield_value_per_unit": a.get('yield_value_per_unit'),
+            "roi": roi,
+        })
+    conn.close()
+    return jsonify(results)
 
 # --- BOTANICAL GARDEN API ENDPOINTS ---
 

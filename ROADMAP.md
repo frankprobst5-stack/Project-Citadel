@@ -1365,32 +1365,71 @@ first:**
    offline expiry-date OCR, Open Food Facts API for product lookup/images
    (the one real external call either tool makes, and only the barcode
    is transmitted).
-3. **Self-sufficiency nutrition calculator + winter gap analysis**, from
-   gardener: monthly calorie/protein/vitamin coverage computed from this
-   project's own already-tracked food/livestock data, falling back to
-   estimates when real production numbers aren't in yet.
-4. **Richer Livestock tab analytics**: production trend charts, feed-cost
-   ROI per animal, overdue health-record warnings (vaccinations,
-   deworming) — today's Livestock tab is a flat registry table, no
-   analytics at all.
-5. **Preservation/pantry method tracking** (canning, freezing,
-   fermenting, drying, root cellar) with per-item guidance, extending the
-   existing Food/Freezer ledgers rather than a new tab.
+3. ~~**Self-sufficiency nutrition calculator + winter gap analysis**~~ — ✅ **done,
+   2026-11-22**, scoped to calories only, not protein/vitamins (see below for why). New
+   `kcal_per_unit` column on `inventory` (nullable — NULL means "not entered," never
+   silently treated as 0 kcal, the exact gap `calculateReadiness()`'s own prior comment
+   named: "there's no unit data to reconcile [the BBK target] with"). The Crisis-Readiness
+   panel gained a real "Self-Sufficiency Nutrition Calculator" section: total tracked food
+   energy (Food + Freezer, `qty × kcal_per_unit` summed over only the items that actually
+   have one entered), a real days-of-coverage figure against the same BBK ~2200kcal/
+   person/day target the panel already used, and a winter-gap figure against a new
+   operator-set winter-window-length input (default 120 days) — "covered" or a real kcal
+   shortfall number, never a vague color alone. The honesty mechanism that matters most:
+   the panel always states *how many* Food/Freezer items are actually counted (e.g. "1 of
+   108") so the total never looks more complete than it is. **Protein and vitamin coverage
+   deliberately not built**, named rather than silently dropped: nothing in this schema
+   tracks either, and estimating them from calorie data alone would be exactly the kind of
+   fabricated precision this project's own Crisis-Readiness Score already explicitly
+   avoided once (see that item's own 2026-11-06 entry above) — real, separate follow-on
+   work if ever picked up (would need its own per-item protein_g/vitamin fields, same
+   shape as kcal_per_unit).
+4. ~~**Richer Livestock tab analytics**~~ — ✅ **done, 2026-11-22.** The flat Livestock
+   registry had no real per-group health or production data to analyze — building "trend
+   charts" or "feed-cost ROI" directly on its free-text `exp` ("Production Yield Info")
+   field would have meant parsing prose, a real fabrication risk. Added real structured
+   data instead: `health_due_date`, `feed_cost_monthly`, `yield_value_per_unit` columns on
+   `inventory` (animal rows only, all nullable/optional), and a new
+   `livestock_production_log` table (date, amount, unit, notes per real logged yield event
+   — eggs collected, gallons of milk, whatever unit that group's own entries use) feeding
+   a genuine time-series, not a derived guess. New `/api/livestock/production` (log/list/
+   delete entries) and `/api/livestock/analytics` (per-group overdue-health flag + a real
+   feed-cost-vs-production-value figure) endpoints. **The ROI figure is computed ONLY when
+   an operator has entered both `feed_cost_monthly` and `yield_value_per_unit` for that
+   group** — never estimated from a guessed market price, the same restraint this
+   project's other analytics already apply. Livestock tab gained Health Due/Feed Cost/
+   Yield Value columns, a "Log Yield" button opening a real entry modal with a hand-rolled
+   SVG trend chart (no charting library pulled in for one simple bar chart), and an alerts
+   strip above the table surfacing real overdue-health and ROI figures. **A real bug found
+   and fixed while building this, not assumed**: the Log Yield button's `onclick` embedded
+   a `JSON.stringify()`'d description directly inside a double-quoted HTML attribute —
+   since `JSON.stringify` itself produces double-quoted output, the attribute closed early
+   on the first embedded quote, silently truncating the handler. Caught by actually
+   clicking the button in a live browser check (the button did nothing), not by reading
+   the code; fixed by HTML-entity-escaping the embedded JSON before interpolating it.
+   **Second real bug, same investigation**: `/api/livestock/analytics` 404'd even after the
+   Flask route existed — this `nginx.conf` has no catch-all `/api/` proxy, every route
+   family needs its own explicit `location` block (the exact same gotcha this file's own
+   `/api/scanner` comment already documents from a prior incident). Added the missing
+   `location /api/livestock`/`/api/livestock/` pair and verified live afterward, not
+   assumed fixed from the diff alone.
+5. ~~**Preservation/pantry method tracking**~~ — ✅ **done, 2026-11-22.** New
+   `preservation_method` column on `inventory` (nullable, plain optional label — Canned/
+   Frozen/Fermented/Dried-Dehydrated/Root Cellar/Fresh-Unprocessed, not a rigid taxonomy
+   beyond what a real pantry actually uses), exposed as a dropdown on Food & Freezer's
+   add-ribbons and inline in each ledger's own table row. Sits naturally alongside the
+   real cross-links into the USDA Canning Guide/Cook Books those same two ledgers already
+   gained in Phase 8 #2 above.
 
-**Triaged, 2026-11-22** (readiness pass ahead of Citadel's first real software release --
-see this document's own Changelog): none of items 2-5 built this pass, by deliberate choice,
-not oversight. Real reasoning per item: #2 (barcode/OCR) needs two new client-side
-libraries and a real external API call (Open Food Facts) -- the right next pick when picked
-up, since it's genuinely the most self-contained of the four (matches this list's own
-original "smallest first" ordering), but still a real multi-day slice of work, not a
-same-session add. #3 (nutrition calculator) and #4 (livestock analytics) are both real
-algorithmic/analytics features needing careful thought about what Citadel's actual tracked
-data can honestly support (same "don't fabricate precision the data doesn't have" discipline
-`CrisisReadinessScore` already had to apply) -- rushing either risks the exact kind of
-fabricated-precision mistake that item's own build note already caught once. #5
-(preservation tracking) is the most self-contained of the analytics-adjacent items but still
-touches the Food/Freezer ledger schema. Order unchanged from the original pass; this is a
-confirmed re-prioritization, not new information.
+Items 3-5 closed 2026-11-22, per Frank's own instruction to clear this whole backlog ("i
+dont want anything left to do on these items") — item 2 (barcode/OCR) follows immediately
+below, same pass. All verified against the real running stack (schema confirmed via
+`PRAGMA table_info`, every new endpoint exercised with real `curl`/browser JS calls, test
+data entered then cleaned back out of Frank's actual real pantry/livestock records
+afterward, not left behind) rather than assumed correct from the diff alone. 92 existing
+Python tests still pass unchanged (`test_scanner_bridge_live.py` remains excluded — a
+pre-existing, unrelated `websockets` import gap in this sandbox, not something this pass
+touched or introduced).
 ## Phase 8 — Content discoverability: three real libraries, zero cross-links, not started
 
 Real grid-down gap analysis, 2026-10-27 (Frank's own framing: "picture grid down, no net,
