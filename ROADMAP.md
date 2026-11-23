@@ -1377,6 +1377,20 @@ first:**
    fermenting, drying, root cellar) with per-item guidance, extending the
    existing Food/Freezer ledgers rather than a new tab.
 
+**Triaged, 2026-11-22** (readiness pass ahead of Citadel's first real software release --
+see this document's own Changelog): none of items 2-5 built this pass, by deliberate choice,
+not oversight. Real reasoning per item: #2 (barcode/OCR) needs two new client-side
+libraries and a real external API call (Open Food Facts) -- the right next pick when picked
+up, since it's genuinely the most self-contained of the four (matches this list's own
+original "smallest first" ordering), but still a real multi-day slice of work, not a
+same-session add. #3 (nutrition calculator) and #4 (livestock analytics) are both real
+algorithmic/analytics features needing careful thought about what Citadel's actual tracked
+data can honestly support (same "don't fabricate precision the data doesn't have" discipline
+`CrisisReadinessScore` already had to apply) -- rushing either risks the exact kind of
+fabricated-precision mistake that item's own build note already caught once. #5
+(preservation tracking) is the most self-contained of the analytics-adjacent items but still
+touches the Food/Freezer ledger schema. Order unchanged from the original pass; this is a
+confirmed re-prioritization, not new information.
 ## Phase 8 — Content discoverability: three real libraries, zero cross-links, not started
 
 Real grid-down gap analysis, 2026-10-27 (Frank's own framing: "picture grid down, no net,
@@ -1439,26 +1453,59 @@ Remedies" video categories or Kiwix's CD3WD/Survivor Library plant content exist
    the stale Knowledge Base tile description while in the area** (already named as a real,
    separate gap below) — it read "phonetic alphabets, Morse code reference manuals" from
    before the real 61-archive library existed; now names real archives.
-2. **Contextual cross-links from feature pages** — `medical.html` links to the Vault's
-   Medical PDFs/videos and Kiwix's Military Medicine/MedlinePlus; Logistics' Water Storage
-   ledger links to Water Treatment Library; its Food/Freezer ledgers link to Cook Books and
-   the USDA Canning Guide; garden.html and the future Baneward link to Plant ID/Herbal
-   Remedies videos and CD3WD/Survivor Library content.
+2. ~~**Contextual cross-links from feature pages**~~ — ✅ **done, 2026-11-22**, scoped to
+   `medical.html` and `logistics.html` (garden.html's own cross-link waits on a real Baneward
+   integration point, not invented here). **A real, previously-undiscovered bug surfaced
+   while building this, not assumed**: `sources.html`'s own existing Vault category links
+   (`renderVaultCard`) pointed at `${linkBase}.html?category=...` (e.g. `pdf.html?category=
+   Cook Books`) — nginx only proxies the bare `/pdf`/`/videos` paths to `vault-api` (see
+   `nginx.conf`), so those links had been 404ing in production since the page shipped
+   2026-11-06, caught only by actually clicking through rather than trusting the code. Fixed
+   to `/${linkBase}?category=...`. **Second bug, same investigation**: even with the path
+   fixed, `?category=` did nothing at all — neither the Flask route nor `pdf.html`/
+   `videos.html`'s own templates ever read it. Closed properly: each template now reads
+   `?category=` via `URLSearchParams` and scrolls to/highlights the matching category card.
+   First attempt reused the existing `filterFiles()` search-bar filter instead of a dedicated
+   match — wrong, caught by actually loading a real `?category=Cook%20Books` link: that
+   function hides a category only when *none of its own files' names* match the query text,
+   so a real category whose files don't happen to contain the category name in their own
+   filename got filtered **out**, while unrelated *empty* categories (zero files to filter)
+   survived by construction — exactly backwards. Rewritten to match the category heading
+   directly, verified live (JS-level check of the real `.card`'s applied outline + scroll
+   position, not just visual inspection) against both `/pdf?category=Cook%20Books` and
+   `/videos?category=Medical`. New real cross-links: `medical.html`'s "Medical Reference
+   Library" card now links to real, specific targets (previously all five links pointed at
+   the same generic, unfiltered `knowledge.html`) — WikiMed, MedlinePlus, and Military
+   Medicine via Kiwix's own `/viewer#<archive-name>` convention (names confirmed against the
+   live `/catalog/v2/entries` feed, not guessed), plus the Vault's real Medical PDFs/videos
+   via the now-fixed `/pdf?category=`/`/videos?category=` links. `logistics.html` gained a
+   one-line reference note on the Water Storage ledger (Water Treatment Library) and the
+   Food/Freezer ledgers (Cook Books + USDA Guide to Home Canning).
 3. **Unified search across all three real sources** — one search box querying Kiwix's own
    catalog API, the Vault's PDF/video filenames and categories, and (once built) Baneward,
    returning one combined result list regardless of which backend actually holds the
-   answer. Bigger lift than #1/#2, real payoff.
+   answer. Bigger lift than #1/#2, real payoff. **Triaged, 2026-11-22: still the right next
+   pick, still not started** — genuinely bigger than the cross-link work above (three
+   different real APIs to query and merge, not just new `<a>` tags), and nothing about
+   today's work changes that estimate either way.
 4. ~~**Fix the stale `knowledge` module manifest description**~~ — ✅ **done, 2026-11-06.**
    Fixed in both real places it lived: `modules/knowledge/manifest.json`'s own
    `description` field and the cockpit's `coreModules` tile text in `index.html` — found
    while building the new sources.html index page above, which needed the real archive
    count anyway.
-5. **Document the real Kiwix archive list and Vault category structure** as a reproducible
-   reference (names, approximate sizes, where to get them) — this specific curation only
-   exists as this one machine's live state today; worth preserving before a rebuild or a
-   second fleet site has to rediscover it from scratch. Real follow-up to the "starter ZIM
-   pack" idea raised during an earlier GitHub-reuse scanning session, now grounded in what's
-   actually already chosen rather than guessed at.
+5. ~~**Document the real Kiwix archive list and Vault category structure**~~ — ✅ **done,
+   2026-11-22.** New [KIWIX_LIBRARY.md](KIWIX_LIBRARY.md): all 61 real archives (confirmed
+   directly against `/data/*.zim` inside the live `citadel-kiwix` container and the catalog's
+   own `<totalResults>`, not estimated), real file sizes (~636GB total), and the Vault's real
+   PDF (12 categories, 68 files) and video (10 categories, 40 files) structure as of this
+   snapshot. Explicitly a frozen point-in-time snapshot, not a live view — `sources.html`
+   already *is* the always-current version of this same information; this document exists
+   specifically so a from-scratch rebuild has something to aim for. Two real, harmless
+   oddities found and recorded rather than silently cleaned up: "Military Medicine" and
+   "WikiMed Medical Encyclopedia" each have two real files at different snapshot dates (both
+   currently live, worth pruning the older one eventually), and the Canadian Prepper
+   archives' own catalog metadata names them `canadian_prep_...` while the real files on disk
+   are `canadian_prepper_...` — a naming slip in the upstream metadata itself, not a bug here.
 
 ## Phase 9 — Baneward range map tie-in ✅ done 2026-11-03
 

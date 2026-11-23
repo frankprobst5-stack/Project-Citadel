@@ -119,7 +119,7 @@
                 .sort((a, b) => b[1].length - a[1].length)
                 .map(([cat, files]) => `
                     <div class="vault-cat-row">
-                        <a href="${linkBase}.html?category=${encodeURIComponent(cat)}">${cat}</a>
+                        <a href="/${linkBase}?category=${encodeURIComponent(cat)}">${cat}</a>
                         <span class="vc-count">${files.length}</span>
                     </div>
                 `).join('');

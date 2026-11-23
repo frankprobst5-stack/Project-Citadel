@@ -228,15 +228,42 @@
                 <div class="row-4">
                     <div class="card">
                         <h2>📚 Medical Reference Library</h2>
+                        <!-- Real cross-links, added per ROADMAP.md's Phase 8 gap
+                             analysis: these used to all point at the generic
+                             knowledge.html iframe with no actual filtering --
+                             a household member looking for "Military Medicine"
+                             landed on Kiwix's own unfiltered front page and had
+                             to already know it existed. Deep-links to Kiwix use
+                             the same http://host:8095/viewer#<archive-name>
+                             convention sources.html's own card links already
+                             use; archive names confirmed against the real
+                             running Kiwix catalog (/catalog/v2/entries), not
+                             guessed. -->
                         <div class="card-sub">Offline access to trusted medical resources.</div>
                         <ul class="link-list">
-                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">First Aid Basics <span>›</span></a></li>
-                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Emergency Medical Procedures <span>›</span></a></li>
-                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Trauma &amp; Critical Care <span>›</span></a></li>
-                            <li><a onclick="event.preventDefault(); window.location.href='knowledge.html'" href="#">Wilderness Medicine <span>›</span></a></li>
-                            <li><a onclick="event.preventDefault(); showTab('resources')" href="#">Medical Reference Manuals (PDF) <span>›</span></a></li>
-                            <li><a onclick="event.preventDefault(); window.location.href='notes.html'" href="#">Custom Documents <span>›</span></a></li>
+                            <li><a id="xlinkWikiMed" href="#">WikiMed Medical Encyclopedia (Kiwix) <span>›</span></a></li>
+                            <li><a id="xlinkMedlinePlus" href="#">MedlinePlus (Kiwix) <span>›</span></a></li>
+                            <li><a id="xlinkMilMed" href="#">Military Medicine (Kiwix) <span>›</span></a></li>
+                            <li><a href="/pdf?category=Medical" target="_blank">Medical PDFs (Vault) <span>›</span></a></li>
+                            <li><a href="/videos?category=Medical" target="_blank">Medical Videos (Vault) <span>›</span></a></li>
+                            <li><a onclick="event.preventDefault(); window.location.href='sources.html'" href="#">Browse everything (full index) <span>›</span></a></li>
                         </ul>
+                        <script>
+                            // Built with real JS, not a template literal in a
+                            // static href -- the Kiwix host is reachable on
+                            // this same machine's hostname, just a different
+                            // port, same pattern sources.html's own kiwix-card
+                            // links already use.
+                            (function () {
+                                const kiwixHost = 'http://' + location.hostname + ':8095/viewer#';
+                                document.getElementById('xlinkWikiMed').href = kiwixHost + 'wikipedia_en_medicine';
+                                document.getElementById('xlinkMedlinePlus').href = kiwixHost + 'medlineplus.gov_en_all';
+                                document.getElementById('xlinkMilMed').href = kiwixHost + 'irp.fas.org_en_military-medicine';
+                                ['xlinkWikiMed', 'xlinkMedlinePlus', 'xlinkMilMed'].forEach((id) => {
+                                    document.getElementById(id).target = '_blank';
+                                });
+                            })();
+                        </script>
                     </div>
 
                     <div class="card">

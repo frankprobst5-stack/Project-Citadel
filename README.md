@@ -15,21 +15,31 @@ Free forever, licensed under the GNU General Public License v3.0 or later (GPL-3
 ## What You Get
 
 ### 🛡️ Command Cockpit Dashboard
-A unified browser-based command center (port **8085**) with 13 integrated modules:
+A unified browser-based command center (port **8085**) with 23 integrated modules — counted directly from the dashboard's own real tile list, not an earlier, smaller count this README used to carry:
 
 - **📡 Communications Hub** — Launches WayStation, the full EmComm dashboard (net control, ICS forms, mesh, Winlink, JS8Call, space weather)
 - **🗺️ Tactical Map** — Offline vector map with real elevation data, no internet required
 - **🎬 Digital Media Vault** — Self-hosted video, audio, and PDF library with category-based organization
 - **🎓 Home Education Hub** — Cloud9 kid dashboard plus Kolibri, a full offline learning platform with thousands of lessons and student tracking
-- **🍲 Recipes & Meal Planner** — Mealie: URL/photo recipe import, meal planning, shopping lists, plus a pantry-check bridge against your own Food Inventory/Freezer Foods ledgers
 - **📚 Knowledge Base** — Offline wiki/encyclopedia access (Kiwix + .zim archives), morse code, phonetic alphabets, technical manuals
+- **🧭 What We Have & Where** — One real index of every reference source on this machine (Kiwix's archives, the Vault's PDF/video categories, First Aid & Medical) in one place
+- **🍲 Recipes & Meal Planner** — Mealie: URL/photo recipe import, meal planning, shopping lists, plus a pantry-check bridge against your own Food Inventory/Freezer Foods ledgers
 - **🌿 Homestead Logistics** — Multi-table inventory system for food, fuel, PPE, orchard/fruit trees, livestock, and botanical gardens (see below)
+- **🥕 Garden Planner** — A real spring/summer/fall crop plan for a 16-bed garden, laid out to match the actual plot
+- **🌿 Wild Plant Database** — Launches Baneward, offline ID for 35,000+ real US wild plants with poison-lookalike warnings and a trait-based ID wizard
 - **🩸 First Aid & Medical** — Offline emergency trauma protocols, surgical field manuals, medical reference charts
 - **🧠 Offline AI Assistant** — Local Large Language Models (Ollama) for data analysis, writing, and computation — no cloud, no tracking
 - **🏠 Home Monitor Matrix** — Smart home device registry and relay control (Project Vigil) for cameras and hardware relays. Solar/battery telemetry runs as a separate service but has no dashboard panel yet — see ROADMAP.md.
-- **📝 Secure Notes** — Flatnotes markdown storage for sensitive documentation, asset inventories, and mission profiles
+- **💾 Note Storage Vault** — Flatnotes markdown storage for sensitive documentation, asset inventories, and mission profiles
+- **📻 Project Intercept** — Passive 433MHz ISM-band decode (weather sensors, TPMS) via a real RTL-SDR dongle — needs the `hardware` profile and real hardware
+- **🔐 Crypto Vault** — Offline AES-256-GCM encryption, a real Shamir's Secret Sharing key splitter, and a client-side password vault — nothing ever touches a network
 - **📟 Master Operations Handbook** — Full household operations manual
 - **⚙️ System Settings** — Live service diagnostics and station identity
+- **👥 Muster (Mobile Ops)** — Grid-down operations control reachable on any phone or tablet with zero install, pulling real messages and map markers live from WayStation
+- **📰 News Archive & Local Log** — Aggregated hazard alerts (NWS, USGS, NHC, InciWeb) and syndicated news, archived for after the grid goes down, plus a hand-typed local log
+- **🖼️ Family Photo Gallery** — Immich-backed local photo/video library — browse, organize, and back up, no cloud upload
+- **🌐 Global Situation Monitor** — A fixed watch-list of major-power escalation indicators across curated feeds — always your own logged assessment, never an automated alarm
+- **🛡️ Master Situation Board** — Everything at a glance on one page: global situation, local hazards, weather, home monitor status, supply levels, media library, host metrics, and backups
 
 Plus a **live scratchpad** for quick tactical notes (auto-saved to browser storage).
 

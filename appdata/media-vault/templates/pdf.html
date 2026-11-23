@@ -79,6 +79,31 @@
                 else card.classList.remove('hidden');
             });
         }
+
+        // A real contextual-cross-link entry point (e.g. from
+        // logistics.html's own Water/Food ledgers, or sources.html's
+        // category cards): scrolls to and highlights the matching
+        // category card from a real ?category= link. Deliberately NOT
+        // routed through filterFiles() -- that function matches each
+        // individual file's own name/text, not the category heading, so
+        // feeding it a category name as a "search" hid the very card it
+        // was meant to find (an empty, unrelated category with zero
+        // file-items can never be hidden by that logic, while a real
+        // category whose files don't happen to contain the category
+        // name in their own filename gets filtered OUT) -- caught by
+        // actually loading this page with a real ?category= link, not
+        // assumed from the code alone. Note this is the vault-api route
+        // (/pdf, not /pdf.html) -- a link built against the static
+        // cockpit path 404s, since nginx only proxies the bare /pdf path
+        // to this service (see nginx.conf).
+        const category = new URLSearchParams(location.search).get('category');
+        if (category) {
+            const card = [...document.querySelectorAll('.card')].find(c => c.querySelector('h2').textContent.trim().includes(category));
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                card.style.outline = '2px solid var(--accent-bright)';
+            }
+        }
     </script>
 </body>
 </html>

@@ -101,6 +101,20 @@
                 else card.classList.remove('hidden');
             });
         }
+
+        // See pdf.html's identical block for the full real reasoning --
+        // scrolls to and highlights the matching category card from a
+        // real ?category= link, rather than routing through
+        // filterFiles() (which matches file names, not the category
+        // heading, and would hide the very card this is meant to find).
+        const category = new URLSearchParams(location.search).get('category');
+        if (category) {
+            const card = [...document.querySelectorAll('.card')].find(c => c.querySelector('h2').textContent.trim().includes(category));
+            if (card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                card.style.outline = '2px solid var(--accent-bright)';
+            }
+        }
     </script>
 </body>
 </html>
