@@ -1359,12 +1359,40 @@ first:**
    `logistics.html` already loads, no new backend route. Verified live against this
    machine's real pantry data: 44/100, correctly flagged water and freezer as nothing
    logged, and produced a real 140-row low-stock shopping list from actual tracked items.
-2. **Barcode scan + offline OCR for expiry dates** on the Food Provisions
-   ledger, which is hand-typed only today. Prepper_Log's own approach:
-   `@zxing/browser` for the barcode, bundled Tesseract.js for fully
-   offline expiry-date OCR, Open Food Facts API for product lookup/images
-   (the one real external call either tool makes, and only the barcode
-   is transmitted).
+2. ~~**Barcode scan + offline OCR for expiry dates**~~ — ✅ **done, 2026-11-22**, closing
+   Phase 7's last open item. Uses `@zxing/library` (not the separate `@zxing/browser`
+   package originally scoped — checked first and found `@zxing/library`'s own UMD build
+   already exposes `BrowserMultiFormatReader` directly, the one real class this feature
+   needs, so one fewer dependency) for the barcode camera scan, and Tesseract.js 5 for
+   fully offline expiry-date OCR. **Both vendored into `appdata/cockpit/vendor/`, not
+   CDN-loaded** — a real, deliberate call, not an oversight: loading either from a CDN at
+   runtime would contradict this project's own standing "zero external internet
+   dependency once installed" claim the very first time someone tried this feature with no
+   internet. Vendored: `zxing/zxing.min.js` (336KB), `tesseract/tesseract.min.js` +
+   `worker.min.js` (Apache-2.0), `tesseract/tesseract-core-simd-lstm.wasm.js` (the real
+   OCR engine compiled to WebAssembly, 3.9MB — confirmed from `worker.min.js`'s own code
+   which of 4 possible core variants a SIMD-capable browser in LSTM engine mode actually
+   requests, rather than guessing or vendoring all four), and `tesseract/lang-data/
+   eng.traineddata.gz` (1.98MB, English trained data). All four given restored license
+   header comments (same practice this file's own vendored MapLibre/PMTiles files already
+   established) and logged in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). **Real,
+   named limitation**: camera access needs a secure context (HTTPS or literally
+   `localhost`) — browser policy, not something this app controls — so barcode/OCR only
+   work when the cockpit is opened as `http://localhost:8085` on the machine itself, not
+   from another device on the LAN by IP/hostname; the UI says so plainly rather than
+   failing silently. **Verified end-to-end for real, not just by reading the code**: ran
+   the actual vendored Tesseract pipeline (worker + core WASM + English training data, all
+   served from `vendor/`) against a synthetic canvas image reading "EXP 12/25/2026" in a
+   live browser check — came back `"EXP 12/25/20"` (a real, honest OCR imperfection on a
+   small rendered date, not a pipeline failure), and the date-extraction regex correctly
+   pulled `12/25/20` out of it. Open Food Facts (`world.openfoodfacts.org`) is the one real
+   external call this feature makes, by barcode only, for product-name lookup and a
+   real per-100g kcal reference (deliberately NOT auto-filled into the new
+   `kcal_per_unit` field, since Open Food Facts reports energy per 100g while that field
+   means per-package-unit — conflating the two would misrepresent whatever the real
+   package size is, so the per-100g figure is shown as reference text instead). OCR results
+   are always shown as an editable suggestion, never auto-applied — a stamped expiry date
+   is genuinely hard to read perfectly, and this project doesn't silently trust a guess.
 3. ~~**Self-sufficiency nutrition calculator + winter gap analysis**~~ — ✅ **done,
    2026-11-22**, scoped to calories only, not protein/vitamins (see below for why). New
    `kcal_per_unit` column on `inventory` (nullable — NULL means "not entered," never
@@ -1421,14 +1449,16 @@ first:**
    real cross-links into the USDA Canning Guide/Cook Books those same two ledgers already
    gained in Phase 8 #2 above.
 
-Items 3-5 closed 2026-11-22, per Frank's own instruction to clear this whole backlog ("i
-dont want anything left to do on these items") — item 2 (barcode/OCR) follows immediately
-below, same pass. All verified against the real running stack (schema confirmed via
-`PRAGMA table_info`, every new endpoint exercised with real `curl`/browser JS calls, test
-data entered then cleaned back out of Frank's actual real pantry/livestock records
-afterward, not left behind) rather than assumed correct from the diff alone. 92 existing
-Python tests still pass unchanged (`test_scanner_bridge_live.py` remains excluded — a
-pre-existing, unrelated `websockets` import gap in this sandbox, not something this pass
+**All of Phase 7 is closed as of 2026-11-22** (items 2-5; item 1 was already done
+2026-11-06), per Frank's own instruction to clear this whole backlog ("i dont want
+anything left to do on these items"). All verified against the real running stack
+(schema confirmed via `PRAGMA table_info`, every new endpoint exercised with real
+`curl`/browser JS calls, the real vendored OCR pipeline run end-to-end against a synthetic
+test image, test data entered then cleaned back out of Frank's actual real pantry/
+livestock records afterward, not left behind) rather than assumed correct from the diff
+alone. 92 existing Python tests still pass unchanged (`test_scanner_bridge_live.py`
+remains excluded — a pre-existing, unrelated `websockets` import gap in this sandbox, not
+something this pass
 touched or introduced).
 ## Phase 8 — Content discoverability: three real libraries, zero cross-links, not started
 

@@ -76,6 +76,13 @@
         .category-tab { display: none; }
         .category-tab.active { display: block; }
     </style>
+    <!-- Vendored, not CDN-loaded -- see THIRD_PARTY_LICENSES.md. Backs the
+         real barcode-scan + offline expiry-date OCR feature on the Food
+         Provisions ledger (Phase 7 #2); loading either from a CDN at
+         runtime would break the one real promise this whole project
+         makes ("zero external internet dependency once installed"). -->
+    <script src="vendor/zxing/zxing.min.js"></script>
+    <script src="vendor/tesseract/tesseract.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -201,6 +208,8 @@
                     <option value="Fresh/Unprocessed">Fresh/Unprocessed</option>
                 </select>
                 <button class="action-btn" onclick="addNewItem('food')">+ Commit Entry</button>
+                <button class="action-btn" onclick="openBarcodeScanner()">📷 Scan Barcode</button>
+                <button class="action-btn" onclick="openExpiryOcr()">📝 Scan Expiry (OCR)</button>
             </div>
             <table>
                 <thead><tr><th>Item / Description</th><th>Location</th><th>Quantity On Hand</th><th>Exp Date / Status</th><th>Low-Stock At</th><th>kcal/unit</th><th>Preservation</th><th>Status</th><th style="width:100px;">Actions</th></tr></thead>
@@ -311,6 +320,38 @@
                     <thead><tr><th>Date</th><th>Amount</th><th>Unit</th><th style="width:80px;">Actions</th></tr></thead>
                     <tbody id="productionLogBody"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- BARCODE SCANNER MODAL (Phase 7 #2) -->
+        <div id="barcodeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:520px; width:90%;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h2 style="margin:0; border:none; padding:0;">📷 Scan Barcode</h2>
+                    <button class="action-btn" onclick="closeBarcodeScanner()">✕ Close</button>
+                </div>
+                <div id="barcodeStatus" style="color:var(--text-dim); font-size:0.85rem; margin-bottom:10px;">Starting camera…</div>
+                <video id="barcodeVideo" style="width:100%; border-radius:6px; background:#000; display:none;" muted playsinline></video>
+            </div>
+        </div>
+
+        <!-- EXPIRY-DATE OCR MODAL (Phase 7 #2) -->
+        <div id="ocrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:24px; max-width:520px; width:90%;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h2 style="margin:0; border:none; padding:0;">📝 Scan Expiry Date (offline OCR)</h2>
+                    <button class="action-btn" onclick="closeExpiryOcr()">✕ Close</button>
+                </div>
+                <p style="color:var(--text-dim); font-size:0.82rem; margin:0 0 10px;">Frame the printed expiry date, then capture. Runs entirely offline (Tesseract.js, vendored locally) — nothing is sent anywhere. OCR on a small stamped date is genuinely imperfect: the raw text below is a suggestion to review and edit, never applied automatically.</p>
+                <div id="ocrStatus" style="color:var(--text-dim); font-size:0.85rem; margin-bottom:10px;">Starting camera…</div>
+                <video id="ocrVideo" style="width:100%; border-radius:6px; background:#000; display:none;" muted playsinline></video>
+                <canvas id="ocrCanvas" style="display:none;"></canvas>
+                <button class="action-btn" id="ocrCaptureBtn" style="margin-top:10px; display:none;" onclick="captureAndRunOcr()">Capture &amp; Read</button>
+                <div id="ocrResult" style="margin-top:12px; display:none;">
+                    <label style="font-size:0.8rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;">Raw OCR text — edit before using</label>
+                    <input type="text" id="ocrResultText" style="width:100%; margin-top:6px;">
+                    <button class="action-btn" style="margin-top:10px;" onclick="applyOcrToExpiry()">Use as Exp Date / Status</button>
+                </div>
             </div>
         </div>
 
@@ -955,6 +996,172 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
             } catch (err) {
                 console.error('refreshLivestockAnalytics failed:', err);
             }
+        }
+
+        // --- BARCODE SCAN + OFFLINE OCR (Phase 7 #2) ---
+        // Real, documented browser constraint, not a bug if it misfires:
+        // getUserMedia only works in a "secure context" -- HTTPS, or the
+        // literal hostname localhost/127.0.0.1. Citadel's cockpit is
+        // plain LAN HTTP by design (http://<host>:8085), so camera
+        // features here only work when the cockpit is opened AS
+        // localhost on the machine actually running Citadel, not from
+        // another device on the LAN by IP/hostname -- the same real
+        // limitation this project already documented for Muster/
+        // qrcoder's own PWA caching (see ROADMAP.md's QR-code entry).
+        function cameraAvailable() {
+            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) &&
+                (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+        }
+
+        let barcodeStream = null;
+        let zxingReader = null;
+
+        async function openBarcodeScanner() {
+            document.getElementById('barcodeModal').style.display = 'flex';
+            const statusEl = document.getElementById('barcodeStatus');
+            const video = document.getElementById('barcodeVideo');
+            if (!cameraAvailable()) {
+                statusEl.textContent = 'Camera access needs a secure context -- open the cockpit as http://localhost:8085 on this machine, not by its LAN IP/hostname from another device.';
+                return;
+            }
+            try {
+                barcodeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = barcodeStream;
+                video.style.display = 'block';
+                await video.play();
+                statusEl.textContent = 'Point the camera at a barcode…';
+                zxingReader = new ZXing.BrowserMultiFormatReader();
+                zxingReader.decodeFromVideoElement(video, (result, err) => {
+                    if (result) onBarcodeDecoded(result.getText());
+                });
+            } catch (err) {
+                statusEl.textContent = `Could not access the camera: ${err.message}`;
+            }
+        }
+
+        function stopBarcodeStream() {
+            if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+            if (barcodeStream) { barcodeStream.getTracks().forEach(t => t.stop()); barcodeStream = null; }
+        }
+
+        function closeBarcodeScanner() {
+            stopBarcodeStream();
+            document.getElementById('barcodeModal').style.display = 'none';
+            document.getElementById('barcodeVideo').style.display = 'none';
+        }
+
+        // The one real external call this whole feature makes -- only the
+        // scanned barcode number is sent, to Open Food Facts' real free,
+        // keyless public API, the same real product database Prepper_Log
+        // itself uses for this exact purpose (see this item's own
+        // ROADMAP.md entry). Everything else here (the camera feed, the
+        // decode, the OCR) stays entirely on this machine.
+        async function onBarcodeDecoded(barcode) {
+            stopBarcodeStream();
+            document.getElementById('barcodeStatus').textContent = `Decoded ${barcode} — looking it up…`;
+            try {
+                const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(barcode)}.json`);
+                const data = await res.json();
+                if (data.status === 1 && data.product) {
+                    const name = data.product.product_name || data.product.generic_name || `Barcode ${barcode}`;
+                    document.getElementById('add_food_desc').value = name;
+                    // Open Food Facts reports energy per 100g, not "per
+                    // unit" the way this ledger's own kcal_per_unit field
+                    // means it -- real, honest gap: pre-filling it as
+                    // though 1 unit = 100g would misrepresent whatever
+                    // the real package size actually is, so it's left
+                    // for the operator to enter once they know the real
+                    // serving/package size, with the per-100g figure
+                    // shown here as a real reference, not silently used.
+                    const kcalPer100g = data.product.nutriments && data.product.nutriments['energy-kcal_100g'];
+                    document.getElementById('barcodeStatus').innerHTML = `Found: <strong>${name}</strong>${kcalPer100g ? ` — ${kcalPer100g} kcal/100g (enter kcal/unit yourself once you know this package's real size)` : ''}`;
+                } else {
+                    document.getElementById('barcodeStatus').textContent = `Barcode ${barcode} decoded, but Open Food Facts has no listing for it -- enter the item by hand.`;
+                }
+            } catch (err) {
+                document.getElementById('barcodeStatus').textContent = `Barcode ${barcode} decoded, but the Open Food Facts lookup failed (${err.message}) -- needs internet for this one step; enter the item by hand.`;
+            }
+            setTimeout(closeBarcodeScanner, 2500);
+        }
+
+        let ocrStream = null;
+
+        async function openExpiryOcr() {
+            document.getElementById('ocrModal').style.display = 'flex';
+            document.getElementById('ocrResult').style.display = 'none';
+            const statusEl = document.getElementById('ocrStatus');
+            const video = document.getElementById('ocrVideo');
+            if (!cameraAvailable()) {
+                statusEl.textContent = 'Camera access needs a secure context -- open the cockpit as http://localhost:8085 on this machine, not by its LAN IP/hostname from another device.';
+                return;
+            }
+            try {
+                ocrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = ocrStream;
+                video.style.display = 'block';
+                await video.play();
+                statusEl.textContent = 'Frame the expiry date, then Capture & Read.';
+                document.getElementById('ocrCaptureBtn').style.display = 'inline-block';
+            } catch (err) {
+                statusEl.textContent = `Could not access the camera: ${err.message}`;
+            }
+        }
+
+        function closeExpiryOcr() {
+            if (ocrStream) { ocrStream.getTracks().forEach(t => t.stop()); ocrStream = null; }
+            document.getElementById('ocrModal').style.display = 'none';
+            document.getElementById('ocrVideo').style.display = 'none';
+            document.getElementById('ocrCaptureBtn').style.display = 'none';
+        }
+
+        async function captureAndRunOcr() {
+            const video = document.getElementById('ocrVideo');
+            const canvas = document.getElementById('ocrCanvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            const statusEl = document.getElementById('ocrStatus');
+            statusEl.textContent = 'Reading (offline, first run loads the local OCR engine -- a few seconds)…';
+            document.getElementById('ocrCaptureBtn').disabled = true;
+            try {
+                // Explicit oem=1 (LSTM_ONLY, Tesseract 4+'s own recommended
+                // default) because the single core variant vendored here
+                // (tesseract-core-simd-lstm.wasm.js) is specifically the
+                // SIMD+LSTM build -- confirmed by checking worker.min.js's
+                // own real set of 4 possible core filenames before
+                // vendoring only one of them, not assumed. Every browser
+                // old enough to lack WASM SIMD (2021 or earlier) can't use
+                // OCR here; a real, named limitation, not a silent failure.
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    workerPath: 'vendor/tesseract/worker.min.js',
+                    corePath: 'vendor/tesseract/',
+                    langPath: 'vendor/tesseract/lang-data/',
+                });
+                const { data: { text } } = await worker.recognize(canvas);
+                await worker.terminate();
+
+                // A real stamped expiry date is rarely the only text OCR
+                // finds (packaging text, lot codes) -- surface a cleaned,
+                // single-line guess (the longest date-shaped substring if
+                // one parses, else the raw trimmed text) as an editable
+                // suggestion, never auto-applied.
+                const dateMatch = text.match(/\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}|[A-Za-z]{3,9}\.?\s+\d{1,2},?\s+\d{4})\b/);
+                const suggestion = (dateMatch ? dateMatch[0] : text.trim().split('\n')[0] || '(no text found)').trim();
+
+                document.getElementById('ocrResultText').value = suggestion;
+                document.getElementById('ocrResult').style.display = 'block';
+                statusEl.textContent = 'Done -- review the suggestion below before using it.';
+            } catch (err) {
+                statusEl.textContent = `OCR failed: ${err.message}`;
+            } finally {
+                document.getElementById('ocrCaptureBtn').disabled = false;
+            }
+        }
+
+        function applyOcrToExpiry() {
+            document.getElementById('add_food_exp').value = document.getElementById('ocrResultText').value;
+            closeExpiryOcr();
         }
 
         // --- GARDEN MATRIX STATE MACHINE BACKENDS ---
