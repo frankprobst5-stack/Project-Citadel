@@ -98,6 +98,15 @@ class WikiAttachmentTests(unittest.TestCase):
         listed = wiki.list_wiki_attachments(conn)
         self.assertEqual(listed[0]["tags"], ["power", "generator"])
 
+    def test_search_matches_filename_title_and_tags(self):
+        conn = fresh_db()
+        wiki.add_wiki_attachment(conn, "pdf", "Medical/Where-There-is-no-Doctor.pdf", title="Where There is no Doctor", tags=["Medical"])
+        wiki.add_wiki_attachment(conn, "video", "Cooking/bread-basics.webm", title="Bread Basics", tags=["Cooking"])
+        self.assertEqual(len(wiki.search_wiki_attachments(conn, "doctor")), 1)
+        self.assertEqual(len(wiki.search_wiki_attachments(conn, "Medical")), 1, "should match on tags")
+        self.assertEqual(len(wiki.search_wiki_attachments(conn, "bread")), 1, "should match on filename")
+        self.assertEqual(len(wiki.search_wiki_attachments(conn, "nonexistent")), 0)
+
 
 class Iso8601DurationTests(unittest.TestCase):
     def test_hours_and_minutes(self):

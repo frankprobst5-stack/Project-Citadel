@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 import sqlite3
 import os
 import json
@@ -441,27 +441,17 @@ def scan_media_folder(base_folder):
     return categories_data
 
 # --- APP LANDING INTERFACE ROUTING ---
-
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
-
-@app.route('/videos', methods=['GET'])
-def list_videos():
-    data = scan_media_folder('videos')
-    return render_template('videos.html', categories=data)
-
-@app.route('/mp3', methods=['GET'])
-@app.route('/mp3s', methods=['GET'])
-def list_mp3s():
-    data = scan_media_folder('mp3s')
-    return render_template('mp3.html', categories=data)
-
-@app.route('/pdf', methods=['GET'])
-@app.route('/pdfs', methods=['GET'])
-def list_pdfs():
-    data = scan_media_folder('pdfs')
-    return render_template('pdf.html', categories=data)
+#
+# The old gallery page routes (`/`, `/videos`, `/mp3`, `/pdf` -- full
+# HTML pages rendering templates/{index,videos,mp3,pdf}.html) are
+# retired as of 2026-11-24: wiki.html's own Media Library is the real
+# browsing UI for this content now (see scripts/backfill_media_to_wiki.py),
+# grouped by category with real search, not a bare folder scan. The
+# underlying scan_media_folder()/`/api/media/*` JSON API below is NOT
+# retired -- board.html, sources.html, and medical.html's own upload
+# feature all still call it directly, unrelated to the page views being
+# removed here. `/files/...` streaming also stays; the Media Library's
+# own attachmentOpenUrl() depends on it.
 
 # --- DYNAMIC OFFLINE FILE STREAMING ENDPOINTS ---
 
@@ -2489,32 +2479,25 @@ def _search_kiwix(query):
     return results
 
 def _search_vault(query):
-    """Real filename + category search across the Vault's own PDF and
-    video folders -- the same scan_media_folder() the /pdf and /videos
-    routes already use, so this never drifts from what those pages
-    actually show."""
-    results = []
-    q = query.lower()
-    for kind, link_base in (("pdfs", "pdf"), ("videos", "videos")):
-        categories = scan_media_folder(kind)
-        for category, files in categories.items():
-            if q in category.lower():
-                results.append({
-                    "source": f"vault_{link_base}",
-                    "title": category,
-                    "subtitle": f"Vault {('PDF' if link_base == 'pdf' else 'Video')} category ({len(files)} files)",
-                    "link": f"/{link_base}?category={urlquote(category)}",
-                })
-                continue  # category itself already matched -- don't also list every file in it
-            for f in files:
-                if q in f.lower():
-                    results.append({
-                        "source": f"vault_{link_base}",
-                        "title": f,
-                        "subtitle": f"Vault {('PDF' if link_base == 'pdf' else 'Video')} — {category}",
-                        "link": f"/{link_base}?category={urlquote(category)}",
-                    })
-    return results
+    """Real filename/title/tag search over wiki_attachments -- replaces
+    the old scan_media_folder()-based search now that /pdf and /videos
+    (the page routes those links pointed to) are retired in favor of
+    wiki.html's own Media Library. Links there with ?media=<query> so
+    the result opens the Library pre-filtered to the same search text,
+    same real mechanism the Library's own search box already uses --
+    covers mp3s too, which the old version never did."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        attachments = wiki.search_wiki_attachments(conn, query)
+    finally:
+        conn.close()
+    icons = {"video": "Video", "audio": "Audio", "pdf": "PDF", "image": "Image"}
+    return [{
+        "source": f"wiki_attachment_{a['kind']}",
+        "title": a["title"] or a["filename"].split("/", 1)[-1],
+        "subtitle": f"Vault {icons.get(a['kind'], a['kind'])} — {(a['tags'] or ['Uncategorized'])[0]}",
+        "link": f"/wiki.html?media={urlquote(query)}",
+    } for a in attachments]
 
 def _search_baneward(query):
     """Real species-name search against Baneward's own live database --

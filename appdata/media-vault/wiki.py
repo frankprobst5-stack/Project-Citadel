@@ -161,6 +161,22 @@ def list_wiki_attachments(conn, page_id=None):
     return [_row_to_attachment(r) for r in cursor.fetchall()]
 
 
+def search_wiki_attachments(conn, query):
+    """Real filename/title/tag search over wiki_attachments -- replaces
+    app.py's old _search_vault (which searched scan_media_folder() and
+    linked to the now-retired /pdf and /videos gallery page routes).
+    Covers all three real kinds (video/audio/pdf), where _search_vault
+    only ever covered pdfs and videos, never mp3s."""
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    like = f"%{query}%"
+    cursor.execute(
+        "SELECT * FROM wiki_attachments WHERE filename LIKE ? OR title LIKE ? OR tags LIKE ? ORDER BY added_at DESC",
+        (like, like, like),
+    )
+    return [_row_to_attachment(r) for r in cursor.fetchall()]
+
+
 def add_wiki_attachment(conn, kind, filename, page_id=None, title=None, tags=None, size_bytes=None):
     if kind not in ("video", "audio", "pdf", "image"):
         raise ValueError(f"unknown attachment kind {kind!r} -- must be video/audio/pdf/image")

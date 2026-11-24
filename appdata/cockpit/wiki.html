@@ -298,6 +298,20 @@
             }
         }
 
+        // Deep-link support for ?media=<query> -- same real mechanism
+        // other pages' own cross-links (medical.html, logistics.html,
+        // board.html, and /api/search's own _search_vault results) use
+        // to jump straight into the Media Library pre-filtered, since
+        // this view has no per-item permalink of its own, just a filter.
+        async function openMediaLibraryFromQuery() {
+            const params = new URLSearchParams(location.search);
+            const media = params.get('media');
+            if (media === null) return;
+            await openMediaLibrary();
+            document.getElementById('mediaSearchBar').value = media;
+            renderMediaLibrary();
+        }
+
         function switchSection(section) {
             currentSection = section;
             document.querySelectorAll('#sectionTabs .cat-tab-btn').forEach(btn => {
@@ -668,6 +682,7 @@
         }
 
         loadPages();
+        openMediaLibraryFromQuery();
     </script>
 </body>
 </html>
