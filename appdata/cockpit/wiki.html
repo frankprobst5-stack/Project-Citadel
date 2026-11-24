@@ -75,6 +75,13 @@
 
         .attachment-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; font-size: 0.85rem; }
 
+        .media-group { margin-bottom: 18px; }
+        .media-group-head { font-family: monospace; font-size: 0.8rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px dashed var(--border-dim); padding-bottom: 4px; }
+        .media-item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+        .media-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 10px; font-size: 0.85rem; }
+        .media-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .media-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
         .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; max-width: 640px; width: 90%; max-height: 85vh; overflow-y: auto; }
         .modal-box h2 { margin: 0; border: none; padding: 0; }
@@ -100,16 +107,39 @@
         <div class="panel-controls">
             <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search pages..." oninput="renderList()">
             <div style="display:flex; gap:10px;">
+                <button class="action-btn" onclick="openMediaLibrary()">📁 Media Library</button>
                 <button class="action-btn" onclick="openImportModal()">🔗 Import Recipe from URL</button>
                 <button class="action-btn" onclick="newPage()">+ New Page</button>
             </div>
         </div>
 
-        <div class="wiki-grid">
+        <div class="wiki-grid" id="wikiGrid">
             <div class="wiki-list" id="wikiList"></div>
             <div class="wiki-detail" id="wikiDetail">
                 <div class="wiki-empty">Select a page on the left, or create a new one.</div>
             </div>
+        </div>
+
+        <!-- MEDIA LIBRARY -- replaces the old folder-scan /videos /mp3 /pdf
+             gallery pages: every video/audio/pdf is a real wiki_attachments
+             row now (see scripts/backfill_media_to_wiki.py), not just a
+             filename on disk, so it can carry tags and show up here
+             without a page of its own. -->
+        <div class="wiki-detail" id="mediaLibrary" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h2 style="margin:0;">📁 Media Library</h2>
+                <button class="action-btn" onclick="closeMediaLibrary()">⬅ Back to Pages</button>
+            </div>
+            <div class="panel-controls">
+                <input type="text" class="search-bar" id="mediaSearchBar" placeholder="🔍 Search filename or category..." oninput="renderMediaLibrary()">
+                <div class="cat-tab-bar" id="mediaKindTabs" style="margin:0; border-bottom:none;">
+                    <button class="cat-tab-btn active" data-kind="all" onclick="switchMediaKind('all')">All</button>
+                    <button class="cat-tab-btn" data-kind="video" onclick="switchMediaKind('video')">🎬 Video</button>
+                    <button class="cat-tab-btn" data-kind="audio" onclick="switchMediaKind('audio')">🎧 Audio</button>
+                    <button class="cat-tab-btn" data-kind="pdf" onclick="switchMediaKind('pdf')">📄 PDF</button>
+                </div>
+            </div>
+            <div id="mediaLibraryBody"></div>
         </div>
     </div>
 
@@ -378,7 +408,7 @@
                     <div id="attachmentList"></div>
                     <div class="add-ribbon">
                         <select id="attachKind"><option value="video">Video</option><option value="audio">Audio</option><option value="pdf">PDF</option><option value="image">Image</option></select>
-                        <input type="text" id="attachFilename" placeholder="Filename (as it exists in the Vault)..." style="flex-grow:1;">
+                        <input type="text" id="attachFilename" placeholder="category/filename.ext (as it exists in the Vault)..." style="flex-grow:1;">
                         <input type="text" id="attachTitle" placeholder="Title (optional)..." style="flex-grow:1;">
                         <button class="action-btn" onclick="addAttachment('${page.id}')">+ Attach</button>
                     </div>
@@ -464,6 +494,91 @@
         async function deleteAttachment(id, pageId) {
             await fetch(`/api/wiki/attachments/${id}`, { method: 'DELETE' });
             await loadAttachments(pageId);
+        }
+
+        // --- Media Library -- replaces the old folder-scan gallery pages ---
+
+        let allAttachments = [];
+        let mediaKindFilter = 'all';
+
+        // Mirrors app.py's own /files/<...>/<category>/<filename> streaming
+        // routes exactly (stream_mp3/stream_pdf/stream_video) -- note "mp3"
+        // is singular there even though the folder is "mp3s". Attachments
+        // store filename as "category/basename" (see
+        // scripts/backfill_media_to_wiki.py) so this just needs to split
+        // that back apart; returns null for kinds with no stream route
+        // (image -- no image folder/route exists in the Vault yet).
+        function attachmentOpenUrl(a) {
+            const routeKind = { video: 'videos', audio: 'mp3', pdf: 'pdfs' }[a.kind];
+            if (!routeKind) return null;
+            const slash = a.filename.indexOf('/');
+            if (slash === -1) return null; // no category prefix -- can't resolve to a real stream path
+            const category = a.filename.slice(0, slash);
+            const basename = a.filename.slice(slash + 1);
+            return `/files/${routeKind}/${encodeURIComponent(category)}/${encodeURIComponent(basename)}`;
+        }
+
+        async function openMediaLibrary() {
+            document.getElementById('wikiGrid').style.display = 'none';
+            document.getElementById('mediaLibrary').style.display = 'block';
+            const res = await fetch('/api/wiki/attachments');
+            allAttachments = await res.json();
+            renderMediaLibrary();
+        }
+
+        function closeMediaLibrary() {
+            document.getElementById('mediaLibrary').style.display = 'none';
+            document.getElementById('wikiGrid').style.display = 'grid';
+        }
+
+        function switchMediaKind(kind) {
+            mediaKindFilter = kind;
+            document.querySelectorAll('#mediaKindTabs .cat-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.kind === kind);
+            });
+            renderMediaLibrary();
+        }
+
+        function renderMediaLibrary() {
+            const q = document.getElementById('mediaSearchBar').value.trim().toLowerCase();
+            const filtered = allAttachments.filter(a => {
+                if (mediaKindFilter !== 'all' && a.kind !== mediaKindFilter) return false;
+                if (!q) return true;
+                return a.filename.toLowerCase().includes(q) || (a.title || '').toLowerCase().includes(q) || (a.tags || []).some(t => t.toLowerCase().includes(q));
+            });
+            const body = document.getElementById('mediaLibraryBody');
+            if (filtered.length === 0) {
+                body.innerHTML = '<div class="wiki-empty">No matching files.</div>';
+                return;
+            }
+            const groups = {};
+            for (const a of filtered) {
+                const cat = (a.tags && a.tags[0]) || 'Uncategorized';
+                (groups[cat] = groups[cat] || []).push(a);
+            }
+            const icons = { video: '🎬', audio: '🎧', pdf: '📄', image: '🖼️' };
+            body.innerHTML = Object.keys(groups).sort().map(cat => {
+                const items = groups[cat].map(a => {
+                    const url = attachmentOpenUrl(a);
+                    const name = a.title || a.filename.slice(a.filename.indexOf('/') + 1);
+                    return `
+                        <div class="media-item">
+                            <span class="media-item-name">${icons[a.kind] || '📎'} ${escapeHtml(name)}</span>
+                            <span class="media-item-actions">
+                                ${url ? `<button class="action-btn" onclick="window.open('${url}', '_blank')">Open</button>` : ''}
+                                <button class="action-btn del-btn" onclick="deleteGlobalAttachment('${a.id}')">Remove</button>
+                            </span>
+                        </div>`;
+                }).join('');
+                return `<div class="media-group"><div class="media-group-head">${escapeHtml(cat)} (${groups[cat].length})</div><div class="media-item-grid">${items}</div></div>`;
+            }).join('');
+        }
+
+        async function deleteGlobalAttachment(id) {
+            if (!confirm('Remove this file from the library? This only removes the catalog entry, not the real file on disk.')) return;
+            await fetch(`/api/wiki/attachments/${id}`, { method: 'DELETE' });
+            allAttachments = allAttachments.filter(a => a.id !== id);
+            renderMediaLibrary();
         }
 
         // --- Recipe import modal ---
