@@ -184,6 +184,7 @@ services:
       - ./appdata/media-vault/videos:/app/videos
       - ./appdata/media-vault/mp3s:/app/mp3s
       - ./appdata/media-vault/pdfs:/app/pdfs
+      - ./appdata/media-vault/images:/app/images
       - ./appdata/media-vault/notes-data:/app/notes-data
       # Real backup/restore (/api/backup/*), added 2026-09-13 -- vault-api
       # needs to see the OTHER services' real data (it only had its own

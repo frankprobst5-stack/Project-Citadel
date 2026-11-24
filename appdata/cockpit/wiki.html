@@ -502,14 +502,14 @@
         let mediaKindFilter = 'all';
 
         // Mirrors app.py's own /files/<...>/<category>/<filename> streaming
-        // routes exactly (stream_mp3/stream_pdf/stream_video) -- note "mp3"
-        // is singular there even though the folder is "mp3s". Attachments
-        // store filename as "category/basename" (see
-        // scripts/backfill_media_to_wiki.py) so this just needs to split
-        // that back apart; returns null for kinds with no stream route
-        // (image -- no image folder/route exists in the Vault yet).
+        // routes exactly (stream_mp3/stream_pdf/stream_video/stream_image)
+        // -- note "mp3" is singular there even though the folder is
+        // "mp3s". Attachments store filename as "category/basename" (see
+        // scripts/backfill_media_to_wiki.py and
+        // scripts/migrate_mealie_recipes_to_wiki.py) so this just needs
+        // to split that back apart.
         function attachmentOpenUrl(a) {
-            const routeKind = { video: 'videos', audio: 'mp3', pdf: 'pdfs' }[a.kind];
+            const routeKind = { video: 'videos', audio: 'mp3', pdf: 'pdfs', image: 'images' }[a.kind];
             if (!routeKind) return null;
             const slash = a.filename.indexOf('/');
             if (slash === -1) return null; // no category prefix -- can't resolve to a real stream path

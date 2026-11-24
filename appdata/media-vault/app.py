@@ -3,9 +3,22 @@ import sqlite3
 import os
 import json
 import hmac
+import mimetypes
 import requests
 import threading
 import time
+
+# Real bug found live (2026-11-24): stream_image (and send_from_directory
+# generally) relies on Python's mimetypes module, which reads the host
+# OS's own /etc/mime.types -- Alpine's base image (this container's own
+# FROM python:3.10-alpine, see Dockerfile) doesn't register .webp at
+# all, so every real .webp recipe image served as the generic
+# "application/octet-stream" instead of "image/webp" (confirmed: this
+# same guess_type() call returns a real answer on a normal desktop
+# Linux host, and None inside this exact container). Registering it
+# explicitly here fixes it everywhere send_from_directory/send_file is
+# used, not just one route, and needs no Alpine package or image rebuild.
+mimetypes.add_type("image/webp", ".webp")
 
 from scanner_config import (
     build_config,
@@ -475,6 +488,19 @@ def stream_video(category, filename):
     if not _is_safe_category(category):
         return "Invalid category", 400
     safe_path = f"/app/videos/{category}"
+    return send_from_directory(safe_path, filename)
+
+# Images -- new kind, backing wiki_attachments' own 'image' kind (real
+# in the schema since wiki.py's own add_wiki_attachment validation, but
+# with no real folder/stream route until recipe images needed one --
+# see scripts/migrate_mealie_recipes_to_wiki.py). Same safe_path pattern
+# as the three routes above; images/ sits alongside videos/mp3s/pdfs/ as
+# its own top-level Vault folder.
+@app.route('/files/images/<category>/<filename>', methods=['GET'])
+def stream_image(category, filename):
+    if not _is_safe_category(category):
+        return "Invalid category", 400
+    safe_path = f"/app/images/{category}"
     return send_from_directory(safe_path, filename)
 # --- INVENTORY API ENDPOINTS ---
 
