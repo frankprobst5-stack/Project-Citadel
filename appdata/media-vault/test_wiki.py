@@ -88,6 +88,16 @@ class WikiAttachmentTests(unittest.TestCase):
         wiki.delete_wiki_attachment(conn, created["id"])
         self.assertEqual(wiki.list_wiki_attachments(conn), [])
 
+    def test_list_decodes_tags_as_a_real_list_not_a_json_string(self):
+        # Real bug found live (2026-11-24): list_wiki_attachments returned
+        # tags as the raw '["x"]' string straight from the column instead
+        # of a decoded list, inconsistent with how pages already handle
+        # this same column shape via _row_to_page.
+        conn = fresh_db()
+        wiki.add_wiki_attachment(conn, "pdf", "manual.pdf", tags=["power", "generator"])
+        listed = wiki.list_wiki_attachments(conn)
+        self.assertEqual(listed[0]["tags"], ["power", "generator"])
+
 
 class Iso8601DurationTests(unittest.TestCase):
     def test_hours_and_minutes(self):

@@ -145,6 +145,12 @@ def search_wiki_pages(conn, query):
 
 # --- Attachments --------------------------------------------------------
 
+def _row_to_attachment(row):
+    attachment = dict(row)
+    attachment["tags"] = json.loads(attachment["tags"]) if attachment.get("tags") else []
+    return attachment
+
+
 def list_wiki_attachments(conn, page_id=None):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -152,7 +158,7 @@ def list_wiki_attachments(conn, page_id=None):
         cursor.execute("SELECT * FROM wiki_attachments WHERE page_id = ? ORDER BY added_at DESC", (page_id,))
     else:
         cursor.execute("SELECT * FROM wiki_attachments ORDER BY added_at DESC")
-    return [dict(r) for r in cursor.fetchall()]
+    return [_row_to_attachment(r) for r in cursor.fetchall()]
 
 
 def add_wiki_attachment(conn, kind, filename, page_id=None, title=None, tags=None, size_bytes=None):

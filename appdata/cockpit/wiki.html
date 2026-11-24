@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="vault-auth.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITADEL // UNIFIED WIKI</title>
+    <link rel="icon" type="image/svg+xml" href="citadel-favicon.svg">
+    <style>
+        :root {
+            /* Citadel Ecosystem brand palette, adopted 2026-09-18 -- see index.html */
+            --bg: #05090d; --panel: #071a2c; --panel-alt: #0a2038; --border: #2a4a66; --border-dim: #16283a;
+            --text: #e7f1f8; --text-dim: #aebbc7; --text-faint: #71899d;
+            --accent: #008dff; --accent-bright: #28c8ff; --amber: #ffb000; --green: #59d67c; --red: #e05252;
+        }
+        body { font-family: 'Ubuntu', sans-serif; background: var(--bg); color: var(--text); padding: 25px; margin: 0; box-sizing: border-box; }
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        .header-block { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; }
+        h2, h3 { color: var(--accent-bright); }
+
+        .action-btn { background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .action-btn:hover { background: var(--panel); border-color: var(--accent); }
+        .action-btn.save { background: rgba(89,214,124,0.15); border-color: var(--green); color: var(--green); }
+        .action-btn.save:hover { background: var(--green); color: var(--bg); }
+        .action-btn.del-btn { background: rgba(224,82,82,0.15); border-color: var(--red); color: var(--red); }
+        .action-btn.del-btn:hover { background: var(--red); color: var(--bg); }
+
+        .status-bar { font-family: monospace; font-size: 0.8rem; color: var(--text-faint); margin-top: -10px; margin-bottom: 20px; text-transform: uppercase; }
+
+        .cat-tab-bar { display: flex; gap: 4px; margin-bottom: 15px; border-bottom: 1px solid var(--border-dim); flex-wrap: wrap; }
+        .cat-tab-btn { background: none; border: none; color: var(--text-faint); padding: 10px 18px; font-family: monospace; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 3px solid transparent; }
+        .cat-tab-btn:hover { color: var(--text); }
+        .cat-tab-btn.active { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+
+        .panel-controls { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 15px; background: var(--bg); padding: 10px; border-radius: 4px; border: 1px solid var(--border); }
+        .search-bar { background: var(--panel); border: 1px solid var(--border); color: var(--accent-bright); padding: 8px 12px; font-family: monospace; border-radius: 4px; width: 300px; outline: none; }
+        .search-bar:focus { border-color: var(--accent); }
+
+        .wiki-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+        .wiki-list { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; max-height: 75vh; overflow-y: auto; }
+        .wiki-list-item { padding: 10px 12px; border-radius: 4px; border: 1px solid var(--border-dim); margin-bottom: 6px; cursor: pointer; background: var(--bg); }
+        .wiki-list-item:hover { border-color: var(--accent); }
+        .wiki-list-item.active { border-color: var(--accent-bright); background: var(--panel-alt); }
+        .wiki-list-title { font-weight: bold; display: block; margin-bottom: 4px; }
+        .wiki-list-empty { color: var(--text-faint); font-size: 0.85rem; padding: 20px 10px; text-align: center; }
+
+        .wiki-detail { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 20px; min-height: 300px; }
+        .wiki-empty { color: var(--text-faint); font-size: 0.9rem; padding: 40px 10px; text-align: center; }
+
+        .badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; font-family: monospace; text-transform: uppercase; white-space: nowrap; display: inline-block; }
+        .badge-section { background: rgba(0,141,255,0.15); color: var(--accent-bright); border: 1px solid var(--accent); }
+        .badge-tag { background: var(--panel-alt); color: var(--text-dim); border: 1px solid var(--border); margin-left: 4px; }
+
+        .add-ribbon { display: flex; gap: 10px; background: var(--bg); padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 15px; flex-wrap: wrap; }
+        .add-ribbon input, .add-ribbon select, .wiki-detail input[type=text], .wiki-detail select, .wiki-detail textarea {
+            background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px; font-family: monospace; border-radius: 4px; outline: none; font-size: 0.85rem;
+        }
+        .add-ribbon input:focus, .wiki-detail input:focus, .wiki-detail select:focus, .wiki-detail textarea:focus { border-color: var(--accent); }
+        .wiki-detail label { display: block; font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px; margin: 12px 0 4px; }
+        .wiki-detail input[type=text], .wiki-detail select { width: 100%; box-sizing: border-box; }
+        .wiki-detail textarea { width: 100%; box-sizing: border-box; min-height: 220px; font-family: monospace; resize: vertical; }
+
+        .wiki-body { line-height: 1.6; }
+        .wiki-body ul, .wiki-body ol { padding-left: 22px; }
+        .wiki-body p { margin: 0 0 10px; }
+
+        .attachment-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; font-size: 0.85rem; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; max-width: 640px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .modal-box h2 { margin: 0; border: none; padding: 0; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-block">
+            <h1>📖 PROJECT CITADEL // UNIFIED WIKI</h1>
+            <button class="action-btn" onclick="window.location.href='index.html'">⬅ COCKPIT MATRIX</button>
+        </div>
+        <div class="status-bar">CONTENT LIBRARY // PAGES + ATTACHMENTS + RECIPE IMPORT // ACTIVE</div>
+
+        <div class="cat-tab-bar" id="sectionTabs">
+            <button class="cat-tab-btn active" data-section="all" onclick="switchSection('all')">All</button>
+            <button class="cat-tab-btn" data-section="recipe" onclick="switchSection('recipe')">🍲 Recipes</button>
+            <button class="cat-tab-btn" data-section="manual" onclick="switchSection('manual')">📋 Manuals</button>
+            <button class="cat-tab-btn" data-section="reference" onclick="switchSection('reference')">📚 Reference</button>
+            <button class="cat-tab-btn" data-section="note" onclick="switchSection('note')">📝 Notes</button>
+        </div>
+
+        <div class="panel-controls">
+            <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search pages..." oninput="renderList()">
+            <div style="display:flex; gap:10px;">
+                <button class="action-btn" onclick="openImportModal()">🔗 Import Recipe from URL</button>
+                <button class="action-btn" onclick="newPage()">+ New Page</button>
+            </div>
+        </div>
+
+        <div class="wiki-grid">
+            <div class="wiki-list" id="wikiList"></div>
+            <div class="wiki-detail" id="wikiDetail">
+                <div class="wiki-empty">Select a page on the left, or create a new one.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECIPE IMPORT MODAL -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h2>🔗 Import Recipe from URL</h2>
+                <button class="action-btn" onclick="closeImportModal()">✕ Close</button>
+            </div>
+            <p style="color:var(--text-dim); font-size:0.82rem; margin:0 0 10px;">
+                Works on sites that embed standard recipe markup (schema.org/Recipe) -- most modern recipe blogs do,
+                since it's the same data Google uses for recipe search results. Review everything below before
+                saving; a scrape from a multi-recipe page can grab the wrong one.
+            </p>
+            <div class="add-ribbon">
+                <input type="text" id="importUrl" placeholder="https://example.com/some-recipe" style="flex-grow:1;">
+                <button class="action-btn" onclick="fetchRecipePreview()" id="importFetchBtn">Fetch</button>
+            </div>
+            <div id="importError" style="color:var(--red); font-size:0.85rem; margin-bottom:10px;"></div>
+            <div id="importPreview" style="display:none;">
+                <label>Title</label>
+                <input type="text" id="importTitle">
+                <label>Servings / Time (reference only, not editable)</label>
+                <div id="importMeta" style="color:var(--text-dim); font-size:0.85rem;"></div>
+                <label>Ingredients (one per line)</label>
+                <textarea id="importIngredients" style="min-height:120px;"></textarea>
+                <label>Instructions (one step per line)</label>
+                <textarea id="importInstructions" style="min-height:160px;"></textarea>
+                <button class="action-btn save" style="margin-top:14px;" onclick="saveRecipeFromPreview()">Save as Recipe</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pages = [];
+        let currentSection = 'all';
+        let selectedId = null;
+        let editing = false;
+        let currentAttachments = [];
+        let importPreviewData = null;
+
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        // Deliberately minimal -- this wiki's content is either generated
+        // by recipe_to_markdown() (headers/bullets/numbered steps only) or
+        // hand-written operator notes/manuals, neither of which needs
+        // tables, code blocks, or nested lists. No markdown library is
+        // vendored for this reason (see THIRD_PARTY_LICENSES.md's own
+        // vendoring convention) -- a full library would be the right call
+        // if richer content ever shows up here.
+        function renderMarkdown(md) {
+            const lines = escapeHtml(md || '').split('\n');
+            let html = '';
+            let listMode = null; // 'ul' | 'ol' | null
+            let paragraph = [];
+
+            function inline(text) {
+                return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
+            }
+            function flushParagraph() {
+                if (paragraph.length) {
+                    html += `<p>${inline(paragraph.join(' '))}</p>`;
+                    paragraph = [];
+                }
+            }
+            function closeList() {
+                if (listMode) { html += `</${listMode}>`; listMode = null; }
+            }
+
+            for (const raw of lines) {
+                const line = raw.trim();
+                if (!line) { flushParagraph(); closeList(); continue; }
+                const h3 = line.match(/^##\s+(.*)/);
+                const h2 = line.match(/^#\s+(.*)/);
+                const bullet = line.match(/^[-*]\s+(.*)/);
+                const numbered = line.match(/^\d+[.)]\s+(.*)/);
+                if (h3) { flushParagraph(); closeList(); html += `<h3>${inline(h3[1])}</h3>`; }
+                else if (h2) { flushParagraph(); closeList(); html += `<h2>${inline(h2[1])}</h2>`; }
+                else if (bullet) {
+                    flushParagraph();
+                    if (listMode !== 'ul') { closeList(); html += '<ul>'; listMode = 'ul'; }
+                    html += `<li>${inline(bullet[1])}</li>`;
+                } else if (numbered) {
+                    flushParagraph();
+                    if (listMode !== 'ol') { closeList(); html += '<ol>'; listMode = 'ol'; }
+                    html += `<li>${inline(numbered[1])}</li>`;
+                } else {
+                    closeList();
+                    paragraph.push(line);
+                }
+            }
+            flushParagraph();
+            closeList();
+            return html;
+        }
+
+        async function loadPages() {
+            const res = await fetch('/api/wiki/pages');
+            pages = await res.json();
+            renderList();
+            const hashId = location.hash.slice(1);
+            if (hashId && pages.find(p => p.id === hashId)) {
+                selectPage(hashId);
+            }
+        }
+
+        function switchSection(section) {
+            currentSection = section;
+            document.querySelectorAll('#sectionTabs .cat-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.section === section);
+            });
+            renderList();
+        }
+
+        function renderList() {
+            const q = document.getElementById('searchBar').value.trim().toLowerCase();
+            const filtered = pages.filter(p => {
+                if (currentSection !== 'all' && p.section !== currentSection) return false;
+                if (!q) return true;
+                return p.title.toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q));
+            });
+            const list = document.getElementById('wikiList');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="wiki-list-empty">No pages yet.</div>';
+                return;
+            }
+            list.innerHTML = filtered.map(p => `
+                <div class="wiki-list-item ${p.id === selectedId ? 'active' : ''}" onclick="selectPage('${p.id}')">
+                    <span class="wiki-list-title">${escapeHtml(p.title)}</span>
+                    <span class="badge badge-section">${escapeHtml(p.section)}</span>
+                    ${(p.tags || []).map(t => `<span class="badge badge-tag">${escapeHtml(t)}</span>`).join('')}
+                </div>
+            `).join('');
+        }
+
+        async function selectPage(id) {
+            selectedId = id;
+            editing = false;
+            history.replaceState(null, '', `#${id}`);
+            renderList();
+            const page = pages.find(p => p.id === id);
+            renderDetail(page);
+            await loadAttachments(id);
+        }
+
+        function newPage() {
+            selectedId = null;
+            editing = true;
+            renderList();
+            renderDetail({ id: null, section: 'note', title: '', body_markdown: '', tags: [], recipe_meta: null, source_url: null });
+            currentAttachments = [];
+        }
+
+        function renderDetail(page) {
+            const detail = document.getElementById('wikiDetail');
+            if (!page) { detail.innerHTML = '<div class="wiki-empty">Select a page on the left, or create a new one.</div>'; return; }
+
+            if (editing) {
+                detail.innerHTML = `
+                    <label>Title</label>
+                    <input type="text" id="editTitle" value="${escapeHtml(page.title)}">
+                    <label>Section</label>
+                    <select id="editSection">
+                        ${['recipe','manual','reference','note'].map(s => `<option value="${s}" ${s === page.section ? 'selected' : ''}>${s}</option>`).join('')}
+                    </select>
+                    <label>Tags (comma separated)</label>
+                    <input type="text" id="editTags" value="${escapeHtml((page.tags || []).join(', '))}">
+                    <label>Body (markdown -- headers with #/##, bullets with -, numbered steps with 1.)</label>
+                    <textarea id="editBody">${escapeHtml(page.body_markdown)}</textarea>
+                    <div style="margin-top:14px; display:flex; gap:10px;">
+                        <button class="action-btn save" onclick="savePage('${page.id || ''}')">Save</button>
+                        <button class="action-btn" onclick="cancelEdit()">Cancel</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const recipe = page.recipe_meta;
+            let bodyHtml;
+            if (page.section === 'recipe' && recipe) {
+                const metaBits = [
+                    recipe.servings && `Servings: ${escapeHtml(recipe.servings)}`,
+                    recipe.prep_time && `Prep: ${escapeHtml(recipe.prep_time)}`,
+                    recipe.cook_time && `Cook: ${escapeHtml(recipe.cook_time)}`,
+                    recipe.total_time && `Total: ${escapeHtml(recipe.total_time)}`,
+                ].filter(Boolean).join(' &middot; ');
+                bodyHtml = `
+                    ${metaBits ? `<p style="color:var(--text-dim);">${metaBits}</p>` : ''}
+                    <h3>Ingredients</h3>
+                    <ul>${(recipe.ingredients || []).map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+                    <h3>Instructions</h3>
+                    <ol>${(recipe.instructions || []).map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ol>
+                `;
+            } else {
+                bodyHtml = renderMarkdown(page.body_markdown);
+            }
+
+            detail.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h2 style="margin-bottom:6px;">${escapeHtml(page.title)}</h2>
+                        <span class="badge badge-section">${escapeHtml(page.section)}</span>
+                        ${(page.tags || []).map(t => `<span class="badge badge-tag">${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                    <div style="display:flex; gap:8px; flex-shrink:0;">
+                        <button class="action-btn" onclick="startEdit()">Edit</button>
+                        <button class="action-btn del-btn" onclick="deletePage('${page.id}')">Delete</button>
+                    </div>
+                </div>
+                ${page.source_url ? `<p style="font-size:0.8rem; margin-top:10px;"><a href="${escapeHtml(page.source_url)}" target="_blank" style="color:var(--accent-bright);">Source ↗</a></p>` : ''}
+                <div class="wiki-body" style="margin-top:14px;">${bodyHtml}</div>
+                <div style="margin-top:20px; border-top:1px solid var(--border-dim); padding-top:14px;">
+                    <h3 style="margin-top:0;">Attachments</h3>
+                    <div id="attachmentList"></div>
+                    <div class="add-ribbon">
+                        <select id="attachKind"><option value="video">Video</option><option value="audio">Audio</option><option value="pdf">PDF</option><option value="image">Image</option></select>
+                        <input type="text" id="attachFilename" placeholder="Filename (as it exists in the Vault)..." style="flex-grow:1;">
+                        <input type="text" id="attachTitle" placeholder="Title (optional)..." style="flex-grow:1;">
+                        <button class="action-btn" onclick="addAttachment('${page.id}')">+ Attach</button>
+                    </div>
+                    <p style="color:var(--text-faint); font-size:0.75rem;">References a file already in the Vault's own video/audio/pdf folders -- this doesn't upload a new file itself.</p>
+                </div>
+            `;
+        }
+
+        function startEdit() { editing = true; renderDetail(pages.find(p => p.id === selectedId)); }
+        function cancelEdit() {
+            editing = false;
+            if (selectedId) renderDetail(pages.find(p => p.id === selectedId));
+            else renderDetail(null);
+        }
+
+        async function savePage(existingId) {
+            const payload = {
+                section: document.getElementById('editSection').value,
+                title: document.getElementById('editTitle').value.trim(),
+                body_markdown: document.getElementById('editBody').value,
+                tags: document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(Boolean),
+            };
+            if (!payload.title) { alert('A title is required.'); return; }
+            const res = await fetch(existingId ? `/api/wiki/pages/${existingId}` : '/api/wiki/pages', {
+                method: existingId ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); alert(`Couldn't save: ${err.error || res.statusText}`); return; }
+            const saved = await res.json();
+            editing = false;
+            await loadPages();
+            selectPage(saved.id);
+        }
+
+        async function deletePage(id) {
+            if (!confirm('Delete this page? This also removes its attachment records.')) return;
+            await fetch(`/api/wiki/pages/${id}`, { method: 'DELETE' });
+            selectedId = null;
+            history.replaceState(null, '', location.pathname);
+            await loadPages();
+            renderDetail(null);
+        }
+
+        async function loadAttachments(pageId) {
+            const res = await fetch(`/api/wiki/attachments?page_id=${encodeURIComponent(pageId)}`);
+            currentAttachments = await res.json();
+            renderAttachments();
+        }
+
+        function renderAttachments() {
+            const container = document.getElementById('attachmentList');
+            if (!container) return;
+            if (currentAttachments.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-faint); font-size:0.85rem;">No attachments yet.</p>';
+                return;
+            }
+            const icons = { video: '🎬', audio: '🎧', pdf: '📄', image: '🖼️' };
+            container.innerHTML = currentAttachments.map(a => `
+                <div class="attachment-row">
+                    <span>${icons[a.kind] || '📎'} ${escapeHtml(a.title || a.filename)} <span class="badge badge-tag">${escapeHtml(a.filename)}</span></span>
+                    <button class="action-btn del-btn" onclick="deleteAttachment('${a.id}', '${selectedId}')">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        async function addAttachment(pageId) {
+            const kind = document.getElementById('attachKind').value;
+            const filename = document.getElementById('attachFilename').value.trim();
+            const title = document.getElementById('attachTitle').value.trim();
+            if (!filename) { alert('A filename is required.'); return; }
+            const res = await fetch('/api/wiki/attachments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page_id: pageId, kind, filename, title: title || null }),
+            });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); alert(`Couldn't attach: ${err.error || res.statusText}`); return; }
+            document.getElementById('attachFilename').value = '';
+            document.getElementById('attachTitle').value = '';
+            await loadAttachments(pageId);
+        }
+
+        async function deleteAttachment(id, pageId) {
+            await fetch(`/api/wiki/attachments/${id}`, { method: 'DELETE' });
+            await loadAttachments(pageId);
+        }
+
+        // --- Recipe import modal ---
+
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'flex';
+            document.getElementById('importUrl').value = '';
+            document.getElementById('importError').textContent = '';
+            document.getElementById('importPreview').style.display = 'none';
+            importPreviewData = null;
+        }
+        function closeImportModal() { document.getElementById('importModal').style.display = 'none'; }
+
+        async function fetchRecipePreview() {
+            const url = document.getElementById('importUrl').value.trim();
+            const errEl = document.getElementById('importError');
+            errEl.textContent = '';
+            if (!url) { errEl.textContent = 'Paste a URL first.'; return; }
+            const btn = document.getElementById('importFetchBtn');
+            btn.disabled = true; btn.textContent = 'Fetching...';
+            try {
+                const res = await fetch('/api/wiki/import-recipe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await res.json();
+                if (!res.ok) { errEl.textContent = data.error || 'Import failed.'; return; }
+                importPreviewData = data;
+                document.getElementById('importTitle').value = data.title || '';
+                document.getElementById('importIngredients').value = (data.ingredients || []).join('\n');
+                document.getElementById('importInstructions').value = (data.instructions || []).join('\n');
+                const metaBits = [
+                    data.servings && `Servings: ${data.servings}`,
+                    data.prep_time && `Prep: ${data.prep_time}`,
+                    data.cook_time && `Cook: ${data.cook_time}`,
+                    data.total_time && `Total: ${data.total_time}`,
+                ].filter(Boolean);
+                document.getElementById('importMeta').textContent = metaBits.join(' · ') || '(none found on the page)';
+                document.getElementById('importPreview').style.display = 'block';
+            } catch (e) {
+                errEl.textContent = `Request failed: ${e}`;
+            } finally {
+                btn.disabled = false; btn.textContent = 'Fetch';
+            }
+        }
+
+        async function saveRecipeFromPreview() {
+            const title = document.getElementById('importTitle').value.trim();
+            const ingredients = document.getElementById('importIngredients').value.split('\n').map(s => s.trim()).filter(Boolean);
+            const instructions = document.getElementById('importInstructions').value.split('\n').map(s => s.trim()).filter(Boolean);
+            if (!title) { alert('A title is required.'); return; }
+            const recipe_meta = {
+                ingredients, instructions,
+                servings: importPreviewData?.servings || null,
+                prep_time: importPreviewData?.prep_time || null,
+                cook_time: importPreviewData?.cook_time || null,
+                total_time: importPreviewData?.total_time || null,
+                image: importPreviewData?.image || null,
+            };
+            const metaLine = [
+                recipe_meta.servings && `Servings: ${recipe_meta.servings}`,
+                recipe_meta.prep_time && `Prep: ${recipe_meta.prep_time}`,
+                recipe_meta.cook_time && `Cook: ${recipe_meta.cook_time}`,
+                recipe_meta.total_time && `Total: ${recipe_meta.total_time}`,
+            ].filter(Boolean).join(' · ');
+            const body_markdown = [
+                metaLine, metaLine ? '' : null,
+                '## Ingredients', ...ingredients.map(i => `- ${i}`), '',
+                '## Instructions', ...instructions.map((s, n) => `${n + 1}. ${s}`),
+            ].filter(l => l !== null).join('\n');
+
+            const res = await fetch('/api/wiki/pages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    section: 'recipe', title, body_markdown, tags: [],
+                    recipe_meta, source_url: importPreviewData?.source_url || null,
+                }),
+            });
+            if (!res.ok) { const err = await res.json().catch(() => ({})); alert(`Couldn't save: ${err.error || res.statusText}`); return; }
+            const saved = await res.json();
+            closeImportModal();
+            switchSection('recipe');
+            await loadPages();
+            selectPage(saved.id);
+        }
+
+        loadPages();
+    </script>
+</body>
+</html>
