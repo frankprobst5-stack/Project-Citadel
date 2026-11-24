@@ -50,6 +50,41 @@ class WikiPageCrudTests(unittest.TestCase):
         self.assertEqual(updated["body_markdown"], "v2")
         self.assertEqual(len(wiki.list_wiki_pages(conn)), 1, "an update must not insert a second row")
 
+    def test_new_page_defaults_to_unverified_with_no_risk_level(self):
+        conn = fresh_db()
+        page = wiki.upsert_wiki_page(conn, None, "manual", "Generator Startup", "body")
+        self.assertEqual(page["verification_status"], "unverified")
+        self.assertIsNone(page["risk_level"])
+
+    def test_rejects_an_unknown_verification_status_or_risk_level(self):
+        conn = fresh_db()
+        with self.assertRaises(ValueError):
+            wiki.upsert_wiki_page(conn, None, "manual", "Title", "body", verification_status="trust-me-bro")
+        with self.assertRaises(ValueError):
+            wiki.upsert_wiki_page(conn, None, "manual", "Title", "body", risk_level="apocalyptic")
+
+    def test_set_verification_status_and_risk_level_on_create(self):
+        conn = fresh_db()
+        page = wiki.upsert_wiki_page(
+            conn, None, "reference", "Severe Bleeding Response", "body",
+            source_url="https://www.redcross.org/take-a-class/resources/learn-first-aid/bleeding",
+            verification_status="verified", risk_level="critical",
+        )
+        self.assertEqual(page["verification_status"], "verified")
+        self.assertEqual(page["risk_level"], "critical")
+
+    def test_an_unrelated_edit_does_not_silently_reset_review_status(self):
+        # Real risk this guards against: INSERT OR REPLACE deletes and
+        # reinserts the row -- any column left out of that statement
+        # resets to its table default, not its prior value. A human
+        # reviewer marking a page "verified" must survive the next
+        # routine body-text edit that doesn't even mention review status.
+        conn = fresh_db()
+        page = wiki.upsert_wiki_page(conn, None, "reference", "Title", "v1", verification_status="verified", risk_level="high")
+        updated = wiki.upsert_wiki_page(conn, page["id"], "reference", "Title", "v2")
+        self.assertEqual(updated["verification_status"], "verified", "a routine edit must not wipe a prior review")
+        self.assertEqual(updated["risk_level"], "high")
+
     def test_delete_removes_the_page_and_its_attachments(self):
         conn = fresh_db()
         page = wiki.upsert_wiki_page(conn, None, "manual", "Generator Startup", "body")

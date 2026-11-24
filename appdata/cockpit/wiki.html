@@ -53,6 +53,20 @@
         .badge-section { background: rgba(0,141,255,0.15); color: var(--accent-bright); border: 1px solid var(--accent); }
         .badge-tag { background: var(--panel-alt); color: var(--text-dim); border: 1px solid var(--border); margin-left: 4px; }
 
+        .cat-tab-btn.emergency-tab { color: var(--red); }
+        .cat-tab-btn.emergency-tab.active { color: var(--red); border-bottom-color: var(--red); }
+
+        /* Verification/risk provenance -- a real record of how
+           confident this page's content actually is, not decoration.
+           See wiki.py's own VERIFICATION_STATUSES/RISK_LEVELS. */
+        .badge-verified { background: rgba(89,214,124,0.15); color: var(--green); border: 1px solid var(--green); }
+        .badge-supported { background: rgba(0,141,255,0.15); color: var(--accent-bright); border: 1px solid var(--accent); }
+        .badge-unverified { background: rgba(255,176,0,0.15); color: var(--amber); border: 1px solid var(--amber); }
+        .badge-conflicting { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid var(--red); }
+        .badge-risk-low { background: var(--panel-alt); color: var(--text-dim); border: 1px solid var(--border); }
+        .badge-risk-moderate { background: rgba(255,176,0,0.12); color: var(--amber); border: 1px solid var(--amber); }
+        .badge-risk-high, .badge-risk-critical { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid var(--red); font-weight: bold; }
+
         .add-ribbon { display: flex; gap: 10px; background: var(--bg); padding: 10px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 15px; flex-wrap: wrap; }
         .add-ribbon input, .add-ribbon select, .wiki-detail input[type=text], .wiki-detail select, .wiki-detail textarea {
             background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px; font-family: monospace; border-radius: 4px; outline: none; font-size: 0.85rem;
@@ -98,6 +112,7 @@
 
         <div class="cat-tab-bar" id="sectionTabs">
             <button class="cat-tab-btn active" data-section="all" onclick="switchSection('all')">All</button>
+            <button class="cat-tab-btn emergency-tab" data-section="emergency" onclick="switchSection('emergency')">🚨 Emergency Now</button>
             <button class="cat-tab-btn" data-section="recipe" onclick="switchSection('recipe')">🍲 Recipes</button>
             <button class="cat-tab-btn" data-section="manual" onclick="switchSection('manual')">📋 Manuals</button>
             <button class="cat-tab-btn" data-section="reference" onclick="switchSection('reference')">📚 Reference</button>
@@ -336,9 +351,24 @@
                 <div class="wiki-list-item ${p.id === selectedId ? 'active' : ''}" onclick="selectPage('${p.id}')">
                     <span class="wiki-list-title">${escapeHtml(p.title)}</span>
                     <span class="badge badge-section">${escapeHtml(p.section)}</span>
+                    ${riskBadge(p)}
+                    ${verificationBadge(p)}
                     ${(p.tags || []).map(t => `<span class="badge badge-tag">${escapeHtml(t)}</span>`).join('')}
                 </div>
             `).join('');
+        }
+
+        // Real provenance, not decoration -- see wiki.py's own
+        // VERIFICATION_STATUSES/RISK_LEVELS and the comment on
+        // upsert_wiki_page about why "verified" must mean something.
+        const VERIFICATION_LABELS = { verified: 'Verified', supported: 'Supported', unverified: 'Unverified', conflicting: 'Conflicting' };
+        function verificationBadge(page) {
+            const status = page.verification_status || 'unverified';
+            return `<span class="badge badge-${status}" title="${status === 'unverified' ? 'Not yet checked against an authoritative source' : ''}">${VERIFICATION_LABELS[status] || status}</span>`;
+        }
+        function riskBadge(page) {
+            if (!page.risk_level) return '';
+            return `<span class="badge badge-risk-${page.risk_level}">${page.risk_level.toUpperCase()} RISK</span>`;
         }
 
         async function selectPage(id) {
@@ -355,7 +385,7 @@
             selectedId = null;
             editing = true;
             renderList();
-            renderDetail({ id: null, section: 'note', title: '', body_markdown: '', tags: [], recipe_meta: null, source_url: null });
+            renderDetail({ id: null, section: 'note', title: '', body_markdown: '', tags: [], recipe_meta: null, source_url: null, verification_status: 'unverified', risk_level: null });
             currentAttachments = [];
         }
 
@@ -369,10 +399,21 @@
                     <input type="text" id="editTitle" value="${escapeHtml(page.title)}">
                     <label>Section</label>
                     <select id="editSection">
-                        ${['recipe','manual','reference','note'].map(s => `<option value="${s}" ${s === page.section ? 'selected' : ''}>${s}</option>`).join('')}
+                        ${['emergency','recipe','manual','reference','note'].map(s => `<option value="${s}" ${s === page.section ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                     <label>Tags (comma separated)</label>
                     <input type="text" id="editTags" value="${escapeHtml((page.tags || []).join(', '))}">
+                    <label>Source URL (the real page this content is drawn from, if any)</label>
+                    <input type="text" id="editSourceUrl" value="${escapeHtml(page.source_url || '')}">
+                    <label>Verification status -- "Verified" means this content was actually drafted against a fetched, cited source, not written from memory</label>
+                    <select id="editVerification">
+                        ${['unverified','supported','verified','conflicting'].map(s => `<option value="${s}" ${s === (page.verification_status || 'unverified') ? 'selected' : ''}>${VERIFICATION_LABELS[s]}</option>`).join('')}
+                    </select>
+                    <label>Risk level (how dangerous is it to get this wrong -- leave blank if not applicable)</label>
+                    <select id="editRiskLevel">
+                        <option value="" ${!page.risk_level ? 'selected' : ''}>None</option>
+                        ${['low','moderate','high','critical'].map(s => `<option value="${s}" ${s === page.risk_level ? 'selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}
+                    </select>
                     <label>Body (markdown -- headers with #/##, bullets with -, numbered steps with 1., inline code, fenced code blocks, pipe tables, and [link text](https://...))</label>
                     <textarea id="editBody">${escapeHtml(page.body_markdown)}</textarea>
                     <div style="margin-top:14px; display:flex; gap:10px;">
@@ -408,6 +449,8 @@
                     <div>
                         <h2 style="margin-bottom:6px;">${escapeHtml(page.title)}</h2>
                         <span class="badge badge-section">${escapeHtml(page.section)}</span>
+                        ${riskBadge(page)}
+                        ${verificationBadge(page)}
                         ${(page.tags || []).map(t => `<span class="badge badge-tag">${escapeHtml(t)}</span>`).join('')}
                     </div>
                     <div style="display:flex; gap:8px; flex-shrink:0;">
@@ -444,6 +487,9 @@
                 title: document.getElementById('editTitle').value.trim(),
                 body_markdown: document.getElementById('editBody').value,
                 tags: document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(Boolean),
+                source_url: document.getElementById('editSourceUrl').value.trim() || null,
+                verification_status: document.getElementById('editVerification').value,
+                risk_level: document.getElementById('editRiskLevel').value || null,
             };
             if (!payload.title) { alert('A title is required.'); return; }
             const res = await fetch(existingId ? `/api/wiki/pages/${existingId}` : '/api/wiki/pages', {

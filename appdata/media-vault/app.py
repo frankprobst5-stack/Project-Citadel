@@ -2547,6 +2547,8 @@ def api_create_wiki_page():
             tags=data.get('tags'),
             recipe_meta=data.get('recipe_meta'),
             source_url=data.get('source_url'),
+            verification_status=data.get('verification_status'),
+            risk_level=data.get('risk_level'),
         )
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -2567,6 +2569,8 @@ def api_update_wiki_page(page_id):
             tags=data.get('tags'),
             recipe_meta=data.get('recipe_meta'),
             source_url=data.get('source_url'),
+            verification_status=data.get('verification_status'),
+            risk_level=data.get('risk_level'),
         )
     except ValueError as e:
         return jsonify({"error": str(e)}), 400

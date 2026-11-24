@@ -27,6 +27,10 @@ from datetime import datetime, timezone
 import requests
 
 
+VERIFICATION_STATUSES = ("verified", "supported", "unverified", "conflicting")
+RISK_LEVELS = ("low", "moderate", "high", "critical")
+
+
 def create_wiki_tables(conn):
     cursor = conn.cursor()
     cursor.execute('''
@@ -42,6 +46,22 @@ def create_wiki_tables(conn):
             updated_at TEXT NOT NULL
         )
     ''')
+    # verification_status/risk_level (added 2026-11-24, the Survival
+    # Reference Library build-out): a real, honest provenance record per
+    # page, not a decorative badge -- "verified" means this page's
+    # content was actually drafted against a fetched, cited
+    # authoritative source (source_url), never just because it sounds
+    # right. CREATE TABLE above is a no-op on an already-existing
+    # install (this table already had real rows -- 10 manual pages, 77
+    # recipes -- by the time this was added), so these need a real
+    # ALTER TABLE, same lesson app.py's own inventory table migration
+    # already learned.
+    cursor.execute("PRAGMA table_info(wiki_pages)")
+    wiki_pages_columns = [row[1] for row in cursor.fetchall()]
+    if "verification_status" not in wiki_pages_columns:
+        cursor.execute("ALTER TABLE wiki_pages ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'unverified'")
+    if "risk_level" not in wiki_pages_columns:
+        cursor.execute("ALTER TABLE wiki_pages ADD COLUMN risk_level TEXT")
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS wiki_attachments (
             id TEXT PRIMARY KEY,
@@ -84,38 +104,59 @@ def get_wiki_page(conn, page_id):
     return _row_to_page(row) if row else None
 
 
-def upsert_wiki_page(conn, page_id, section, title, body_markdown, tags=None, recipe_meta=None, source_url=None):
+def upsert_wiki_page(conn, page_id, section, title, body_markdown, tags=None, recipe_meta=None, source_url=None,
+                      verification_status=None, risk_level=None):
     if not section or not str(section).strip():
         raise ValueError("a wiki page needs a real section")
     if not title or not str(title).strip():
         raise ValueError("a wiki page needs a real title")
+    if verification_status is not None and verification_status not in VERIFICATION_STATUSES:
+        raise ValueError(f"unknown verification_status {verification_status!r} -- must be one of {VERIFICATION_STATUSES}")
+    if risk_level is not None and risk_level not in RISK_LEVELS:
+        raise ValueError(f"unknown risk_level {risk_level!r} -- must be one of {RISK_LEVELS}")
     now = datetime.now(timezone.utc).isoformat()
     tags_json = json.dumps(tags or [])
     recipe_meta_json = json.dumps(recipe_meta) if recipe_meta is not None else None
     cursor = conn.cursor()
     if page_id:
-        cursor.execute(
-            "SELECT created_at FROM wiki_pages WHERE id = ?", (page_id,)
-        )
+        # INSERT OR REPLACE deletes+reinserts the row -- any column left
+        # out of the VALUES below would silently reset to its table
+        # default, not keep its prior value. verification_status/
+        # risk_level are genuinely optional on every call site (most
+        # updates aren't touching review status), so the existing value
+        # has to be read first and only overridden when the caller
+        # actually passed something, or a real reviewer's prior
+        # "verified" mark would get silently wiped back to "unverified"
+        # on the next unrelated edit.
+        cursor.execute("SELECT created_at, verification_status, risk_level FROM wiki_pages WHERE id = ?", (page_id,))
         existing = cursor.fetchone()
         created_at = existing[0] if existing else now
+        if verification_status is None:
+            verification_status = existing[1] if existing else "unverified"
+        if risk_level is None and existing:
+            risk_level = existing[2]
         cursor.execute(
             """
             INSERT OR REPLACE INTO wiki_pages
-                (id, section, title, body_markdown, tags, recipe_meta, source_url, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, section, title, body_markdown, tags, recipe_meta, source_url, created_at, updated_at,
+                 verification_status, risk_level)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (page_id, section, title, body_markdown, tags_json, recipe_meta_json, source_url, created_at, now),
+            (page_id, section, title, body_markdown, tags_json, recipe_meta_json, source_url, created_at, now,
+             verification_status, risk_level),
         )
     else:
         page_id = str(uuid.uuid4())
+        verification_status = verification_status or "unverified"
         cursor.execute(
             """
             INSERT INTO wiki_pages
-                (id, section, title, body_markdown, tags, recipe_meta, source_url, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, section, title, body_markdown, tags, recipe_meta, source_url, created_at, updated_at,
+                 verification_status, risk_level)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (page_id, section, title, body_markdown, tags_json, recipe_meta_json, source_url, now, now),
+            (page_id, section, title, body_markdown, tags_json, recipe_meta_json, source_url, now, now,
+             verification_status, risk_level),
         )
     conn.commit()
     return get_wiki_page(conn, page_id)
