@@ -359,7 +359,7 @@
                     </select>
                     <label>Tags (comma separated)</label>
                     <input type="text" id="editTags" value="${escapeHtml((page.tags || []).join(', '))}">
-                    <label>Body (markdown -- headers with #/##, bullets with -, numbered steps with 1., `code`, ```fenced blocks```, | pipe | tables |, and [link text](https://...))</label>
+                    <label>Body (markdown -- headers with #/##, bullets with -, numbered steps with 1., inline code, fenced code blocks, pipe tables, and [link text](https://...))</label>
                     <textarea id="editBody">${escapeHtml(page.body_markdown)}</textarea>
                     <div style="margin-top:14px; display:flex; gap:10px;">
                         <button class="action-btn save" onclick="savePage('${page.id || ''}')">Save</button>
