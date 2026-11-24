@@ -120,7 +120,7 @@
                 </div>
                 <div class="log-card">
                     <h2>🍲 Recipe Pantry Check</h2>
-                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in Mealie and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
+                    <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">Look up a recipe in the Unified Wiki and see which ingredients you already have in Food Inventory / Freezer Foods.</p>
                     <button class="action-btn" onclick="openPanel('pantryCheckPanel')">Access Ledger</button>
                 </div>
                 <div class="log-card">
@@ -507,11 +507,11 @@
             </table>
         </div>
 
-        <!-- RECIPE PANTRY CHECK (MEALIE BRIDGE) -->
+        <!-- RECIPE PANTRY CHECK (wiki recipe pages, Mealie retired 2026-11-24) -->
         <div id="pantryCheckPanel" class="viewport-panel">
             <h2>🍲 Recipe Pantry Check</h2>
             <p style="color:var(--text-dim); font-size:0.85rem; margin:0 0 15px 0;">
-                Search for a recipe by name (looked up in <a href="http://localhost:8097" target="_blank" style="color:var(--accent);">Mealie</a>)
+                Search for a recipe by name (looked up in the <a href="wiki.html" target="_blank" style="color:var(--accent);">Unified Wiki</a>)
                 and see which ingredients are already sitting in your Food Inventory or Freezer Foods ledger.
                 Matching is a best-effort text match, not exact — always eyeball the results.
             </p>
@@ -1255,16 +1255,17 @@ if (parseInt(qtyEl.value) < 0 || isNaN(parseInt(qtyEl.value))) { qtyEl.value = 0
             loadGardenLedger();
         }
 
-        // --- RECIPE PANTRY CHECK (MEALIE BRIDGE) ---
-        // Calls vault-api's /api/pantry-check (see app.py), which does the
-        // actual Mealie API call + inventory cross-check server-side --
-        // this page just renders whatever comes back.
+        // --- RECIPE PANTRY CHECK (wiki recipe pages, Mealie retired 2026-11-24) ---
+        // Calls vault-api's /api/pantry-check (see app.py), which looks the
+        // recipe up among the Unified Wiki's own recipe pages + does the
+        // inventory cross-check server-side -- this page just renders
+        // whatever comes back.
         async function runPantryCheck() {
             const query = document.getElementById('pantryCheckQuery').value.trim();
             const resultsEl = document.getElementById('pantryCheckResults');
             if (!query) { resultsEl.innerHTML = '<span style="color:var(--red);">Type a recipe name first.</span>'; return; }
 
-            resultsEl.innerHTML = '<span>Checking Mealie + pantry ledgers…</span>';
+            resultsEl.innerHTML = '<span>Checking Wiki recipes + pantry ledgers…</span>';
             try {
                 const res = await fetch(`/api/pantry-check?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
                 const data = await res.json();

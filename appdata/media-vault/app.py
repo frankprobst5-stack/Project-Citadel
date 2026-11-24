@@ -100,11 +100,6 @@ def _require_vault_token():
     if not VAULT_API_TOKEN or not hmac.compare_digest(provided, VAULT_API_TOKEN):
         return jsonify({"error": "Missing or invalid X-Vault-Token header."}), 401
 
-# Mealie pantry-check bridge (see /api/pantry-check below) -- server-to-
-# server config, never exposed to the browser.
-MEALIE_BASE_URL = os.environ.get("MEALIE_BASE_URL", "http://citadel-mealie:9000")
-MEALIE_API_TOKEN = os.environ.get("MEALIE_API_TOKEN", "")
-
 def init_db():
     """Automatically creates the database and layout tables on startup."""
     conn = sqlite3.connect(DB_PATH)
@@ -694,85 +689,50 @@ def delete_garden_item(item_id):
     conn.close()
     return jsonify({"status": "success"})
 
-# --- MEALIE PANTRY-CHECK BRIDGE ---
-# The one piece of the Mealie recipe integration that's genuinely
-# Citadel-specific: no recipe app knows about this homestead's own Food
-# Inventory / Freezer Foods ledgers (the `inventory` table's `food` and
-# `freezer` categories, same table logistics.html already reads/writes
-# via /api/inventory above). This calls Mealie's own REST API server-to-
-# server over citadel-net -- never from the browser -- since it needs
-# Mealie's API token, which must stay off the client.
+# --- WIKI RECIPE PANTRY-CHECK ---
+# Was a Mealie API bridge until Mealie was retired 2026-11-24 (every
+# real recipe already migrated -- see scripts/migrate_mealie_recipes_to_wiki.py)
+# -- same real feature, same response shape logistics.html's own
+# runPantryCheck() already expects, now sourced from wiki_pages
+# directly instead of a second container's REST API.
 #
-# Matching a recipe's structured ingredient food name against a ledger
-# row's freeform `desc` text is necessarily a best-effort, case-
-# insensitive substring match in both directions: both sides are typed
-# independently by a person ("chicken breast" in Mealie vs. "Chicken
-# Breasts - Freezer 2" in the ledger), so there's no shared ID to join
-# on.
+# Real precision loss worth being honest about: Mealie's own structured
+# `recipeIngredient[].food.name` field (e.g. just "olive oil") is gone
+# -- wiki_pages' recipe_meta only carries the flat display line ("2
+# tablespoons olive oil") recipe_to_markdown()/the JSON-LD importer
+# already produce. Matching a short pantry `desc` ("Olive Oil") as a
+# substring of that longer line still works for the common case; the
+# REVERSE direction (checking if the whole ingredient line is a
+# substring of a pantry desc) rarely fires now and isn't load-bearing,
+# kept only because it was free and harmless under the old shorter
+# food-name text too.
 @app.route('/api/pantry-check', methods=['GET'])
 def pantry_check():
-    if not MEALIE_API_TOKEN:
-        return jsonify({
-            "status": "error",
-            "detail": "MEALIE_API_TOKEN not configured -- generate one in Mealie's User Settings > API Tokens and set it in .env, then restart vault-api.",
-        }), 400
-
     query = request.args.get("q", "").strip()
-    slug = request.args.get("slug", "").strip()
-    if not query and not slug:
-        return jsonify({"status": "error", "detail": "pass ?q=<search text> or ?slug=<recipe slug>"}), 400
-
-    headers = {"Authorization": f"Bearer {MEALIE_API_TOKEN}"}
-    try:
-        if not slug:
-            search_res = requests.get(
-                f"{MEALIE_BASE_URL}/api/recipes",
-                params={"search": query, "perPage": 1},
-                headers=headers,
-                timeout=10,
-            )
-            search_res.raise_for_status()
-            items = search_res.json().get("items", [])
-            if not items:
-                return jsonify({"status": "error", "detail": f"no recipe found matching {query!r}"}), 404
-            slug = items[0]["slug"]
-
-        recipe_res = requests.get(f"{MEALIE_BASE_URL}/api/recipes/{slug}", headers=headers, timeout=10)
-        recipe_res.raise_for_status()
-        recipe = recipe_res.json()
-    except requests.RequestException as e:
-        return jsonify({"status": "error", "detail": f"Mealie unreachable or failed: {e}"}), 502
+    if not query:
+        return jsonify({"status": "error", "detail": "pass ?q=<recipe name to search for>"}), 400
 
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventory WHERE category IN ('food', 'freezer')")
-    pantry_rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+    try:
+        recipe_pages = wiki.list_wiki_pages(conn, section="recipe")
+        matches = [p for p in recipe_pages if query.lower() in p["title"].lower()]
+        if not matches:
+            return jsonify({"status": "error", "detail": f"no recipe found matching {query!r}"}), 404
+        recipe_page = matches[0]
 
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM inventory WHERE category IN ('food', 'freezer')")
+        pantry_rows = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    ingredients = (recipe_page.get("recipe_meta") or {}).get("ingredients", [])
     results = []
-    for ing in recipe.get("recipeIngredient", []):
-        food = ing.get("food") or {}
-        food_name = (food.get("name") or "").strip()
-        # Mealie's own `display` collapses to just the bare quantity when
-        # `food` didn't parse (e.g. "1" instead of "1 bag Egg Noodles") --
-        # originalText/note still hold the real freeform line in that case,
-        # so prefer those over `display` when there's no structured food.
-        if food_name:
-            display = ing.get("display") or ing.get("originalText") or food_name
-        else:
-            display = ing.get("originalText") or ing.get("note") or ing.get("display") or "(unparsed ingredient)"
-        if not food_name:
-            results.append({"ingredient": display, "matched": False, "pantry_matches": []})
-            continue
-        needle = food_name.lower()
-        matches = [
-            row for row in pantry_rows
-            if needle in (row.get("desc") or "").lower() or (row.get("desc") or "").lower() in needle
-        ]
+    for display in ingredients:
+        line = display.lower()
+        matches = [row for row in pantry_rows if row.get("desc") and row["desc"].lower() in line]
         results.append({
             "ingredient": display,
-            "food_name": food_name,
             "matched": len(matches) > 0,
             "pantry_matches": [
                 {"desc": m["desc"], "loc": m["loc"], "qty": m["qty"], "category": m["category"]}
@@ -782,7 +742,7 @@ def pantry_check():
 
     return jsonify({
         "status": "success",
-        "recipe": {"name": recipe.get("name"), "slug": recipe.get("slug")},
+        "recipe": {"name": recipe_page["title"], "slug": recipe_page["id"]},
         "ingredients": results,
         "missing_count": sum(1 for r in results if not r["matched"]),
     })

@@ -47,7 +47,6 @@ appdata/media-vault/citadel.db
 # profile picture, and Mealie's own auth session secrets (.secret,
 # .session_secret) -- same reasoning as every other appdata/ real-data
 # exclusion above, never belongs in git.
-appdata/mealie/data/
 appdata/media-vault/ZIM_Library/
 appdata/project-vigil/vigil_state.json
 appdata/project-vigil/vigil_grid_ledger.json

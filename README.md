@@ -19,11 +19,10 @@ A unified browser-based command center (port **8085**) with 23 integrated module
 
 - **📡 Communications Hub** — Launches WayStation, the full EmComm dashboard (net control, ICS forms, mesh, Winlink, JS8Call, space weather)
 - **🗺️ Tactical Map** — Offline vector map with real elevation data, no internet required
-- **🎬 Digital Media Vault** — Self-hosted video, audio, and PDF library with category-based organization
 - **🎓 Home Education Hub** — Cloud9 kid dashboard plus Kolibri, a full offline learning platform with thousands of lessons and student tracking
 - **📚 Knowledge Base** — Offline wiki/encyclopedia access (Kiwix + .zim archives), morse code, phonetic alphabets, technical manuals
-- **🧭 What We Have & Where** — One real index of every reference source on this machine (Kiwix's archives, the Vault's PDF/video categories, First Aid & Medical) in one place
-- **🍲 Recipes & Meal Planner** — Mealie: URL/photo recipe import, meal planning, shopping lists, plus a pantry-check bridge against your own Food Inventory/Freezer Foods ledgers
+- **🧭 What We Have & Where** — One real index of every reference source on this machine (Kiwix's archives, the Wiki's Media Library, First Aid & Medical) in one place
+- **📖 Unified Wiki** — One content library: recipes (paste a URL and it scrapes the ingredients/steps — no separate recipe app needed), manuals, notes, and reference pages, plus a Media Library for every video/audio/PDF file, all with real search and a pantry-check bridge against your Food Inventory/Freezer Foods ledgers
 - **🌿 Homestead Logistics** — Multi-table inventory system for food, fuel, PPE, orchard/fruit trees, livestock, and botanical gardens (see below)
 - **🥕 Garden Planner** — A real spring/summer/fall crop plan for a 16-bed garden, laid out to match the actual plot
 - **🌿 Wild Plant Database** — Launches Baneward, offline ID for 35,000+ real US wild plants with poison-lookalike warnings and a trait-based ID wizard
@@ -166,7 +165,7 @@ you actually enable in the installer's module picker:
 | You enable | Realistic free RAM to budget (beyond your OS's own usage) |
 |---|---|
 | Just the lightweight tier (Home Monitor, Secure Notes, Knowledge Base) | ~1 GB |
-| + Recipes and/or Whisper audio transcription | ~2 GB |
+| + Whisper audio transcription | ~2 GB |
 | + Off-Grid AI and/or Home Education (share one Ollama engine, so enabling both doesn't double this cost) | ~5 GB, more for a larger model than the default `llama3.2:1b` — Kolibri's own cap was raised to 2GB 2026-09-20 after a real content-library query needed it |
 | Everything at once (the installer's non-interactive default) | **8 GB+ free, 16 GB total system RAM is comfortable** — this is what actually froze a real 15 GB test machine when combined with normal desktop use, so don't undersize this |
 
@@ -227,22 +226,7 @@ Same idea — downloads to `%USERPROFILE%\citadel` and hands off to `install.bat
    just re-run the installer later to retry the map data alone.
 5. **Open your browser** to **http://localhost:8085**
 
-Everything runs locally. Your entire home infrastructure is now up and running.
-
-### First-Run Security Step: Change Mealie's Default Login
-
-Mealie (the recipe manager) ships with self-signup disabled and a
-publicly-documented default admin account: `changeme@example.com` /
-`MyPassword`. Anyone who's read Mealie's own docs knows this login for
-*every* fresh Citadel install, so change it immediately:
-
-1. Open `http://localhost:8097`, log in with the default above.
-2. Avatar (top right) → **Manage Your Account** → set your own email
-   and password.
-
-This is the one credential in Citadel that isn't obviously yours by
-default — everything else has no login at all (see "Known Gaps" below
-for what that means for exposing this beyond your own LAN).
+Everything runs locally. Your entire home infrastructure is now up and running. Nothing in Citadel has a login by default -- fine on a trusted home LAN, worth knowing before exposing any of this beyond it.
 
 ### Configuration (Optional)
 
@@ -354,8 +338,7 @@ docker compose restart citadel-vault-brain
 | **Ollama** (Offline AI) | 11500 | Local LLM engine (internal: 11434) |
 | **Open WebUI** (AI Chat) | 8090 | Multi-user AI chat interface |
 | **Kiwix** (Encyclopedia) | 8095 | Offline wiki access |
-| **Whisper** (Audio transcription) | 8096 | Local speech-to-text (also used by Mealie's Audio Provider) |
-| **Mealie** (Recipes) | 8097 | Recipe manager & meal planner |
+| **Whisper** (Audio transcription) | 8096 | Local speech-to-text |
 | **Flatnotes** (Secure Notes) | 8098 | Markdown note storage |
 | **Cloud9** (Kid Dashboard) | 8099 | Homeschool dashboard for one kid's device |
 
@@ -454,7 +437,7 @@ All changes are hot-reloaded or require a simple `docker compose restart <servic
 GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
 
 **Important:** This covers Citadel's own original code only (cockpit, media-vault, install scripts, Project Vigil integration, the Muster bridge). It does not relicense anything else. Two other categories of third-party code are involved, both retaining their own original licenses:
-- **Bundled container services** (Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes, Mealie, trunk-recorder, rtl_433, and others) are pulled from their own upstream repositories at install/run time, not redistributed as part of this repo.
+- **Bundled container services** (Ollama, Open WebUI, Kiwix, Kolibri, Flatnotes, trunk-recorder, rtl_433, and others) are pulled from their own upstream repositories at install/run time, not redistributed as part of this repo.
 - **Vendored frontend libraries** (MapLibre GL JS, PMTiles, protomaps-themes-base — all BSD-3-Clause) are copied directly into `appdata/cockpit/vendor/` so the offline map works with no build step, with each file's own license notice preserved as a header comment.
 
 See **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)** for the full, real, verified list — copyright holders, exact licenses, and sources — rather than taking this paragraph's word for it.

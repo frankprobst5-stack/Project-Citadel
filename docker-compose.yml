@@ -31,7 +31,6 @@ include:
   - modules/hardware/compose.fragment.yml
   - modules/knowledge/compose.fragment.yml
   - modules/notes/compose.fragment.yml
-  - modules/recipes/compose.fragment.yml
   - modules/vigil/compose.fragment.yml
 # --- MODULE INCLUDES: END ---
 
@@ -225,12 +224,6 @@ services:
       # database file"), not silently serve stale/wrong data.
       - ${BANEWARD_DATA_PATH:-/citadel-baneward-path-unset}:/baneward-data:ro
     environment:
-      # Lets /api/pantry-check (app.py) call the mealie container below
-      # server-to-server -- see that route's own comment for why this
-      # bridge lives in vault-api instead of a browser calling Mealie
-      # directly.
-      - MEALIE_BASE_URL=http://citadel-mealie:9000
-      - MEALIE_API_TOKEN=${MEALIE_API_TOKEN}
       - CITADEL_HOST_PATH=${CITADEL_HOST_PATH:-}
       # Real fix for a live-reported vulnerability (2026-09-21) -- see
       # cockpit's own comment on this same variable above for the full
@@ -254,20 +247,9 @@ services:
     networks:
       - citadel-net
     restart: unless-stopped
-    depends_on:
-      mealie:
-        condition: service_started
-        # vault-api is always-on core infra, but mealie (now defined in
-        # modules/recipes/compose.fragment.yml) is gated behind the
-        # "recipes" profile -- `required: false` means "wait for it if
-        # the recipes profile is active, but don't force mealie to start
-        # (or error out) when it's excluded from a lighter install."
-        # `include:` merges mealie's service definition into this same
-        # model regardless of profile selection (profiles only gate what
-        # STARTS, not what Compose knows about), so this cross-file
-        # reference resolves exactly like it did before the module split
-        # -- verified with `docker compose config` after the split.
-        required: false
+    # (depends_on: mealie removed 2026-11-24 along with the whole
+    # recipes module -- see modules/recipes/ deletion and
+    # scripts/migrate_mealie_recipes_to_wiki.py.)
 
 networks:
   citadel-net:

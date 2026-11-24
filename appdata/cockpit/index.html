@@ -224,7 +224,6 @@
             { key: 'cloud9', title: "Home Education Hub", desc: "Cloud9 — the kid dashboard: AI homework helper, planner, dictionary, weather labs, video shelf, and a link into the full Kolibri course library.", meta: "Engine: Cloud9", icon: "🎓", action: "http://localhost:8099", profile: 'education' },
             { key: 'kiwix', title: "Knowledge Base", desc: "61 real offline ZIM archives — Ready.gov, Wikipedia, Khan Academy, Stack Exchange Q&A for woodworking/gardening/mechanics, Project Gutenberg, and more.", meta: "Storage: Wiki Core", icon: "📚", action: "knowledge.html", profile: 'knowledge' },
             { key: 'sources', title: "What We Have & Where", desc: "One real index of every reference source on this machine — Kiwix's own archives by name, the Vault's PDF/video categories with live counts, and a link into First Aid & Medical — so a household member under stress has one place to start, not three to guess between.", meta: "Index: Citadel + Vault + Kiwix", icon: "🧭", action: "sources.html", profile: null },
-            { key: 'mealie', title: "Recipes & Meal Planner", desc: "Import recipes by URL or hand-enter them, build a weekly meal plan, generate a shopping list, and check a recipe's ingredients against your Food Inventory and Freezer Foods ledgers.", meta: "Engine: Mealie", icon: "🍲", action: "http://localhost:8097", profile: 'recipes' },
             { key: 'wiki', title: "Unified Wiki", desc: "One content library: all 77 Mealie recipes (paste a link and it scrapes the ingredients/steps), the old Master Operations Handbook, 251 real videos/mp3s/PDFs in a Media Library, plus your own notes and reference pages -- all with real search. Mealie itself is still around until it's retired for good.", meta: "Engine: Vault Brain Core", icon: "📖", action: "wiki.html", profile: null },
             { key: 'vault', title: "Homestead Logistics", desc: "Track seed variety data logs, fertilization intervals, crop yields, and field rotations.", meta: "Ledger: Botanical Core", icon: "🌿", action: "logistics.html", profile: null },
             { key: 'static', title: "Garden Planner", desc: "A real spring/summer/fall crop plan for the 16-bed garden — laid out to match the actual fence and compass orientation. Click any bed to see what's growing, spacing, and timing.", meta: "Storage: Botanical Core", icon: "🥕", action: "garden.html", profile: null },
@@ -343,7 +342,6 @@
             { key: 'baneward', name: 'Baneward', unmonitored: true, profile: null },
             { key: 'maps',    name: 'Maps', profile: null },
             { key: 'kiwix',   name: 'Kiwix', profile: 'knowledge' },
-            { key: 'mealie',  name: 'Mealie', profile: 'recipes' },
             { key: 'ai',      name: 'AI', profile: 'ai' },
             { key: 'backup',  name: 'Backup', profile: null },
             { key: 'newsAlerts', name: 'Alerts', special: 'alerts', unmonitored: true, profile: null },
@@ -387,7 +385,7 @@
         async function runHealthChecks() {
             const host = window.location.hostname;
             const results = {};
-            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, mealie, backup, familyphotos] = await Promise.all([
+            const [power, vault, maps, kiwix, ai, kolibri, flatnotes, cloud9, backup, familyphotos] = await Promise.all([
                 checkSameOrigin('/api/grid'),
                 checkSameOrigin('/api/inventory/general'),
                 checkSameOrigin('tiles/comms_base.pmtiles'),
@@ -396,7 +394,6 @@
                 checkNoCors(`http://${host}:8081`),
                 checkNoCors(`http://${host}:8098`),
                 checkNoCors(`http://${host}:8099`),
-                checkNoCors(`http://${host}:8097`),
                 checkSameOrigin('/api/backup/list'),
                 checkNoCors(`http://${host}:8100`),
             ]);
@@ -409,7 +406,6 @@
             results.kolibri = kolibri;
             results.flatnotes = flatnotes;
             results.cloud9 = cloud9;
-            results.mealie = mealie;
             results.backup = backup;
             results.familyphotos = familyphotos;
             results.static = true; // purely local static content, always available
@@ -584,7 +580,7 @@
         }
 
         function diffAndLog(prev, curr) {
-            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', mealie: 'Mealie recipes', backup: 'Backup system', familyphotos: 'Family photo gallery' };
+            const labels = { power: 'Vigil power hub', vault: 'Media vault', maps: 'Map tile store', kiwix: 'Kiwix', ai: 'Off-grid AI (Ollama)', kolibri: 'Kolibri education', flatnotes: 'Flatnotes vault', cloud9: 'Cloud9 kid dashboard', backup: 'Backup system', familyphotos: 'Family photo gallery' };
             Object.keys(labels).forEach(k => {
                 if (!prev) return; // first run: don't spam a log full of "detected" on load
                 if (prev[k] !== curr[k]) {
